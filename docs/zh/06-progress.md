@@ -139,9 +139,19 @@ Carrier 模拟送达
 
 ---
 
+## 传输层抽象（设计原则 2.3）
+
+- **transport.py**：`TransportAdapter` 抽象基类，定义 `connect`、`disconnect`、`publish`、`subscribe` 接口
+- **transport_nats.py**：`NatsTransportAdapter`，NATS 参考实现
+- **broadcaster.py**：`IntentBroadcaster` 支持注入 `transport` 参数，默认使用 NATS，保持向后兼容
+- 未来可扩展：HTTP、WebSocket、DHT、P2P 等传输适配器
+
+---
+
 ## 下一步计划
 
 1. ~~**Open-A2A Bridge**~~ ✅ 已实现（`bridge/main.py`、`Dockerfile.bridge`、`make run-bridge`）
-2. **可选**：多 Merchant 场景测试、真实支付通道对接、传输层抽象
-3. **可选**：Solid Pod 客户端凭证认证（当前为用户名/密码）
-4. **可选**：Agent 跨服务器发现（DHT、NATS 集群联邦）
+2. ~~**传输层抽象**~~ ✅ 已实现（`TransportAdapter`、`NatsTransportAdapter`）
+3. **可选**：多 Merchant 场景测试、真实支付通道对接
+4. **可选**：Solid Pod 客户端凭证认证（当前为用户名/密码）
+5. **可选**：Agent 跨服务器发现（DHT、NATS 集群联邦）

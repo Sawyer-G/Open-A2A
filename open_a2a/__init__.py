@@ -25,6 +25,8 @@ from open_a2a.preferences import (
     PreferencesProvider,
     SolidPodPreferencesProvider,
 )
+from open_a2a.transport import TransportAdapter
+from open_a2a.transport_nats import NatsTransportAdapter
 
 __all__ = [
     "Intent",
@@ -39,6 +41,8 @@ __all__ = [
     "PreferencesProvider",
     "FilePreferencesProvider",
     "SolidPodPreferencesProvider",
+    "TransportAdapter",
+    "NatsTransportAdapter",
 ]
 
 __version__ = "0.1.0"

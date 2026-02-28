@@ -87,9 +87,17 @@
 - **Dockerfile.bridge**: Bridge image build
 - **docker-compose.deploy.yml**: One-click deploy (NATS + Solid + Bridge)
 
+## Transport Layer Abstraction (Design Principle 2.3)
+
+- **transport.py**: `TransportAdapter` abstract base class; `connect`, `disconnect`, `publish`, `subscribe`
+- **transport_nats.py**: `NatsTransportAdapter`, NATS reference implementation
+- **broadcaster.py**: `IntentBroadcaster` accepts `transport` parameter; defaults to NATS, backward compatible
+- Future: HTTP, WebSocket, DHT, P2P adapters
+
 ## Next Steps
 
 1. ~~**Open-A2A Bridge**~~ ✅ Done
-2. **Optional**: Multi-Merchant test, transport layer abstraction
-3. **Optional**: Solid Pod client credentials auth (current: username/password)
-4. **Optional**: Agent cross-server discovery (DHT, NATS cluster federation)
+2. ~~**Transport layer abstraction**~~ ✅ Done
+3. **Optional**: Multi-Merchant test, real payment channel
+4. **Optional**: Solid Pod client credentials auth (current: username/password)
+5. **Optional**: Agent cross-server discovery (DHT, NATS cluster federation)

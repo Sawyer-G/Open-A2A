@@ -13,7 +13,9 @@ Open-A2A/
 ├── spec/                       # Core protocol specs (RFC)
 ├── open_a2a/                   # Python reference implementation (SDK)
 │   ├── intent.py               # Message models
-│   ├── broadcaster.py         # NATS wrapper
+│   ├── broadcaster.py         # Intent broadcast (TransportAdapter-based)
+│   ├── transport.py           # Transport layer abstract interface
+│   ├── transport_nats.py      # NATS transport adapter
 │   ├── identity.py            # DID identity (Phase 2)
 │   ├── preferences.py         # Preferences abstraction (Phase 2)
 │   └── agent.py               # BaseAgent

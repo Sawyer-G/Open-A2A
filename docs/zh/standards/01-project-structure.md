@@ -13,7 +13,9 @@ Open-A2A/
 ├── spec/                       # 核心协议规范（RFC 文档）
 ├── open_a2a/                   # 协议参考实现（Python SDK）
 │   ├── intent.py               # 消息模型
-│   ├── broadcaster.py          # NATS 封装
+│   ├── broadcaster.py          # 意图广播（基于 TransportAdapter）
+│   ├── transport.py            # 传输层抽象接口
+│   ├── transport_nats.py       # NATS 传输适配器
 │   ├── identity.py             # DID 身份（Phase 2）
 │   ├── preferences.py          # 偏好存储抽象（Phase 2）
 │   └── agent.py                # BaseAgent 基类

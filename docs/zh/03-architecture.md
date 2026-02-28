@@ -64,6 +64,7 @@ graph TD
 
 ### 2.2 发现与广播（意图网格）— 解决「谁在附近，谁能响应」
 
+- **传输层抽象**：`TransportAdapter` 接口（`open_a2a/transport.py`），当前实现 `NatsTransportAdapter`，未来可扩展 HTTP、WebSocket、DHT、P2P
 - **核心工具**：`NATS.io` + `Hypercore`
 - **开发任务**：
   - **意图广播 (Publish)**：Agent 向 `intent.{domain}.{action}` 主题发布消息（示例：`intent.food.order`）

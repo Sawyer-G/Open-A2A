@@ -35,7 +35,17 @@ Open-A2A **不实现** Agent 推理能力，建议与成熟运行时集成：
 | [Ollama](https://ollama.com/) | 本地 LLM 推理 | 作为 Agent 的模型底座 |
 | [MCP](https://modelcontextprotocol.io/) | 模型上下文协议 | 工具暴露、语义握手 |
 
-### Step 4: 交互协作层 (A2A & P2P)
+### Step 4: 传输层抽象 (Transport Layer)
+
+| 组件 | 说明 | 状态 |
+|------|------|------|
+| `TransportAdapter` | 抽象接口：`connect`、`disconnect`、`publish`、`subscribe` | ✅ 已实现（`open_a2a/transport.py`） |
+| `NatsTransportAdapter` | NATS 参考实现 | ✅ 已实现（`open_a2a/transport_nats.py`） |
+| `IntentBroadcaster` | 支持 `transport` 参数注入，默认 NATS | ✅ 已实现 |
+
+**用法**：`IntentBroadcaster(nats_url=...)` 保持向后兼容；自定义传输可 `IntentBroadcaster(transport=MyTransportAdapter())`。未来可扩展 HTTP、WebSocket、DHT、P2P 等适配器。
+
+### Step 5: 交互协作层 (A2A & P2P)
 
 | 工具 | 说明 |
 |------|------|
