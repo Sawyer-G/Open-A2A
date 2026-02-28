@@ -1,0 +1,34 @@
+---
+description: Open-A2A 项目结构与可维护性规范
+globs: "**/*.py,core/**/*,example/**/*,spec/**/*"
+alwaysApply: false
+---
+
+# 项目结构与可维护性
+
+开发时遵循以下规范，详细说明见 `docs/zh/standards/` 或 `docs/en/standards/`。
+
+## 目录结构
+
+- `spec/`：协议 RFC 文档
+- `core/`：Python SDK 参考实现
+- `example/`：Consumer、Merchant、Carrier 等 Demo
+- `docs/`：项目文档
+
+## 命名规范
+
+- 模块/文件：`snake_case`（如 `intent_broadcaster.py`）
+- 类：`PascalCase`
+- 函数/变量：`snake_case`
+- 常量：`UPPER_SNAKE_CASE`
+
+## 代码原则
+
+- 模块职责单一，避免上帝类
+- 业务逻辑与 I/O 分离，便于测试
+- 配置通过环境变量，敏感信息不提交
+
+## 参考文档
+
+- `docs/zh/standards/01-project-structure.md` 或 `docs/en/standards/01-project-structure.md`
+- `docs/zh/standards/03-contribution.md` 或 `docs/en/standards/03-contribution.md`

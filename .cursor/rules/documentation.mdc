@@ -1,0 +1,27 @@
+---
+description: Open-A2A 文档编写与维护规范
+globs: "docs/**/*.md,spec/**/*.md,**/README.md"
+alwaysApply: false
+---
+
+# 文档规范
+
+编写或修改文档时遵循以下规范，详见 `docs/zh/standards/02-documentation.md` 或 `docs/en/standards/02-documentation.md`。
+
+## 命名
+
+- 主文档：`{序号}-{主题}.md`（如 `01-project-overview.md`）
+- 规范：`docs/zh/standards/` 或 `docs/en/standards/` 下
+- 参考/归档：`docs/zh/reference/` 或 `docs/en/reference/`
+
+## 格式
+
+- 清晰的标题层级（H1 → H2 → H3）
+- 代码块标明语言
+- 链接使用相对路径
+
+## 更新原则
+
+- 文档与代码同步更新
+- 架构变更时同步更新 `03-architecture.md`（中英双语）
+- 新增规范时同步更新 `docs/zh/README.md` 与 `docs/en/README.md` 导航

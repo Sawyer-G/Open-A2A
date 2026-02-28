@@ -1,0 +1,259 @@
+---
+alwaysApply: true
+---
+
+# Open-A2A (Open Agent-to-Agent Network) 项目规则
+
+## 项目概览要求
+
+在每次回复用户之前，AI 必须：
+
+1. **先浏览整个项目的框架**
+   - **优先浏览已写好的文档**（通常是 markdown 文件，位于 docs/ 目录或其他位置）
+     - 先阅读项目文档了解项目背景、架构设计和开发规范
+     - 参考已有的技术文档、API 文档、架构图等
+     - 从文档中获取项目的设计思路和最佳实践
+   - **规范文档**：代码结构、文档规范、协作流程见 `docs/zh/standards/` 或 `docs/en/standards/`
+   - 理解项目结构（spec/core/example 目录职责见 `docs/zh/standards/01-project-structure.md`）
+   - 理解项目的技术栈和架构模式
+   - 查看相关文件路径和上下文，确保理解用户的请求场景
+
+## 代码输出规则
+
+2. **不要直接输出代码**
+   - 在用户明确说出"请协助完成这部分功能"、"请实现"、"请编写代码"等类似明确指示后，再开始编写代码
+   - 如果用户只是询问、讨论或寻求建议，应该只提供分析、解释和建议，不输出完整代码
+   - 在提供代码之前，先确认用户的具体需求和实现意图
+
+## 工作流程
+
+- 先理解项目整体架构和上下文
+- 分析用户需求
+- 等待明确的代码实现指示
+- 然后才开始编写代码
+
+## Git 版本控制工作流
+
+### Git 工作流规范
+
+项目遵循标准的 Git Flow 工作流，详细规范请参考：`docs/zh/standards/git.md` 或 `docs/en/standards/git.md`。
+
+**核心规范摘要**：
+- **分支命名**：
+  - 功能分支：`feature/{开发者名}-{功能描述}`
+  - 修复分支：`bugfix/{开发者名}-{问题描述}`
+  - 热修复：`hotfix/{开发者名}-{问题描述}`
+  - 个人分支：`{开发者名}/develop`
+- **提交信息**：采用 Conventional Commits 格式
+  - 格式：`<type>(<scope>): <subject>`
+  - 类型：`feat`、`fix`、`docs`、`style`、`refactor`、`perf`、`test`、`chore`
+  - 使用中文描述，简洁明了
+
+### 版本控制检查流程
+
+当用户提到以下关键词时，AI 必须执行版本控制检查流程：
+- "版本控制"、"git"、"提交"、"commit"、"分支"、"branch"
+- "请帮我进行版本控制"、"检查代码状态"、"查看修改"
+
+**检查流程**（按顺序执行）：
+
+1. **查看当前 Git 状态**
+   ```bash
+   git status
+   ```
+   - 检查当前分支名称
+   - 检查是否有未提交的更改
+   - 检查是否有未跟踪的文件
+
+2. **查看当前分支信息**
+   ```bash
+   git branch -a
+   git log --oneline -5
+   ```
+   - 确认当前所在分支
+   - 查看最近的提交历史
+
+3. **查看文件变更详情**
+   ```bash
+   git diff --stat
+   git diff
+   ```
+   - 查看修改的文件列表和统计
+   - 查看具体的代码变更内容
+
+4. **分析并给出建议**
+
+   根据检查结果，AI 需要：
+   
+   - **分支检查**：
+     - ✅ 如果分支命名符合规范，确认正确
+     - ⚠️ 如果分支命名不符合规范，建议切换到正确的分支或重命名
+     - ⚠️ 如果在 `master` 分支有修改，建议切换到功能分支
+   
+   - **修改内容分析**：
+     - 分析修改的文件类型和数量
+     - 识别是否有敏感文件（如 `.env`、密钥文件等）
+     - 检查是否有不应该提交的文件（如 `node_modules`、构建产物等）
+   
+   - **提交建议**：
+     - 如果有未提交的更改：
+       - 建议提交信息格式（根据变更类型）
+       - 建议是否需要分多次提交（如果变更涉及多个功能）
+       - 提醒检查是否有测试文件需要更新
+     - 如果没有未提交的更改：
+       - 确认工作区干净
+       - 建议是否需要同步远程分支
+   
+   - **工作流建议**：
+     - 如果当前在功能分支，建议定期同步 `develop` 分支
+     - 如果功能开发完成，建议创建 Pull Request
+     - 如果发现冲突，建议解决冲突的步骤
+
+5. **提供具体操作建议**
+
+   根据分析结果，提供具体的 Git 命令建议：
+   - 切换分支命令
+   - 提交命令（包含符合规范的提交信息）
+   - 同步分支命令
+   - 其他必要的 Git 操作
+
+**注意事项**：
+- 所有 Git 操作建议必须符合项目规范（参考 `docs/zh/standards/git.md`）
+- 提交信息必须使用中文，遵循 Conventional Commits 格式
+- 敏感文件（`.env`、密钥等）不应提交，需提醒用户检查 `.gitignore`
+- 在给出提交建议前，先确认用户意图（是否真的需要提交）
+
+## 版本号管理工作流
+
+### 版本号管理规范
+
+项目遵循语义化版本号（SemVer）规范，详细规范请参考：`docs/standards/02-version-management.md` 和 `docs/guides/05-version-locations.md`
+
+**核心规范摘要**：
+- **版本号格式**：`主版本号.次版本号.修订号`（如 `1.2.3`）
+- **MAJOR**（主版本）：不兼容的 API 变更（`1.0.0` → `2.0.0`）
+- **MINOR**（次版本）：向后兼容的功能新增（`1.0.0` → `1.1.0`）
+- **PATCH**（修订号）：向后兼容的问题修复（`1.0.0` → `1.0.1`）
+
+### 版本号管理检查流程
+
+当用户提到以下关键词时，AI 必须执行版本号管理检查流程：
+- "版本号"、"版本管理"、"管理版本"、"更新版本"
+- "请帮我管理项目版本号"、"应该是什么版本"、"版本号更新"
+
+**检查流程**（按顺序执行）：
+
+1. **查看当前版本号**
+   ```bash
+   # 查看前端版本号
+   cat package.json | grep version
+   cat src/constants/version.ts | grep APP_VERSION
+   
+   # 查看后端版本号
+   cat backend/app/config.py | grep APP_VERSION
+   
+   # 查看 Git Tag（已发布的版本）
+   git tag -l | sort -V | tail -5
+   ```
+
+2. **分析 Git 提交历史**
+   ```bash
+   # 查看最近的提交记录
+   git log --oneline --since="1 month ago" | head -20
+   
+   # 查看最近的 Git Tag
+   git describe --tags --abbrev=0 2>/dev/null || echo "无版本标签"
+   
+   # 查看自上次 Tag 后的提交
+   git log $(git describe --tags --abbrev=0 2>/dev/null || echo "HEAD~10")..HEAD --oneline
+   ```
+
+3. **分析提交类型和版本建议**
+
+   根据 Git 提交历史分析：
+   
+   - **统计提交类型**：
+     - 统计 `feat:` 提交数量（功能新增）
+     - 统计 `fix:` 提交数量（Bug 修复）
+     - 统计 `BREAKING CHANGE` 或重大变更（不兼容变更）
+   
+   - **版本号建议**：
+     - 如果有 `BREAKING CHANGE` 或重大架构变更 → **MAJOR 版本**（如 `1.0.0` → `2.0.0`）
+     - 如果有 `feat:` 提交（新功能）→ **MINOR 版本**（如 `1.0.0` → `1.1.0`）
+     - 如果只有 `fix:` 提交（Bug 修复）→ **PATCH 版本**（如 `1.0.0` → `1.0.1`）
+     - 如果当前版本是 `1.0.0` 且是首次发布 → 保持 `1.0.0` 或建议 `1.0.0`
+   
+   - **版本号计算规则**：
+     ```
+     当前版本：X.Y.Z
+     
+     如果自上次 Tag 后：
+     - 有 BREAKING CHANGE → 建议版本：(X+1).0.0
+     - 有 feat 提交 → 建议版本：X.(Y+1).0
+     - 只有 fix 提交 → 建议版本：X.Y.(Z+1)
+     - 无变更 → 保持当前版本
+     ```
+
+4. **检查版本号一致性**
+
+   检查以下位置的版本号是否一致：
+   - ✅ `package.json` 的 `version` 字段
+   - ✅ `src/constants/version.ts` 的 `APP_VERSION`
+   - ✅ `backend/app/config.py` 的 `APP_VERSION`
+   - ✅ Android `android/app/build.gradle` 的 `versionName`
+   - ✅ iOS `ios/CatCareRN/Info.plist` 的版本号（如可访问）
+   - ✅ 最近的 Git Tag（如存在）
+
+5. **提供版本号更新建议**
+
+   根据分析结果，AI 需要：
+   
+   - **版本号建议**：
+     - 明确建议下一个版本号（如 `1.0.1`、`1.1.0`、`2.0.0`）
+     - 说明版本号变更的原因（基于提交历史分析）
+     - 如果版本号不一致，指出不一致的位置
+   
+   - **需要更新的文件列表**：
+     根据 `docs/guides/05-version-locations.md`，列出需要更新的文件：
+     
+     **前端文件**：
+     - `package.json` - 更新 `version` 字段
+     - `src/constants/version.ts` - 更新 `APP_VERSION`
+     - `android/app/build.gradle` - 更新 `versionName` 和 `versionCode`
+     - `ios/CatCareRN/Info.plist` 或 `ios/CatCareRN.xcodeproj/project.pbxproj` - 更新版本号
+     
+     **后端文件**：
+     - `backend/app/config.py` - 更新 `APP_VERSION` 默认值
+     - `backend/.env.example` - 更新 `APP_VERSION`（如已添加）
+     
+     **其他**：
+     - 创建 Git Tag：`git tag -a v{版本号} -m "Release v{版本号}"`
+   
+   - **版本号更新步骤**：
+     1. 更新所有相关文件的版本号
+     2. 提交版本号更新：`git commit -m "chore: bump version to {版本号}"`
+     3. 创建 Git Tag：`git tag -a v{版本号} -m "Release v{版本号}"`
+     4. 推送代码和标签：`git push && git push --tags`
+
+6. **Git 提交时的版本号检查**
+
+   当用户执行 Git 提交时，如果检测到版本号相关文件的变更，AI 应该：
+   
+   - **检查版本号更新**：
+     ```bash
+     git diff --name-only | grep -E "(package.json|version.ts|config.py|build.gradle|Info.plist)"
+     ```
+   
+   - **如果检测到版本号更新**：
+     - ✅ 确认版本号更新是否合理（基于提交内容）
+     - ✅ 提醒用户检查是否所有位置都已更新
+     - ✅ 建议提交信息格式：`chore: bump version to {版本号}`
+     - ✅ 建议创建 Git Tag：`git tag -a v{版本号} -m "Release v{版本号}"`
+     - ⚠️ 如果只更新了部分文件，提醒用户更新所有相关文件
+
+**注意事项**：
+- 版本号管理必须遵循语义化版本号（SemVer）规范
+- 版本号更新应该是一次性操作，确保所有位置同步更新
+- 版本号更新应该单独提交，使用 `chore: bump version to {版本号}` 格式
+- 重要版本发布应该创建 Git Tag
+- 参考文档：`docs/standards/02-version-management.md` 和 `docs/guides/05-version-locations.md`
