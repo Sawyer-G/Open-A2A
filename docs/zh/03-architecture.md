@@ -57,11 +57,10 @@ graph TD
 
 ### 2.1 身份与数据（数字舱）— 解决「我是谁，我的偏好」
 
-- **核心工具**：`SpruceID` (DID) + `Community Solid Server` (Pod)
-- **开发任务**：
-  - **DID 绑定**：每个 Agent 启动时生成一个 `did:key`
-  - **偏好存储**：在 Solid Pod 中存入 `profile.jsonld`，描述用户偏好与约束（示例：口味、预算、隐私策略）
-  - **权限最小化**：Agent 通过 VC（可验证凭证）证明能力或权限，而非暴露原始数据
+- **已实现**：`open_a2a/identity.py`（基于 [didlite](https://github.com/jondepalma/didlite-pkg)）、`open_a2a/preferences.py`（`FilePreferencesProvider`）
+- **DID 绑定**：`AgentIdentity` 生成 `did:key`，消息可选 JWS 签名（`USE_IDENTITY=1` 启用）
+- **偏好存储**：`FilePreferencesProvider` 从 `profile.json` 读取 constraints、location；Solid Pod 接口已预留
+- **后续**：SpruceID、Community Solid Server 用于完整 Pod 集成；VC 用于权限最小化
 
 ### 2.2 发现与广播（意图网格）— 解决「谁在附近，谁能响应」
 

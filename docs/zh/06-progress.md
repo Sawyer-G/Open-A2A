@@ -7,7 +7,7 @@
 | 阶段 | 状态 | 说明 |
 |------|------|------|
 | **Phase 1: Hello Open-A2A** | ✅ 已完成 | 广播-响应流程已跑通并验证 |
-| **Phase 2: 隐私与身份认证** | ⏳ 未开始 | DID + Solid Pod |
+| **Phase 2: 隐私与身份认证** | ✅ 已完成 | did:key 签名 + 偏好存储抽象 |
 | **Phase 3: 复杂场景模拟** | ✅ 已完成 | A-B-C 全链路 + 模拟结算 |
 
 ---
@@ -88,6 +88,36 @@ Carrier 模拟送达
 
 ---
 
+## Phase 2 完成项
+
+### 1. DID 身份与消息签名
+
+- **identity.py**：基于 [didlite](https://github.com/jondepalma/didlite-pkg) 的 `AgentIdentity`，支持 `did:key` 生成与 JWS 签名/验签
+- **broadcaster.py**：可选 `identity` 参数，发布时对 Intent/Offer 签名，订阅时解析 JWS 或 JSON
+- **intent.py**：Intent、Offer 新增 `sender_did` 字段（验签后填充）
+
+### 2. 偏好存储抽象
+
+- **preferences.py**：`PreferencesProvider` 抽象基类，`FilePreferencesProvider` 基于 JSON 文件实现
+- **example/profile.json**：示例偏好文件（constraints、location）
+- 为 Solid Pod 预留接口，当前从 `profile.json` 读取
+
+### 3. 示例更新
+
+- **consumer.py**：支持从 `profile.json` 读取偏好，`USE_IDENTITY=1` 时启用 DID 签名
+- **merchant.py**：`USE_IDENTITY=1` 时启用 DID 签名
+
+### 4. 依赖与安装
+
+- **pyproject.toml**：新增可选依赖 `[identity]`（didlite）
+- **Makefile**：新增 `make install-full`（含 identity、dev）
+
+### 5. 虚拟环境规范
+
+- **.cursor/rules**：新增虚拟环境规范，要求使用 `.venv/bin/pip`、`.venv/bin/python`，避免污染系统环境
+
+---
+
 ## 提交历史
 
 | 提交 | 说明 |
@@ -99,6 +129,6 @@ Carrier 模拟送达
 
 ## 下一步计划
 
-1. **Phase 2**：集成 `did:key` 与 Solid Pod
+1. **Solid Pod 集成**：将 `FilePreferencesProvider` 替换或扩展为 Solid Pod 实现
 2. **集成研究**：调研 OpenClaw / ZeroClaw 的 Tool/Channel 扩展机制，设计 Open-A2A 适配层
-3. **可选**：多 Merchant 场景测试、Docker Compose 编排、真实支付通道对接
+3. **可选**：多 Merchant 场景测试、Docker Compose 编排、真实支付通道对接、传输层抽象

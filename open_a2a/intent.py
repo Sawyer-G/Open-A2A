@@ -40,6 +40,7 @@ class Intent:
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
     sender_id: str = ""
+    sender_did: Optional[str] = None  # Phase 2: did:key，验签后填充
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -51,13 +52,14 @@ class Intent:
             "reply_to": self.reply_to,
             "timestamp": self.timestamp,
             "sender_id": self.sender_id,
+            "sender_did": self.sender_did,
         }
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), ensure_ascii=False)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Intent":
+    def from_dict(cls, data: dict[str, Any], signer_did: Optional[str] = None) -> "Intent":
         loc = None
         if data.get("location"):
             loc = Location.from_dict(data["location"])
@@ -70,11 +72,12 @@ class Intent:
             reply_to=data["reply_to"],
             timestamp=data.get("timestamp", ""),
             sender_id=data.get("sender_id", ""),
+            sender_did=signer_did or data.get("sender_did"),
         )
 
     @classmethod
-    def from_json(cls, s: str) -> "Intent":
-        return cls.from_dict(json.loads(s))
+    def from_json(cls, s: str, signer_did: Optional[str] = None) -> "Intent":
+        return cls.from_dict(json.loads(s), signer_did=signer_did)
 
 
 @dataclass
@@ -93,6 +96,7 @@ class Offer:
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
     sender_id: str = ""
+    sender_did: Optional[str] = None  # Phase 2: did:key，验签后填充
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -104,13 +108,14 @@ class Offer:
             "description": self.description,
             "timestamp": self.timestamp,
             "sender_id": self.sender_id,
+            "sender_did": self.sender_did,
         }
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), ensure_ascii=False)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Offer":
+    def from_dict(cls, data: dict[str, Any], signer_did: Optional[str] = None) -> "Offer":
         return cls(
             id=data["id"],
             intent_id=data["intent_id"],
@@ -120,11 +125,12 @@ class Offer:
             description=data.get("description", ""),
             timestamp=data.get("timestamp", ""),
             sender_id=data.get("sender_id", ""),
+            sender_did=signer_did or data.get("sender_did"),
         )
 
     @classmethod
-    def from_json(cls, s: str) -> "Offer":
-        return cls.from_dict(json.loads(s))
+    def from_json(cls, s: str, signer_did: Optional[str] = None) -> "Offer":
+        return cls.from_dict(json.loads(s), signer_did=signer_did)
 
 
 @dataclass

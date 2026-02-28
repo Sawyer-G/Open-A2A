@@ -5,18 +5,27 @@
 ```
 Open-A2A/
 ├── .cursor/                    # Cursor IDE config
-│   └── rules/                  # AI collaboration rules
+│   └── rules/                  # AI rules (incl. venv convention)
 ├── docs/                       # Project documentation
 │   ├── zh/                     # Chinese docs
 │   ├── en/                     # English docs
-│   └── ...
+│   └── standards/              # Standards
 ├── spec/                       # Core protocol specs (RFC)
-├── core/                       # Python reference implementation (SDK)
+├── open_a2a/                   # Python reference implementation (SDK)
+│   ├── intent.py               # Message models
+│   ├── broadcaster.py         # NATS wrapper
+│   ├── identity.py            # DID identity (Phase 2)
+│   ├── preferences.py         # Preferences abstraction (Phase 2)
+│   └── agent.py               # BaseAgent
 ├── example/                    # Examples & Demos
-├── .gitignore
-├── README.md
-├── LICENSE
-└── pyproject.toml              # or requirements.txt
+│   ├── consumer.py
+│   ├── merchant.py
+│   ├── carrier.py
+│   └── profile.json           # Preferences example (Phase 2)
+├── .venv/                      # Virtual env (not committed)
+├── Makefile                    # venv, install, install-full, run-*
+├── pyproject.toml
+└── README.md
 ```
 
 ### 1.1 Directory Responsibilities
@@ -24,7 +33,7 @@ Open-A2A/
 | Directory | Responsibility | Notes |
 |-----------|----------------|-------|
 | `spec/` | Protocol definition | Handshake, message format, semantic dictionary |
-| `core/` | Reference implementation | Python SDK for other projects |
+| `open_a2a/` | Reference implementation | Python SDK for other projects |
 | `example/` | Sample code | Consumer, Merchant, Carrier demos |
 | `docs/` | Project docs | Architecture, requirements, guides (bilingual) |
 
@@ -80,7 +89,8 @@ See [git.md](./git.md).
 
 ## 4. Tech Stack Conventions
 
-- **Language**: Python 3.10+
-- **Package management**: Prefer `pyproject.toml` (Poetry or PEP 621)
-- **Style**: PEP 8, format with `ruff` or `black`
+- **Language**: Python 3.9+
+- **Package management**: `pyproject.toml` (PEP 621); optional deps `[identity]`, `[dev]`
+- **Style**: PEP 8, format with `ruff`
 - **Types**: Encourage type hints
+- **Virtual env**: Use `.venv/bin/python`, `.venv/bin/pip`, or `make` targets; avoid polluting system

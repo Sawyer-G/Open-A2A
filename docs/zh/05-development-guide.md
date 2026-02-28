@@ -6,18 +6,20 @@
 
 ### Step 1: 基础信任层 (DID & Auth)
 
-| 工具 | 说明 |
-|------|------|
-| [SSI-SDK](https://github.com/TalaoLabs/ssi-sdk) | 轻量级自建身份 SDK，支持生成 `did:key` |
-| [SpruceID (DIDKit)](https://github.com/spruceed/didkit) | 工业级 DID 和 VC 处理工具，支持 Rust/Python/Node |
-| [Veramo](https://veramo.io/) | TypeScript 模块化 DID 框架 |
+| 工具 | 说明 | 状态 |
+|------|------|------|
+| [didlite](https://github.com/jondepalma/didlite-pkg) | 轻量 Python `did:key` + JWS 签名，零依赖膨胀 | ✅ 已集成（`pip install open-a2a[identity]`） |
+| [SSI-SDK](https://github.com/TalaoLabs/ssi-sdk) | 轻量级自建身份 SDK，支持生成 `did:key` | 备选 |
+| [SpruceID (DIDKit)](https://github.com/spruceed/didkit) | 工业级 DID 和 VC 处理工具，支持 Rust/Python/Node | 备选 |
+| [Veramo](https://veramo.io/) | TypeScript 模块化 DID 框架 | 备选 |
 
 ### Step 2: 数据主权层 (Solid Pod)
 
-| 工具 | 说明 |
-|------|------|
-| [Community Solid Server (CSS)](https://github.com/CommunitySolidServer/CommunitySolidServer) | **核心推荐**，Solid 官方开源实现，`npx @solid/community-server` 启动 |
-| [Inrupt JavaScript SDK](https://docs.inrupt.com/developer-tools/javascript/client-libraries/) | 智能体读写 Pod 数据的逻辑 |
+| 工具 | 说明 | 状态 |
+|------|------|------|
+| `FilePreferencesProvider` | 基于 JSON 的偏好存储，见 `open_a2a/preferences.py` | ✅ 已实现，为 Pod 预留接口 |
+| [Community Solid Server (CSS)](https://github.com/CommunitySolidServer/CommunitySolidServer) | **核心推荐**，Solid 官方开源实现，`npx @solid/community-server` 启动 | 待集成 |
+| [Inrupt JavaScript SDK](https://docs.inrupt.com/developer-tools/javascript/client-libraries/) | 智能体读写 Pod 数据的逻辑 | 待集成 |
 
 ### Step 3: 能力执行层 (Agent 运行时)
 
@@ -92,3 +94,16 @@ Open-A2A **不实现** Agent 推理能力，建议与成熟运行时集成：
 | [Olas (Autonolas)](https://olas.network/) | 强调「多智能体共识」，多个 Agent 共同决策并签名，适合金融等高安全场景 | 协作涉及资产时，参考其「服务注册（Registry）」机制 |
 | [Morpheus](https://mor.org/) | 侧重「算力去中心化」，类似去中心化操作系统，用户支付代币调动全球 Agent | 其智能体接口标准（Smart Agent Protocol）值得参考 |
 | [Fetch.ai (Almanac)](https://fetch.ai/) | 解决「Agent 目录」问题，有类似电话本的合约，Agent 可注册地址和能力 | 框架需要类似的「去中心化索引」来解决交互寻址 |
+
+---
+
+## 4. 多语言 SDK 规划
+
+当前 Open-A2A 仅提供 Python 参考实现。当项目成熟、有非 Python 技术栈的接入需求时，可考虑提供 TypeScript、Go、Java 等多语言 SDK。
+
+**形式说明**：协议（RFC）与语言无关；多语言 SDK 是同一协议的不同实现，用于扩大采用范围。参考 [Google A2A](https://github.com/a2aproject/A2A) 的 Python、JS、Java、Go、.NET 等多语言实现。
+
+**详细规划**：见 [07-multi-language-sdk.md](./07-multi-language-sdk.md)，包括：
+- 为何需要多语言、何时考虑
+- 语言优先级、仓库组织、核心能力清单
+- 维护考量与参考资源

@@ -15,6 +15,13 @@ from open_a2a.intent import (
 from open_a2a.broadcaster import IntentBroadcaster
 from open_a2a.agent import BaseAgent
 
+try:
+    from open_a2a.identity import AgentIdentity
+except ImportError:
+    AgentIdentity = None  # type: ignore
+
+from open_a2a.preferences import FilePreferencesProvider, PreferencesProvider
+
 __all__ = [
     "Intent",
     "Offer",
@@ -24,6 +31,9 @@ __all__ = [
     "Location",
     "IntentBroadcaster",
     "BaseAgent",
+    "AgentIdentity",
+    "PreferencesProvider",
+    "FilePreferencesProvider",
 ]
 
 __version__ = "0.1.0"

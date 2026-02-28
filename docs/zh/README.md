@@ -13,6 +13,7 @@
 | [04-roadmap.md](./04-roadmap.md) | 开发路线图：MVP 落地步骤 |
 | [05-development-guide.md](./05-development-guide.md) | 开发指南：资源栈、架构优化、竞品分析 |
 | [06-progress.md](./06-progress.md) | **项目进度**：当前完成项与验证结果 |
+| [07-multi-language-sdk.md](./07-multi-language-sdk.md) | 多语言 SDK 规划：未来扩展参考 |
 
 ## 规范与标准
 

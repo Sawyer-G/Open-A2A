@@ -6,18 +6,20 @@ Follow the layered architecture; integrate in this order:
 
 ### Step 1: Trust Layer (DID & Auth)
 
-| Tool | Description |
-|------|-------------|
-| [SSI-SDK](https://github.com/TalaoLabs/ssi-sdk) | Lightweight self-hosted identity SDK, supports `did:key` |
-| [SpruceID (DIDKit)](https://github.com/spruceed/didkit) | Production DID & VC tools, Rust/Python/Node |
-| [Veramo](https://veramo.io/) | Modular TypeScript DID framework |
+| Tool | Description | Status |
+|------|-------------|--------|
+| [didlite](https://github.com/jondepalma/didlite-pkg) | Lightweight Python `did:key` + JWS signing | ✅ Integrated (`pip install open-a2a[identity]`) |
+| [SSI-SDK](https://github.com/TalaoLabs/ssi-sdk) | Lightweight self-hosted identity SDK | Alternative |
+| [SpruceID (DIDKit)](https://github.com/spruceed/didkit) | Production DID & VC tools | Alternative |
+| [Veramo](https://veramo.io/) | Modular TypeScript DID framework | Alternative |
 
 ### Step 2: Data Sovereignty (Solid Pod)
 
-| Tool | Description |
-|------|-------------|
-| [Community Solid Server (CSS)](https://github.com/CommunitySolidServer/CommunitySolidServer) | **Recommended**. Official Solid implementation, `npx @solid/community-server` |
-| [Inrupt JavaScript SDK](https://docs.inrupt.com/developer-tools/javascript/client-libraries/) | Agent logic for reading/writing Pod data |
+| Tool | Description | Status |
+|------|-------------|--------|
+| `FilePreferencesProvider` | JSON-based preferences, see `open_a2a/preferences.py` | ✅ Implemented; Pod interface reserved |
+| [Community Solid Server (CSS)](https://github.com/CommunitySolidServer/CommunitySolidServer) | **Recommended**. Official Solid implementation | Pending |
+| [Inrupt JavaScript SDK](https://docs.inrupt.com/developer-tools/javascript/client-libraries/) | Agent logic for reading/writing Pod data | Pending |
 
 ### Step 3: Agent Runtime (Capability Layer)
 
@@ -92,3 +94,13 @@ User / Merchant / Rider
 | [Olas (Autonolas)](https://olas.network/) | Multi-agent consensus, joint signatures; finance-grade | Reference "Registry" for asset-related collaboration |
 | [Morpheus](https://mor.org/) | Decentralized compute; users pay tokens to run global Agents | Smart Agent Protocol worth studying |
 | [Fetch.ai (Almanac)](https://fetch.ai/) | Agent directory; contract-based address/capability registry | Need similar decentralized index for addressing |
+
+---
+
+## 4. Multi-Language SDK Planning
+
+Open-A2A currently provides only a Python reference implementation. When the project matures and non-Python integration is needed, consider TypeScript, Go, Java, etc.
+
+**Form**: A protocol (RFC) is language-agnostic; multi-language SDKs are different implementations of the same protocol, expanding adoption. See [Google A2A](https://github.com/a2aproject/A2A) for Python, JS, Java, Go, .NET implementations.
+
+**Details**: [07-multi-language-sdk.md](./07-multi-language-sdk.md)—why, when, language priority, repo layout, maintenance.

@@ -3,7 +3,7 @@ NATS 意图广播与订阅 (RFC-001)
 """
 
 import asyncio
-from typing import Awaitable, Callable, Optional
+from typing import TYPE_CHECKING, Awaitable, Callable, Optional
 
 from open_a2a.intent import (
     Intent,
@@ -25,17 +25,34 @@ except ImportError:
     NATSClient = None  # type: ignore
     NATSTimeoutError = Exception  # type: ignore
 
+if TYPE_CHECKING:
+    from open_a2a.identity import AgentIdentity
+
+
+def _get_identity_module():
+    """延迟导入 identity，避免循环依赖"""
+    try:
+        from open_a2a import identity
+        return identity
+    except ImportError:
+        return None
+
 
 class IntentBroadcaster:
     """
     意图广播器 - 封装 NATS 发布/订阅
     """
 
-    def __init__(self, nats_url: str = "nats://localhost:4222") -> None:
+    def __init__(
+        self,
+        nats_url: str = "nats://localhost:4222",
+        identity: Optional["AgentIdentity"] = None,  # noqa: F821
+    ) -> None:
         if NATSClient is None:
             raise ImportError("nats-py is required. Install with: pip install nats-py")
         self._nats_url = nats_url
         self._nc: Optional[NATSClient] = None
+        self._identity = identity
 
     async def connect(self) -> None:
         """连接 NATS"""
@@ -48,16 +65,34 @@ class IntentBroadcaster:
             await self._nc.drain()
             self._nc = None
 
+    def _maybe_sign(self, payload: dict) -> bytes:
+        """若配置了 identity 则签名，否则返回 JSON"""
+        if self._identity:
+            mod = _get_identity_module()
+            if mod and mod.AgentIdentity.is_available():
+                jws = self._identity.sign(payload)
+                return jws.encode("utf-8")
+        import json
+        return json.dumps(payload, ensure_ascii=False).encode("utf-8")
+
+    def _parse_incoming(self, data: bytes):
+        """解析入站消息：支持 JWS 或 JSON"""
+        text = data.decode("utf-8")
+        mod = _get_identity_module()
+        if mod:
+            return mod.parse_message(text)
+        import json
+        return json.loads(text), None
+
     async def publish_intent(self, intent: Intent) -> None:
         """
         发布意图到 intent.food.order
         """
         if not self._nc:
             raise RuntimeError("Not connected. Call connect() first.")
-        await self._nc.publish(
-            TOPIC_INTENT_FOOD_ORDER,
-            intent.to_json().encode("utf-8"),
-        )
+        payload = intent.to_dict()
+        body = self._maybe_sign(payload)
+        await self._nc.publish(TOPIC_INTENT_FOOD_ORDER, body)
 
     async def subscribe_intents(
         self,
@@ -70,8 +105,8 @@ class IntentBroadcaster:
             raise RuntimeError("Not connected. Call connect() first.")
 
         async def _handler(msg):
-            data = msg.data.decode("utf-8")
-            intent = Intent.from_json(data)
+            payload, signer_did = self._parse_incoming(msg.data)
+            intent = Intent.from_dict(payload, signer_did=signer_did)
             await handler(intent)
 
         await self._nc.subscribe(
@@ -85,10 +120,9 @@ class IntentBroadcaster:
         """
         if not self._nc:
             raise RuntimeError("Not connected. Call connect() first.")
-        await self._nc.publish(
-            reply_to,
-            offer.to_json().encode("utf-8"),
-        )
+        payload = offer.to_dict()
+        body = self._maybe_sign(payload)
+        await self._nc.publish(reply_to, body)
 
     async def publish_and_collect_offers(
         self,
@@ -106,8 +140,8 @@ class IntentBroadcaster:
         offers: list[Offer] = []
 
         async def _handler(msg):
-            data = msg.data.decode("utf-8")
-            offer = Offer.from_json(data)
+            payload, signer_did = self._parse_incoming(msg.data)
+            offer = Offer.from_dict(payload, signer_did=signer_did)
             offers.append(offer)
             if on_offer:
                 await on_offer(offer)

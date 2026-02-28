@@ -44,19 +44,29 @@
 | 目录 | 说明 |
 |------|------|
 | [`spec/`](./spec) | 核心协议规范（RFC 文档） |
-| [`core/`](./core) | 协议的 Python 参考实现（SDK） |
+| [`open_a2a/`](./open_a2a) | 协议的 Python 参考实现（SDK） |
 | [`example/`](./example) | 示例：Consumer、Merchant、Carrier Demo |
 | [`docs/`](./docs) | 项目文档、架构、需求、开发指南 |
 
 ## 快速开始
 
-> 项目处于早期开发阶段，协议与参考实现正在完善中。
+> 所有 Python 操作请在虚拟环境中执行（`.venv/bin/python` 或 `make`），避免污染系统环境。
+
+```bash
+make venv && make install        # 创建虚拟环境并安装
+# 或 make install-full           # 含 identity、dev 依赖
+make run-merchant                # 终端 1
+make run-carrier                 # 终端 2
+make run-consumer                # 终端 3
+```
+
+需先启动 NATS：`docker run -p 4222:4222 nats:latest`
 
 **开发路线图**：
 
-1. **Hello Open-A2A**：NATS 广播-响应（Consumer ↔ Merchant）
-2. **隐私与身份**：DID + Solid Pod 集成
-3. **全链路闭环**：A-B-C 三方 + 模拟结算
+1. ✅ **Hello Open-A2A**：NATS 广播-响应（Consumer ↔ Merchant）
+2. ✅ **隐私与身份**：did:key 签名 + 偏好存储抽象
+3. ✅ **全链路闭环**：A-B-C 三方 + 模拟结算
 
 详见 [开发路线图](./docs/zh/04-roadmap.md) / [Roadmap](./docs/en/04-roadmap.md)。
 
@@ -85,7 +95,7 @@ We welcome contributors worldwide—open source developers, Web3 enthusiasts, re
 
 ## 技术栈
 
-- **身份**：DID (did:key)、SpruceID、Solid Pod
+- **身份**：DID (did:key) 已集成 [didlite](https://github.com/jondepalma/didlite-pkg)；偏好存储抽象（Solid Pod 预留）
 - **通信**：NATS JetStream、libp2p、DIDComm
 - **Agent**：MCP、Ollama、LangGraph
 - **结算**：HTLC、闪电网络（或第三方支付 API 作为可插拔通道）

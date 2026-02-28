@@ -60,7 +60,8 @@ intent.{domain}.{action}[.{sub}]
 | `constraints` | array | - | 约束列表 |
 | `reply_to` | string | ✓ | 回复主题，商家将 Offer 发往此处 |
 | `timestamp` | string | ✓ | ISO 8601 |
-| `sender_id` | string | - | 发送方标识 (Phase 2: did) |
+| `sender_id` | string | - | 发送方标识 |
+| `sender_did` | string | - | Phase 2: 验签后的 did:key，可选 |
 
 ### 3.2 报价消息 (Offer)
 
@@ -89,6 +90,7 @@ intent.{domain}.{action}[.{sub}]
 | `description` | string | - | 描述 |
 | `timestamp` | string | ✓ | ISO 8601 |
 | `sender_id` | string | - | 商家标识 |
+| `sender_did` | string | - | Phase 2: 验签后的 did:key，可选 |
 
 ## 4. 语义字典 (Semantic Vocabulary)
 

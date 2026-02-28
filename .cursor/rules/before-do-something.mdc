@@ -32,6 +32,31 @@ alwaysApply: true
 - 等待明确的代码实现指示
 - 然后才开始编写代码
 
+## 虚拟环境规范（避免污染系统环境）
+
+**目的**：所有 Python 相关操作必须在项目虚拟环境中执行，不污染用户系统环境。
+
+**强制规则**：
+- **pip 安装**：必须使用 `$(VENV)/bin/pip` 或 `make install`，禁止使用系统 `pip`
+- **python 执行**：必须使用 `$(VENV)/bin/python` 或 `make run-*`，禁止使用系统 `python` / `python3`
+- **项目路径**：本项目虚拟环境为 `.venv/`，Makefile 中 `VENV := .venv`、`PYTHON := $(VENV)/bin/python`、`PIP := $(VENV)/bin/pip`
+
+**正确示例**：
+```bash
+.venv/bin/pip install -e ".[identity]"
+.venv/bin/python example/consumer.py
+make install
+make run-consumer
+```
+
+**错误示例**（会污染系统）：
+```bash
+pip install ...        # 可能安装到系统
+python example/...    # 可能使用系统 Python
+```
+
+**终端命令执行**：AI 在执行任何 `pip`、`python` 相关命令时，必须显式使用 `.venv/bin/` 路径或 `make` 目标。
+
 ## Git 版本控制工作流
 
 ### Git 工作流规范

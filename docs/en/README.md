@@ -13,6 +13,7 @@
 | [04-roadmap.md](./04-roadmap.md) | Development roadmap: MVP phases |
 | [05-development-guide.md](./05-development-guide.md) | Development guide: resource stack, competitors |
 | [06-progress.md](./06-progress.md) | **Project progress**: completed items and verification |
+| [07-multi-language-sdk.md](./07-multi-language-sdk.md) | Multi-language SDK planning: future expansion reference |
 
 ## Standards
 

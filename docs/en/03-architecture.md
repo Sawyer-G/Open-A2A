@@ -53,11 +53,10 @@ graph TD
 
 ### 2.1 Identity & Data (Digital Pod) — "Who am I, what do I like?"
 
-- **Tools**: `SpruceID` (DID) + `Community Solid Server` (Pod)
-- **Tasks**:
-  - **DID Binding**: Each Agent generates a `did:key` on startup
-  - **Preference Storage**: Store `profile.jsonld` in Solid Pod (e.g., `"dislike": ["coriander"]`)
-  - **Minimal Permissions**: Agent proves "I can pay" via VC, without exposing card numbers
+- **Implemented**: `open_a2a/identity.py` ([didlite](https://github.com/jondepalma/didlite-pkg)), `open_a2a/preferences.py` (`FilePreferencesProvider`)
+- **DID Binding**: `AgentIdentity` generates `did:key`; optional JWS signing (`USE_IDENTITY=1`)
+- **Preference Storage**: `FilePreferencesProvider` reads from `profile.json`; Solid Pod interface reserved
+- **Next**: SpruceID, Community Solid Server for full Pod; VC for minimal permissions
 
 ### 2.2 Discovery & Broadcast (Intent Mesh) — "Where are noodles, who can deliver?"
 

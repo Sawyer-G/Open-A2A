@@ -3,6 +3,7 @@
 Merchant Agent - 商家 Agent 示例
 
 订阅「想吃面」意图，自动回复报价；收到订单确认后发布配送请求。
+支持 Phase 2：可选 DID 签名。
 """
 
 import asyncio
@@ -11,6 +12,15 @@ import uuid
 
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+def _create_identity():
+    if os.getenv("USE_IDENTITY", "").lower() in ("1", "true", "yes"):
+        try:
+            from open_a2a import AgentIdentity
+            return AgentIdentity() if AgentIdentity else None
+        except ImportError:
+            pass
+    return None
 
 from open_a2a import (
     Intent,
@@ -31,14 +41,18 @@ async def main() -> None:
     nats_url = os.getenv("NATS_URL", "nats://localhost:4222")
     merchant_id = os.getenv("MERCHANT_ID", "merchant-001")
 
-    broadcaster = IntentBroadcaster(nats_url)
+    identity = _create_identity()
+    broadcaster = IntentBroadcaster(nats_url, identity=identity)
     await broadcaster.connect()
+    if identity:
+        print(f"[Merchant] 使用 DID 签名: {identity.did}")
 
     # 记录本商家发出的 offer_id，用于过滤订单确认
     my_offer_ids: set[str] = set()
 
     async def handle_intent(intent: Intent) -> None:
-        print(f"[Merchant] 收到意图: {intent.type} from {intent.sender_id}")
+        who = intent.sender_did or intent.sender_id
+        print(f"[Merchant] 收到意图: {intent.type} from {who}")
         if intent.type.lower() == "noodle":
             offer = Offer(
                 intent_id=intent.id,

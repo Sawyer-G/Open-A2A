@@ -14,23 +14,32 @@
 
 ---
 
-### Phase 2: Privacy & Identity
+### Phase 2: Privacy & Identity ✅
 
 **Goal**: Ensure only real Agents can communicate.
 
-**Tasks**:
+**Completed**:
 
-1. Integrate `did:key` encryption; messages must be signed before send
-2. Integrate Solid Pod; Agent reads user preferences from Pod, not hardcoded
+1. ✅ Integrated `did:key` (via didlite); optional JWS signing, verification on receive
+2. ✅ Preferences abstraction (`FilePreferencesProvider`); Agent reads from `profile.json`; Solid Pod interface reserved
 
 ---
 
-### Phase 3: Complex Scenario Simulation
+### Phase 3: Complex Scenario Simulation ✅
 
 **Goal**: Full A-B-C flow for "ordering noodles".
 
-**Tasks**:
+**Completed**:
 
-1. Add `Carrier.py` (delivery agent)
-2. Implement contract-based simulated payment flow
-3. Open source codebase and publish first RFC
+1. ✅ Added `Carrier.py` (delivery agent)
+2. ✅ Simulated payment flow (Merchant logs "结算完成" on LogisticsAccept)
+3. ✅ RFC-001 extended; codebase open
+
+---
+
+### Future: Multi-Language SDK (TBD)
+
+**Goal**: When the project matures, provide reference implementations in TypeScript, Go, Java, etc.
+
+**Reference**: See [07-multi-language-sdk.md](./07-multi-language-sdk.md).  
+**Triggers**: Non-Python integration demand, stable protocol, community maintainers.

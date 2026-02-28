@@ -5,18 +5,28 @@
 ```
 Open-A2A/
 ├── .cursor/                    # Cursor IDE 配置
-│   └── rules/                  # AI 协作规则
+│   └── rules/                  # AI 协作规则（含虚拟环境规范）
 ├── docs/                       # 项目文档
 │   ├── zh/                     # 中文文档
 │   ├── en/                     # 英文文档
-│   └── ...
+│   └── standards/              # 规范文档
 ├── spec/                       # 核心协议规范（RFC 文档）
-├── core/                       # 协议参考实现（Python SDK）
+├── open_a2a/                   # 协议参考实现（Python SDK）
+│   ├── intent.py               # 消息模型
+│   ├── broadcaster.py          # NATS 封装
+│   ├── identity.py             # DID 身份（Phase 2）
+│   ├── preferences.py          # 偏好存储抽象（Phase 2）
+│   └── agent.py                # BaseAgent 基类
 ├── example/                    # 示例与 Demo
+│   ├── consumer.py
+│   ├── merchant.py
+│   ├── carrier.py
+│   └── profile.json            # 偏好示例（Phase 2）
+├── .venv/                      # 虚拟环境（不提交）
 ├── .gitignore
-├── README.md
-├── LICENSE
-└── pyproject.toml              # 或 requirements.txt
+├── Makefile                    # venv, install, install-full, run-*
+├── pyproject.toml
+└── README.md
 ```
 
 ### 1.1 各目录职责
@@ -24,7 +34,7 @@ Open-A2A/
 | 目录 | 职责 | 说明 |
 |------|------|------|
 | `spec/` | 协议定义 | Agent 间握手、消息格式、语义字典等 RFC 文档 |
-| `core/` | 参考实现 | 协议的 Python SDK，供其他项目引用 |
+| `open_a2a/` | 参考实现 | 协议的 Python SDK，供其他项目引用 |
 | `example/` | 示例代码 | Consumer、Merchant、Carrier 等 Demo |
 | `docs/` | 项目文档 | 架构、需求、开发指南等（中英双语） |
 
@@ -80,7 +90,8 @@ Open-A2A/
 
 ## 4. 技术栈约定
 
-- **语言**：Python 3.10+
-- **包管理**：优先使用 `pyproject.toml`（Poetry 或 PEP 621）
-- **代码风格**：遵循 PEP 8，使用 `ruff` 或 `black` 格式化
+- **语言**：Python 3.9+
+- **包管理**：`pyproject.toml`（PEP 621），可选依赖 `[identity]`、`[dev]`
+- **代码风格**：遵循 PEP 8，使用 `ruff` 格式化
 - **类型注解**：鼓励使用类型提示（Type Hints）
+- **虚拟环境**：所有 Python 操作使用 `.venv/bin/python`、`.venv/bin/pip` 或 `make` 目标，避免污染系统环境

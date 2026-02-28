@@ -1,0 +1,5 @@
+{
+  "constraints": ["No_Coriander", "<30min"],
+  "location": {"lat": 31.23, "lon": 121.47},
+  "budget_max": 50
+}
