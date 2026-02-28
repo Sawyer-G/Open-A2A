@@ -132,18 +132,32 @@ services:
 
 ---
 
-## 4. Open-A2A Bridge 实现要点
+## 4. Open-A2A Bridge 实现
 
-Bridge 是一个 Python 服务，核心职责：
+Bridge 已实现，位于 `bridge/main.py`。
 
 | 功能 | 实现 |
 |------|------|
-| 订阅 NATS 意图 | 使用 `IntentBroadcaster.subscribe_intents()` |
-| 转发给 OpenClaw | `requests.post(gateway_url + "/hooks/agent", ...)` |
-| 接收 OpenClaw 回复 | 通过 Webhook 回调或轮询（需根据 OpenClaw 能力设计） |
-| 暴露发布 API | FastAPI/Flask `POST /api/publish_intent`，内部调用 `broadcaster.publish_and_collect_offers()` |
+| 订阅 NATS 意图 | `IntentBroadcaster.subscribe_intents()`，收到后转发 |
+| 转发给 OpenClaw | `httpx.post(gateway_url + "/hooks/agent", ...)` |
+| 暴露发布 API | `POST /api/publish_intent`，可选收集报价并返回 |
+| 健康检查 | `GET /health` |
 
-**当前状态**：Bridge 为设计文档，具体实现需根据 OpenClaw 的 Webhook/API 细节开发。项目 `example/` 下的 `consumer.py`、`merchant.py` 可作为 Bridge 内部逻辑的参考。
+**运行方式**：
+```bash
+make install-bridge && make run-bridge
+# 或
+docker compose -f docker-compose.deploy.yml up -d
+```
+
+**API 示例**：
+```bash
+curl -X POST http://localhost:8080/api/publish_intent \
+  -H "Content-Type: application/json" \
+  -d '{"type":"Noodle","constraints":["No_Coriander"],"collect_offers":true}'
+```
+
+**OpenClaw Tool 配置**：见 [openclaw-tool-example.md](./openclaw-tool-example.md)
 
 ---
 
@@ -171,6 +185,6 @@ Bridge 是一个 Python 服务，核心职责：
 
 ## 7. 下一步
 
-1. 实现 **Open-A2A Bridge** 完整代码（含 Dockerfile）
-2. 编写 OpenClaw 的 **Open-A2A Tool** 配置示例
+1. ~~实现 **Open-A2A Bridge** 完整代码（含 Dockerfile）~~ ✅ 已完成
+2. ~~编写 OpenClaw 的 **Open-A2A Tool** 配置示例~~ ✅ 见 [openclaw-tool-example.md](./openclaw-tool-example.md)
 3. 提供 **TypeScript SDK** 或 HTTP 客户端，便于 OpenClaw 直接调用（见 07-multi-language-sdk.md）

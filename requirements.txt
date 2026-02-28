@@ -9,3 +9,7 @@ nats-py>=2.6.0
 # 可选：Solid Pod 偏好存储 (Phase 2)
 # pip install open-a2a[solid]  或 make install-solid
 # solid-file>=0.2.0
+
+# 可选：Open-A2A Bridge（与 OpenClaw 集成）
+# pip install open-a2a[bridge]  或 make install-bridge
+# fastapi, uvicorn, httpx

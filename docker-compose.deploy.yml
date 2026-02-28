@@ -4,7 +4,7 @@
 #   1. 复制 .env.example 为 .env，配置 OPENCLAW_GATEWAY_URL、OPENCLAW_HOOKS_TOKEN
 #   2. docker compose -f docker-compose.deploy.yml up -d
 #
-# 注意: Open-A2A Bridge 当前为占位，完整实现见 docs/zh/09-deployment-and-openclaw-integration.md
+# Bridge 需 OPENCLAW_GATEWAY_URL、OPENCLAW_HOOKS_TOKEN 才能转发意图到 OpenClaw
 
 services:
   nats:
@@ -19,11 +19,17 @@ services:
       - "8443:8443"
     restart: unless-stopped
 
-  # Bridge 占位：需根据 09-deployment-and-openclaw-integration.md 实现
-  # open-a2a-bridge:
-  #   build: .
-  #   environment:
-  #     - NATS_URL=nats://nats:4222
-  #     - OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL}
-  #     - OPENCLAW_HOOKS_TOKEN=${OPENCLAW_HOOKS_TOKEN}
-  #   depends_on: [nats]
+  open-a2a-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile.bridge
+    ports:
+      - "8080:8080"
+    environment:
+      - NATS_URL=nats://nats:4222
+      - OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL:-}
+      - OPENCLAW_HOOKS_TOKEN=${OPENCLAW_HOOKS_TOKEN:-}
+      - BRIDGE_ENABLE_FORWARD=${BRIDGE_ENABLE_FORWARD:-1}
+    depends_on:
+      - nats
+    restart: unless-stopped

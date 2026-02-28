@@ -29,7 +29,8 @@ Open-A2A **does not implement** Agent inference. Integrate with mature runtimes:
 
 | Project | Description | Open-A2A Integration |
 |---------|-------------|----------------------|
-| [OpenClaw](https://github.com/openclaw/openclaw) | Personal AI assistant, multi-channel (WhatsApp, Telegram, etc.), TypeScript | As Tool/Skill or Channel, connect to Open-A2A protocol |
+| **Open-A2A Bridge** | `bridge/main.py`, FastAPI service | ✅ Implemented, `make install-bridge && make run-bridge`, see [09-deployment-and-openclaw-integration.md](./09-deployment-and-openclaw-integration.md) |
+| [OpenClaw](https://github.com/openclaw/openclaw) | Personal AI assistant, multi-channel (WhatsApp, Telegram, etc.), TypeScript | Connect via Bridge as Tool or Channel |
 | [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) | Lightweight Rust runtime (<5MB RAM), trait-driven | Pluggable Provider/Channel implementing Open-A2A |
 | [Ollama](https://ollama.com/) | Local LLM inference | As Agent's model backend |
 | [MCP](https://modelcontextprotocol.io/) | Model Context Protocol | Tool exposure, semantic handshake |

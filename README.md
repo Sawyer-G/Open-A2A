@@ -62,6 +62,8 @@ make run-consumer                # 终端 3
 
 需先启动 NATS：`docker run -p 4222:4222 nats:latest`
 
+**与 OpenClaw 集成**：`make install-bridge && make run-bridge`，详见 [部署与 OpenClaw 集成](./docs/zh/09-deployment-and-openclaw-integration.md)
+
 **开发路线图**：
 
 1. ✅ **Hello Open-A2A**：NATS 广播-响应（Consumer ↔ Merchant）

@@ -29,7 +29,8 @@ Open-A2A **不实现** Agent 推理能力，建议与成熟运行时集成：
 
 | 项目 | 说明 | 与 Open-A2A 的集成点 |
 |------|------|---------------------|
-| [OpenClaw](https://github.com/openclaw/openclaw) | 个人 AI 助手，多通道（WhatsApp、Telegram 等），TypeScript | 可作为 Tool/Skill 或 Channel，接入 Open-A2A 协议 |
+| **Open-A2A Bridge** | `bridge/main.py`，FastAPI 服务 | ✅ 已实现，`make install-bridge && make run-bridge`，见 [09-deployment-and-openclaw-integration.md](./09-deployment-and-openclaw-integration.md) |
+| [OpenClaw](https://github.com/openclaw/openclaw) | 个人 AI 助手，多通道（WhatsApp、Telegram 等），TypeScript | 通过 Bridge 作为 Tool 或 Channel 接入 |
 | [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) | 轻量 Rust 运行时（<5MB RAM），Trait 驱动 | 可插拔 Provider/Channel 实现 Open-A2A |
 | [Ollama](https://ollama.com/) | 本地 LLM 推理 | 作为 Agent 的模型底座 |
 | [MCP](https://modelcontextprotocol.io/) | 模型上下文协议 | 工具暴露、语义握手 |

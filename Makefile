@@ -1,7 +1,7 @@
 # Open-A2A 开发命令
 # 使用 make 或 make help 查看可用命令
 
-.PHONY: venv install install-full run-merchant run-consumer run-carrier help
+.PHONY: venv install install-full install-solid install-bridge run-merchant run-consumer run-carrier run-bridge help
 
 # 默认使用 .venv
 VENV := .venv
@@ -18,6 +18,7 @@ help:
 	@echo "  make run-merchant - 运行 Merchant 示例"
 	@echo "  make run-consumer - 运行 Consumer 示例"
 	@echo "  make run-carrier  - 运行 Carrier 示例"
+	@echo "  make run-bridge   - 运行 Open-A2A Bridge（需 make install-bridge）"
 	@echo ""
 	@echo "首次使用: make venv && make install"
 
@@ -41,6 +42,13 @@ install-full: venv
 install-solid: venv
 	$(PIP) install -e ".[solid]"
 	@echo "依赖（含 Solid Pod）已安装到虚拟环境"
+
+install-bridge: venv
+	$(PIP) install -e ".[bridge]"
+	@echo "依赖（含 Bridge）已安装到虚拟环境"
+
+run-bridge:
+	$(PYTHON) -m uvicorn bridge.main:app --host 0.0.0.0 --port 8080
 
 run-merchant:
 	$(PYTHON) example/merchant.py

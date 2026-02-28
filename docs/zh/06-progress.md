@@ -39,7 +39,7 @@
 ### 4. 开发环境
 
 - 虚拟环境（`.venv/`）
-- Makefile：`venv`、`install`、`run-merchant`、`run-consumer`
+- Makefile：`venv`、`install`、`install-full`、`install-solid`、`install-bridge`、`run-merchant`、`run-consumer`、`run-carrier`、`run-bridge`
 - `pyproject.toml`、`requirements.txt`、`.env.example`
 
 ### 5. 验证结果
@@ -84,7 +84,7 @@ Carrier 模拟送达
 
 ### 5. Makefile
 
-- 新增 `make run-carrier`
+- 新增 `make run-carrier`、`make run-bridge`、`make install-bridge`
 
 ---
 
@@ -111,12 +111,22 @@ Carrier 模拟送达
 
 ### 4. 依赖与安装
 
-- **pyproject.toml**：新增可选依赖 `[identity]`（didlite）、`[solid]`（solid-file）
-- **Makefile**：新增 `make install-full`（含 identity、dev）、`make install-solid`（含 Solid Pod）
+- **pyproject.toml**：新增可选依赖 `[identity]`（didlite）、`[solid]`（solid-file）、`[bridge]`（fastapi、uvicorn、httpx）
+- **Makefile**：新增 `make install-full`、`make install-solid`、`make install-bridge`、`make run-bridge`
 
 ### 5. 虚拟环境规范
 
 - **.cursor/rules**：新增虚拟环境规范，要求使用 `.venv/bin/pip`、`.venv/bin/python`，避免污染系统环境
+
+---
+
+## Bridge 扩展（OpenClaw 集成）
+
+- **bridge/main.py**：FastAPI 服务，`POST /api/publish_intent` 发布意图并可选收集报价，`GET /health` 健康检查
+- **NATS 订阅转发**：订阅 `intent.food.order`，收到后转发给 OpenClaw `/hooks/agent`（需配置 `OPENCLAW_GATEWAY_URL`、`OPENCLAW_HOOKS_TOKEN`）
+- **Dockerfile.bridge**：Bridge 镜像构建
+- **docker-compose.deploy.yml**：NATS + Solid + Bridge 一键部署
+- **docs/zh/openclaw-tool-example.md**：OpenClaw Tool 配置示例
 
 ---
 
@@ -131,6 +141,7 @@ Carrier 模拟送达
 
 ## 下一步计划
 
-1. **集成研究**：调研 OpenClaw / ZeroClaw 的 Tool/Channel 扩展机制，设计 Open-A2A 适配层
-2. **可选**：多 Merchant 场景测试、Docker Compose 编排、真实支付通道对接、传输层抽象
+1. ~~**Open-A2A Bridge**~~ ✅ 已实现（`bridge/main.py`、`Dockerfile.bridge`、`make run-bridge`）
+2. **可选**：多 Merchant 场景测试、真实支付通道对接、传输层抽象
 3. **可选**：Solid Pod 客户端凭证认证（当前为用户名/密码）
+4. **可选**：Agent 跨服务器发现（DHT、NATS 集群联邦）

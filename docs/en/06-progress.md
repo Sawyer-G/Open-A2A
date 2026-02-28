@@ -56,7 +56,7 @@
 - **preferences.py**: `PreferencesProvider` abstract, `FilePreferencesProvider` (JSON file), `SolidPodPreferencesProvider` (self-hosted Solid, **recommended**)
 - **broadcaster.py**: Optional `identity` param for signing; parse JWS or JSON on receive
 - **intent.py**: `sender_did` field on Intent, Offer
-- **Makefile**: `make install-full` for identity + dev deps, `make install-solid` for Solid Pod
+- **Makefile**: `make install-full`, `make install-solid`, `make install-bridge`, `make run-bridge`
 - **Examples**: `USE_IDENTITY=1` enables DID signing; `profile.json` or self-hosted Solid for preferences; `upload_profile_to_solid.py`; `docker-compose.solid.yml` for self-hosted Pod
 
 ---
@@ -80,8 +80,16 @@
 
 ---
 
+## Bridge Extension (OpenClaw Integration)
+
+- **bridge/main.py**: FastAPI service; `POST /api/publish_intent` to publish intent and optionally collect offers; `GET /health` for health check
+- **NATS subscription forwarding**: Subscribes to `intent.food.order`, forwards to OpenClaw `/hooks/agent` (requires `OPENCLAW_GATEWAY_URL`, `OPENCLAW_HOOKS_TOKEN`)
+- **Dockerfile.bridge**: Bridge image build
+- **docker-compose.deploy.yml**: One-click deploy (NATS + Solid + Bridge)
+
 ## Next Steps
 
-1. **Integration research**: Study OpenClaw / ZeroClaw Tool/Channel extension mechanisms, design Open-A2A adapter layer
-2. **Optional**: Multi-Merchant test, Docker Compose setup, transport layer abstraction
+1. ~~**Open-A2A Bridge**~~ ✅ Done
+2. **Optional**: Multi-Merchant test, transport layer abstraction
 3. **Optional**: Solid Pod client credentials auth (current: username/password)
+4. **Optional**: Agent cross-server discovery (DHT, NATS cluster federation)

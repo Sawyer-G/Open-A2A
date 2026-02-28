@@ -15,6 +15,7 @@
 | [06-progress.md](./06-progress.md) | **Project progress**: completed items and verification |
 | [07-multi-language-sdk.md](./07-multi-language-sdk.md) | Multi-language SDK planning: future expansion reference |
 | [08-solid-self-hosted.md](./08-solid-self-hosted.md) | **Self-hosted Solid Pod**: recommended for data sovereignty |
+| [09-deployment-and-openclaw-integration.md](./09-deployment-and-openclaw-integration.md) | **Deployment & OpenClaw integration** |
 
 ## Standards
 

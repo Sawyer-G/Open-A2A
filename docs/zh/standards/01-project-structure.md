@@ -17,15 +17,22 @@ Open-A2A/
 │   ├── identity.py             # DID 身份（Phase 2）
 │   ├── preferences.py          # 偏好存储抽象（Phase 2）
 │   └── agent.py                # BaseAgent 基类
+├── bridge/                     # Open-A2A Bridge（OpenClaw 适配层）
+│   ├── __init__.py
+│   └── main.py
 ├── example/                    # 示例与 Demo
 │   ├── consumer.py
 │   ├── merchant.py
 │   ├── carrier.py
-│   └── profile.json            # 偏好示例（Phase 2）
+│   ├── profile.json            # 偏好示例（Phase 2）
+│   └── upload_profile_to_solid.py
 ├── .venv/                      # 虚拟环境（不提交）
 ├── .gitignore
-├── Makefile                    # venv, install, install-full, run-*
+├── Makefile                    # venv, install, install-full, install-solid, install-bridge, run-*
 ├── pyproject.toml
+├── Dockerfile.bridge
+├── docker-compose.solid.yml
+├── docker-compose.deploy.yml
 └── README.md
 ```
 
@@ -35,6 +42,7 @@ Open-A2A/
 |------|------|------|
 | `spec/` | 协议定义 | Agent 间握手、消息格式、语义字典等 RFC 文档 |
 | `open_a2a/` | 参考实现 | 协议的 Python SDK，供其他项目引用 |
+| `bridge/` | 适配层 | Open-A2A Bridge，连接 NATS 与 OpenClaw |
 | `example/` | 示例代码 | Consumer、Merchant、Carrier 等 Demo |
 | `docs/` | 项目文档 | 架构、需求、开发指南等（中英双语） |
 
@@ -91,7 +99,7 @@ Open-A2A/
 ## 4. 技术栈约定
 
 - **语言**：Python 3.9+
-- **包管理**：`pyproject.toml`（PEP 621），可选依赖 `[identity]`、`[dev]`
+- **包管理**：`pyproject.toml`（PEP 621），可选依赖 `[identity]`、`[solid]`、`[bridge]`、`[dev]`
 - **代码风格**：遵循 PEP 8，使用 `ruff` 格式化
 - **类型注解**：鼓励使用类型提示（Type Hints）
 - **虚拟环境**：所有 Python 操作使用 `.venv/bin/python`、`.venv/bin/pip` 或 `make` 目标，避免污染系统环境

@@ -16,6 +16,7 @@
 | [07-multi-language-sdk.md](./07-multi-language-sdk.md) | 多语言 SDK 规划：未来扩展参考 |
 | [08-solid-self-hosted.md](./08-solid-self-hosted.md) | **自托管 Solid Pod**：数据主权推荐方案 |
 | [09-deployment-and-openclaw-integration.md](./09-deployment-and-openclaw-integration.md) | **服务器部署与 OpenClaw 集成**：与现有服务共存 |
+| [openclaw-tool-example.md](./openclaw-tool-example.md) | OpenClaw Tool 配置示例 |
 
 ## 规范与标准
 

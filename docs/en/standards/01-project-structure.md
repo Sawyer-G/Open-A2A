@@ -17,14 +17,21 @@ Open-A2A/
 │   ├── identity.py            # DID identity (Phase 2)
 │   ├── preferences.py         # Preferences abstraction (Phase 2)
 │   └── agent.py               # BaseAgent
+├── bridge/                     # Open-A2A Bridge (OpenClaw adapter)
+│   ├── __init__.py
+│   └── main.py
 ├── example/                    # Examples & Demos
 │   ├── consumer.py
 │   ├── merchant.py
 │   ├── carrier.py
-│   └── profile.json           # Preferences example (Phase 2)
+│   ├── profile.json           # Preferences example (Phase 2)
+│   └── upload_profile_to_solid.py
 ├── .venv/                      # Virtual env (not committed)
-├── Makefile                    # venv, install, install-full, run-*
+├── Makefile                    # venv, install, install-full, install-solid, install-bridge, run-*
 ├── pyproject.toml
+├── Dockerfile.bridge
+├── docker-compose.solid.yml
+├── docker-compose.deploy.yml
 └── README.md
 ```
 
@@ -34,6 +41,7 @@ Open-A2A/
 |-----------|----------------|-------|
 | `spec/` | Protocol definition | Handshake, message format, semantic dictionary |
 | `open_a2a/` | Reference implementation | Python SDK for other projects |
+| `bridge/` | Adapter layer | Open-A2A Bridge, connects NATS with OpenClaw |
 | `example/` | Sample code | Consumer, Merchant, Carrier demos |
 | `docs/` | Project docs | Architecture, requirements, guides (bilingual) |
 

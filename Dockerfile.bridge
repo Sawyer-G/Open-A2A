@@ -1,0 +1,16 @@
+# Open-A2A Bridge - 连接 NATS 与 OpenClaw
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY pyproject.toml README.md ./
+COPY open_a2a/ open_a2a/
+COPY bridge/ bridge/
+
+RUN pip install --no-cache-dir ".[bridge]"
+
+EXPOSE 8080
+
+ENV BRIDGE_PORT=8080
+
+CMD ["python", "-m", "uvicorn", "bridge.main:app", "--host", "0.0.0.0", "--port", "8080"]
