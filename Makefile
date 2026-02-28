@@ -1,7 +1,7 @@
 # Open-A2A 开发命令
 # 使用 make 或 make help 查看可用命令
 
-.PHONY: venv install run-merchant run-consumer help
+.PHONY: venv install run-merchant run-consumer run-carrier help
 
 # 默认使用 .venv
 VENV := .venv
@@ -15,6 +15,7 @@ help:
 	@echo "  make install   - 在虚拟环境中安装项目 (editable)"
 	@echo "  make run-merchant - 运行 Merchant 示例"
 	@echo "  make run-consumer - 运行 Consumer 示例"
+	@echo "  make run-carrier  - 运行 Carrier 示例"
 	@echo ""
 	@echo "首次使用: make venv && make install"
 
@@ -36,3 +37,6 @@ run-merchant:
 
 run-consumer:
 	$(PYTHON) example/consumer.py
+
+run-carrier:
+	$(PYTHON) example/carrier.py

@@ -8,7 +8,7 @@
 |------|------|------|
 | **Phase 1: Hello Open-A2A** | ✅ 已完成 | 广播-响应流程已跑通并验证 |
 | **Phase 2: 隐私与身份认证** | ⏳ 未开始 | DID + Solid Pod |
-| **Phase 3: 复杂场景模拟** | ⏳ 未开始 | A-B-C 全链路 + 模拟结算 |
+| **Phase 3: 复杂场景模拟** | ✅ 已完成 | A-B-C 全链路 + 模拟结算 |
 
 ---
 
@@ -50,6 +50,44 @@
 
 ---
 
+## Phase 3 完成项
+
+### 1. 协议扩展（RFC-001）
+
+- 新增主题：`intent.food.order_confirm`、`intent.logistics.request`、`intent.logistics.accept.{id}`
+- 新增消息：OrderConfirm、LogisticsRequest、LogisticsAccept
+
+### 2. SDK 扩展
+
+| 模块 | 新增 |
+|------|------|
+| `intent.py` | OrderConfirm、LogisticsRequest、LogisticsAccept、delivery 字段 |
+| `broadcaster.py` | publish_order_confirm、subscribe_order_confirm、publish_logistics_request、subscribe_logistics_requests、publish_logistics_accept、publish_and_collect_logistics_accepts |
+
+### 3. 示例 Demo
+
+| 文件 | 说明 |
+|------|------|
+| `consumer.py` | 选择报价后发布 OrderConfirm |
+| `merchant.py` | 订阅 order_confirm，发布 LogisticsRequest，收集 LogisticsAccept |
+| `carrier.py` | 订阅配送请求，自动接单并模拟送达 |
+
+### 4. A-B-C 全流程
+
+```
+Consumer → Intent → Merchant(s) → Offer
+Consumer → OrderConfirm → Merchant
+Merchant → LogisticsRequest → Carrier(s) → LogisticsAccept
+Merchant 收到接单 → 模拟结算完成
+Carrier 模拟送达
+```
+
+### 5. Makefile
+
+- 新增 `make run-carrier`
+
+---
+
 ## 提交历史
 
 | 提交 | 说明 |
@@ -62,6 +100,5 @@
 ## 下一步计划
 
 1. **Phase 2**：集成 `did:key` 与 Solid Pod
-2. **Phase 3**：加入 Carrier、模拟支付流
-3. **集成研究**：调研 OpenClaw / ZeroClaw 的 Tool/Channel 扩展机制，设计 Open-A2A 适配层
-4. **可选**：多 Merchant 场景测试、Docker Compose 编排
+2. **集成研究**：调研 OpenClaw / ZeroClaw 的 Tool/Channel 扩展机制，设计 Open-A2A 适配层
+3. **可选**：多 Merchant 场景测试、Docker Compose 编排、真实支付通道对接

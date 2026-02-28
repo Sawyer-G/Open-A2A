@@ -8,8 +8,14 @@ from typing import Awaitable, Callable, Optional
 from open_a2a.intent import (
     Intent,
     Offer,
+    OrderConfirm,
+    LogisticsRequest,
+    LogisticsAccept,
     TOPIC_INTENT_FOOD_ORDER,
     TOPIC_INTENT_FOOD_OFFER_PREFIX,
+    TOPIC_ORDER_CONFIRM,
+    TOPIC_LOGISTICS_REQUEST,
+    TOPIC_LOGISTICS_ACCEPT_PREFIX,
 )
 
 try:
@@ -113,3 +119,96 @@ class IntentBroadcaster:
         await sub.unsubscribe()
 
         return offers
+
+    # --- 订单确认 (Phase 3) ---
+
+    async def publish_order_confirm(self, confirm: OrderConfirm) -> None:
+        """发布订单确认到 intent.food.order_confirm"""
+        if not self._nc:
+            raise RuntimeError("Not connected. Call connect() first.")
+        await self._nc.publish(
+            TOPIC_ORDER_CONFIRM,
+            confirm.to_json().encode("utf-8"),
+        )
+
+    async def subscribe_order_confirm(
+        self,
+        handler: Callable[[OrderConfirm], Awaitable[None]],
+    ) -> None:
+        """订阅 intent.food.order_confirm"""
+        if not self._nc:
+            raise RuntimeError("Not connected. Call connect() first.")
+
+        async def _handler(msg):
+            data = msg.data.decode("utf-8")
+            confirm = OrderConfirm.from_json(data)
+            await handler(confirm)
+
+        await self._nc.subscribe(TOPIC_ORDER_CONFIRM, cb=_handler)
+
+    # --- 配送 (Phase 3) ---
+
+    async def publish_logistics_request(self, req: LogisticsRequest) -> None:
+        """发布配送请求到 intent.logistics.request"""
+        if not self._nc:
+            raise RuntimeError("Not connected. Call connect() first.")
+        await self._nc.publish(
+            TOPIC_LOGISTICS_REQUEST,
+            req.to_json().encode("utf-8"),
+        )
+
+    async def subscribe_logistics_requests(
+        self,
+        handler: Callable[[LogisticsRequest], Awaitable[None]],
+    ) -> None:
+        """订阅 intent.logistics.request"""
+        if not self._nc:
+            raise RuntimeError("Not connected. Call connect() first.")
+
+        async def _handler(msg):
+            data = msg.data.decode("utf-8")
+            req = LogisticsRequest.from_json(data)
+            await handler(req)
+
+        await self._nc.subscribe(TOPIC_LOGISTICS_REQUEST, cb=_handler)
+
+    async def publish_logistics_accept(
+        self, accept: LogisticsAccept, reply_to: str
+    ) -> None:
+        """发布配送接单到 reply_to"""
+        if not self._nc:
+            raise RuntimeError("Not connected. Call connect() first.")
+        await self._nc.publish(
+            reply_to,
+            accept.to_json().encode("utf-8"),
+        )
+
+    async def publish_and_collect_logistics_accepts(
+        self,
+        req: LogisticsRequest,
+        timeout_seconds: float = 10.0,
+        on_accept: Optional[
+            Callable[[LogisticsAccept], Awaitable[None]]
+        ] = None,
+    ) -> list[LogisticsAccept]:
+        """发布配送请求并收集接单"""
+        if not self._nc:
+            raise RuntimeError("Not connected. Call connect() first.")
+
+        subject = req.reply_to
+        accepts: list[LogisticsAccept] = []
+
+        async def _handler(msg):
+            data = msg.data.decode("utf-8")
+            accept = LogisticsAccept.from_json(data)
+            accepts.append(accept)
+            if on_accept:
+                await on_accept(accept)
+
+        sub = await self._nc.subscribe(subject, cb=_handler)
+        await self.publish_logistics_request(req)
+
+        await asyncio.sleep(timeout_seconds)
+        await sub.unsubscribe()
+
+        return accepts

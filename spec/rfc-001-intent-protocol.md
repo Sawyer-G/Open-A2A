@@ -25,6 +25,9 @@ intent.{domain}.{action}[.{sub}]
 |------|------|------|
 | `intent.food.order` | Consumer → 网络 | 消费者发布「想吃」意图 |
 | `intent.food.offer.{intent_id}` | Merchant → Consumer | 商家针对某意图回复报价 |
+| `intent.food.order_confirm` | Consumer → Merchant | 消费者确认订单（接受某 Offer） |
+| `intent.logistics.request` | Merchant → 网络 | 商家发布配送请求 |
+| `intent.logistics.accept.{request_id}` | Carrier → Merchant | 骑手接单 |
 
 ## 3. 消息格式
 
@@ -110,7 +113,75 @@ Consumer                          NATS                          Merchant(s)
    |                                 |                                  |
 ```
 
-## 6. 扩展说明
+## 6. Phase 3 扩展：配送与订单确认
+
+### 6.1 订单确认 (OrderConfirm)
+
+消费者向 `intent.food.order_confirm` 发布，表示接受某 Offer：
+
+```json
+{
+  "id": "uuid-v4",
+  "intent_id": "original-intent-id",
+  "offer_id": "accepted-offer-id",
+  "consumer_id": "consumer-001",
+  "delivery": {"lat": 31.25, "lon": 121.50},
+  "timestamp": "2026-02-28T12:01:00Z"
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | string | ✓ | 订单唯一标识 |
+| `intent_id` | string | ✓ | 原始意图 ID |
+| `offer_id` | string | ✓ | 接受的 Offer ID |
+| `consumer_id` | string | - | 消费者标识 |
+| `delivery` | object | - | 配送地址，含 lat/lon，用于 LogisticsRequest |
+| `timestamp` | string | ✓ | ISO 8601 |
+
+### 6.2 配送请求 (LogisticsRequest)
+
+商家向 `intent.logistics.request` 发布：
+
+```json
+{
+  "id": "uuid-v4",
+  "order_id": "order-from-confirm",
+  "pickup": {"lat": 31.23, "lon": 121.47},
+  "delivery": {"lat": 31.25, "lon": 121.50},
+  "fee": 3,
+  "unit": "UNIT",
+  "reply_to": "intent.logistics.accept.{id}",
+  "timestamp": "2026-02-28T12:02:00Z",
+  "sender_id": "merchant-001"
+}
+```
+
+### 6.3 配送接单 (LogisticsAccept)
+
+骑手向 `reply_to` 主题发布：
+
+```json
+{
+  "id": "uuid-v4",
+  "request_id": "logistics-request-id",
+  "eta_minutes": 20,
+  "timestamp": "2026-02-28T12:02:05Z",
+  "sender_id": "carrier-001"
+}
+```
+
+### 6.4 A-B-C 全流程
+
+```
+Consumer → Intent → Merchant(s) → Offer
+Consumer → OrderConfirm → Merchant
+Merchant → LogisticsRequest → Carrier(s) → LogisticsAccept
+(模拟) Carrier 送达 → 结算
+```
+
+---
+
+## 7. 扩展说明
 
 - Phase 2：`sender_id` 替换为 `did:key`，消息增加签名字段
-- Phase 3：新增 `intent.logistics.request`、`intent.logistics.accept` 等主题

@@ -6,6 +6,7 @@
 
 | Document | Description |
 |----------|-------------|
+| [**00-design-principles.md**](./00-design-principles.md) | **Design principles**: core goals, relationship to example scenarios (required) |
 | [01-project-overview.md](./01-project-overview.md) | Project overview: background, vision, target users |
 | [02-requirements.md](./02-requirements.md) | Product requirements: features, user story, constraints |
 | [03-architecture.md](./03-architecture.md) | System architecture: three-tier mesh, tech stack |
@@ -30,6 +31,6 @@
 
 ## Reading Order
 
-1. **Newcomers**: 01 → 02 → 03 → 04
-2. **Developers**: 03 → 05 → 04, then `standards/01-project-structure.md`
+1. **Newcomers**: 00 (design principles) → 01 → 02 → 03 → 04
+2. **Developers**: 00 → 03 → 05 → 04, then `standards/01-project-structure.md`
 3. **Contributors**: All docs + all standards
