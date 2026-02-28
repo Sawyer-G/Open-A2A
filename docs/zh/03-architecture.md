@@ -57,10 +57,10 @@ graph TD
 
 ### 2.1 身份与数据（数字舱）— 解决「我是谁，我的偏好」
 
-- **已实现**：`open_a2a/identity.py`（基于 [didlite](https://github.com/jondepalma/didlite-pkg)）、`open_a2a/preferences.py`（`FilePreferencesProvider`）
+- **已实现**：`open_a2a/identity.py`（基于 [didlite](https://github.com/jondepalma/didlite-pkg)）、`open_a2a/preferences.py`（`FilePreferencesProvider`、`SolidPodPreferencesProvider`）
 - **DID 绑定**：`AgentIdentity` 生成 `did:key`，消息可选 JWS 签名（`USE_IDENTITY=1` 启用）
-- **偏好存储**：`FilePreferencesProvider` 从 `profile.json` 读取 constraints、location；Solid Pod 接口已预留
-- **后续**：SpruceID、Community Solid Server 用于完整 Pod 集成；VC 用于权限最小化
+- **偏好存储**：`FilePreferencesProvider` 从 `profile.json` 读取；`SolidPodPreferencesProvider` 从**自托管** Solid Pod 读取（**推荐**，符合数据主权，`pip install open-a2a[solid]`）
+- **后续**：SpruceID、VC 用于权限最小化；客户端凭证认证
 
 ### 2.2 发现与广播（意图网格）— 解决「谁在附近，谁能响应」
 

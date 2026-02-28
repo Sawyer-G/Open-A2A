@@ -21,7 +21,7 @@
 **Completed**:
 
 1. ✅ Integrated `did:key` (via didlite); optional JWS signing, verification on receive
-2. ✅ Preferences abstraction (`FilePreferencesProvider`); Agent reads from `profile.json`; Solid Pod interface reserved
+2. ✅ Preferences abstraction (`FilePreferencesProvider`, `SolidPodPreferencesProvider`); Agent reads from `profile.json` or self-hosted Solid Pod (self-hosted recommended for data sovereignty)
 
 ---
 

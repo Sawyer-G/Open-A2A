@@ -53,10 +53,10 @@ graph TD
 
 ### 2.1 Identity & Data (Digital Pod) — "Who am I, what do I like?"
 
-- **Implemented**: `open_a2a/identity.py` ([didlite](https://github.com/jondepalma/didlite-pkg)), `open_a2a/preferences.py` (`FilePreferencesProvider`)
+- **Implemented**: `open_a2a/identity.py` ([didlite](https://github.com/jondepalma/didlite-pkg)), `open_a2a/preferences.py` (`FilePreferencesProvider`, `SolidPodPreferencesProvider`)
 - **DID Binding**: `AgentIdentity` generates `did:key`; optional JWS signing (`USE_IDENTITY=1`)
-- **Preference Storage**: `FilePreferencesProvider` reads from `profile.json`; Solid Pod interface reserved
-- **Next**: SpruceID, Community Solid Server for full Pod; VC for minimal permissions
+- **Preference Storage**: `FilePreferencesProvider` from `profile.json`; `SolidPodPreferencesProvider` from **self-hosted** Solid Pod (**recommended**, data sovereignty, `pip install open-a2a[solid]`)
+- **Next**: SpruceID, VC for minimal permissions; client credentials auth
 
 ### 2.2 Discovery & Broadcast (Intent Mesh) — "Where are noodles, who can deliver?"
 

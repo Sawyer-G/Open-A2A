@@ -20,7 +20,11 @@ try:
 except ImportError:
     AgentIdentity = None  # type: ignore
 
-from open_a2a.preferences import FilePreferencesProvider, PreferencesProvider
+from open_a2a.preferences import (
+    FilePreferencesProvider,
+    PreferencesProvider,
+    SolidPodPreferencesProvider,
+)
 
 __all__ = [
     "Intent",
@@ -34,6 +38,7 @@ __all__ = [
     "AgentIdentity",
     "PreferencesProvider",
     "FilePreferencesProvider",
+    "SolidPodPreferencesProvider",
 ]
 
 __version__ = "0.1.0"

@@ -17,9 +17,11 @@ Follow the layered architecture; integrate in this order:
 
 | Tool | Description | Status |
 |------|-------------|--------|
-| `FilePreferencesProvider` | JSON-based preferences, see `open_a2a/preferences.py` | ✅ Implemented; Pod interface reserved |
-| [Community Solid Server (CSS)](https://github.com/CommunitySolidServer/CommunitySolidServer) | **Recommended**. Official Solid implementation | Pending |
-| [Inrupt JavaScript SDK](https://docs.inrupt.com/developer-tools/javascript/client-libraries/) | Agent logic for reading/writing Pod data | Pending |
+| `FilePreferencesProvider` | JSON-based preferences, see `open_a2a/preferences.py` | ✅ Implemented |
+| `SolidPodPreferencesProvider` | Read/write from self-hosted Solid Pod (**recommended**), `pip install open-a2a[solid]` | ✅ Implemented |
+| [solid-file](https://github.com/twonote/solid-file-python) | Python Solid Pod client; supports Node Solid Server | ✅ Integrated |
+| [docker-compose.solid.yml](../docker-compose.solid.yml) | One-click self-hosted Solid deployment | ✅ Provided |
+| [08-solid-self-hosted.md](./08-solid-self-hosted.md) | Self-hosted Solid setup guide | Required reading |
 
 ### Step 3: Agent Runtime (Capability Layer)
 

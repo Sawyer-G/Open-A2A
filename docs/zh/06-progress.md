@@ -99,18 +99,20 @@ Carrier 模拟送达
 ### 2. 偏好存储抽象
 
 - **preferences.py**：`PreferencesProvider` 抽象基类，`FilePreferencesProvider` 基于 JSON 文件实现
+- **SolidPodPreferencesProvider**：从自托管 Solid Pod 读写偏好（**推荐**，`pip install open-a2a[solid]`），符合数据主权
+- **docker-compose.solid.yml**：自托管 Solid 一键部署
 - **example/profile.json**：示例偏好文件（constraints、location）
-- 为 Solid Pod 预留接口，当前从 `profile.json` 读取
+- **example/upload_profile_to_solid.py**：将本地 profile.json 上传到 Pod 的脚本
 
 ### 3. 示例更新
 
-- **consumer.py**：支持从 `profile.json` 读取偏好，`USE_IDENTITY=1` 时启用 DID 签名
+- **consumer.py**：支持从 `profile.json` 或 Solid Pod 读取偏好，`USE_IDENTITY=1` 时启用 DID 签名
 - **merchant.py**：`USE_IDENTITY=1` 时启用 DID 签名
 
 ### 4. 依赖与安装
 
-- **pyproject.toml**：新增可选依赖 `[identity]`（didlite）
-- **Makefile**：新增 `make install-full`（含 identity、dev）
+- **pyproject.toml**：新增可选依赖 `[identity]`（didlite）、`[solid]`（solid-file）
+- **Makefile**：新增 `make install-full`（含 identity、dev）、`make install-solid`（含 Solid Pod）
 
 ### 5. 虚拟环境规范
 
@@ -129,6 +131,6 @@ Carrier 模拟送达
 
 ## 下一步计划
 
-1. **Solid Pod 集成**：将 `FilePreferencesProvider` 替换或扩展为 Solid Pod 实现
-2. **集成研究**：调研 OpenClaw / ZeroClaw 的 Tool/Channel 扩展机制，设计 Open-A2A 适配层
-3. **可选**：多 Merchant 场景测试、Docker Compose 编排、真实支付通道对接、传输层抽象
+1. **集成研究**：调研 OpenClaw / ZeroClaw 的 Tool/Channel 扩展机制，设计 Open-A2A 适配层
+2. **可选**：多 Merchant 场景测试、Docker Compose 编排、真实支付通道对接、传输层抽象
+3. **可选**：Solid Pod 客户端凭证认证（当前为用户名/密码）

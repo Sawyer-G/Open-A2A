@@ -17,9 +17,11 @@
 
 | 工具 | 说明 | 状态 |
 |------|------|------|
-| `FilePreferencesProvider` | 基于 JSON 的偏好存储，见 `open_a2a/preferences.py` | ✅ 已实现，为 Pod 预留接口 |
-| [Community Solid Server (CSS)](https://github.com/CommunitySolidServer/CommunitySolidServer) | **核心推荐**，Solid 官方开源实现，`npx @solid/community-server` 启动 | 待集成 |
-| [Inrupt JavaScript SDK](https://docs.inrupt.com/developer-tools/javascript/client-libraries/) | 智能体读写 Pod 数据的逻辑 | 待集成 |
+| `FilePreferencesProvider` | 基于 JSON 的偏好存储，见 `open_a2a/preferences.py` | ✅ 已实现 |
+| `SolidPodPreferencesProvider` | 从自托管 Solid Pod 读写偏好（**推荐**），`pip install open-a2a[solid]` | ✅ 已实现 |
+| [solid-file](https://github.com/twonote/solid-file-python) | Python Solid Pod 客户端，支持 Node Solid Server | ✅ 已集成 |
+| [docker-compose.solid.yml](../docker-compose.solid.yml) | 自托管 Solid 一键部署 | ✅ 已提供 |
+| [08-solid-self-hosted.md](./08-solid-self-hosted.md) | 自托管 Solid 配置指南 | 必读 |
 
 ### Step 3: 能力执行层 (Agent 运行时)
 

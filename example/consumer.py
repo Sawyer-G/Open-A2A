@@ -17,8 +17,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from open_a2a import Intent, Offer, OrderConfirm, IntentBroadcaster
 from open_a2a.intent import Location, TOPIC_INTENT_FOOD_OFFER_PREFIX
 
-# Phase 2: 可选偏好与身份
+# Phase 2: 可选偏好与身份（支持 Solid Pod）
 def _load_preferences():
+    # 优先从自托管 Solid Pod 读取（符合数据主权，需设置 SOLID_* 环境变量）
+    if os.getenv("SOLID_POD_ENDPOINT"):
+        try:
+            from open_a2a import SolidPodPreferencesProvider
+            return SolidPodPreferencesProvider()
+        except (ImportError, ValueError) as e:
+            print(f"[Consumer] Solid Pod 不可用: {e}，回退到本地 profile.json")
+    # 回退到本地 profile.json
     profile_path = Path(__file__).parent / "profile.json"
     if profile_path.exists():
         from open_a2a import FilePreferencesProvider

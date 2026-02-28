@@ -53,11 +53,11 @@
 ## Phase 2 Completed
 
 - **identity.py**: `AgentIdentity` based on [didlite](https://github.com/jondepalma/didlite-pkg), `did:key` + JWS sign/verify
-- **preferences.py**: `PreferencesProvider` abstract, `FilePreferencesProvider` (JSON file)
+- **preferences.py**: `PreferencesProvider` abstract, `FilePreferencesProvider` (JSON file), `SolidPodPreferencesProvider` (self-hosted Solid, **recommended**)
 - **broadcaster.py**: Optional `identity` param for signing; parse JWS or JSON on receive
 - **intent.py**: `sender_did` field on Intent, Offer
-- **Makefile**: `make install-full` for identity + dev deps
-- **Examples**: `USE_IDENTITY=1` enables DID signing; `profile.json` for preferences
+- **Makefile**: `make install-full` for identity + dev deps, `make install-solid` for Solid Pod
+- **Examples**: `USE_IDENTITY=1` enables DID signing; `profile.json` or self-hosted Solid for preferences; `upload_profile_to_solid.py`; `docker-compose.solid.yml` for self-hosted Pod
 
 ---
 
@@ -82,6 +82,6 @@
 
 ## Next Steps
 
-1. **Solid Pod**: Replace/extend `FilePreferencesProvider` with Solid Pod implementation
-2. **Integration research**: Study OpenClaw / ZeroClaw Tool/Channel extension mechanisms, design Open-A2A adapter layer
-3. **Optional**: Multi-Merchant test, Docker Compose setup, transport layer abstraction
+1. **Integration research**: Study OpenClaw / ZeroClaw Tool/Channel extension mechanisms, design Open-A2A adapter layer
+2. **Optional**: Multi-Merchant test, Docker Compose setup, transport layer abstraction
+3. **Optional**: Solid Pod client credentials auth (current: username/password)

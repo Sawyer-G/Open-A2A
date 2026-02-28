@@ -1,0 +1,19 @@
+# 自托管 Solid Pod（Node Solid Server）
+# 符合 Open-A2A 数据主权设计：偏好数据存储在用户自己的服务器
+#
+# 启动: docker compose -f docker-compose.solid.yml up -d
+# 访问: https://localhost:8443 （首次需在 Web 界面注册账号，自签名证书可继续访问）
+#
+# 配置 .env 后使用:
+#   SOLID_IDP=https://localhost:8443/
+#   SOLID_POD_ENDPOINT=https://localhost:8443/你的用户名/
+#   SOLID_USERNAME=你的用户名
+#   SOLID_PASSWORD=你的密码
+
+services:
+  solid:
+    image: aveltens/solid-server:latest
+    ports:
+      - "8443:8443"
+    # 使用镜像内置自签名证书，仅适合本地开发
+    # 生产环境请参考 https://github.com/angelo-v/docker-solid-server/tree/main/examples

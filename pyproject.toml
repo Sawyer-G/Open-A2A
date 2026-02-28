@@ -29,6 +29,9 @@ dependencies = [
 identity = [
     "didlite>=0.2.4",
 ]
+solid = [
+    "solid-file>=0.2.0",
+]
 dev = [
     "pytest>=7.0",
     "ruff>=0.1.0",

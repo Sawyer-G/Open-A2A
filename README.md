@@ -95,7 +95,7 @@ We welcome contributors worldwide—open source developers, Web3 enthusiasts, re
 
 ## 技术栈
 
-- **身份**：DID (did:key) 已集成 [didlite](https://github.com/jondepalma/didlite-pkg)；偏好存储抽象（Solid Pod 预留）
+- **身份**：DID (did:key) 已集成 [didlite](https://github.com/jondepalma/didlite-pkg)；偏好存储支持 profile.json 或自托管 Solid Pod（推荐）
 - **通信**：NATS JetStream、libp2p、DIDComm
 - **Agent**：MCP、Ollama、LangGraph
 - **结算**：HTLC、闪电网络（或第三方支付 API 作为可插拔通道）

@@ -21,7 +21,7 @@
 **已完成**：
 
 1. ✅ 集成 `did:key`（基于 didlite），消息发送前可选私钥签名，支持 JWS 验签
-2. ✅ 偏好存储抽象（`FilePreferencesProvider`），Agent 从 `profile.json` 读取偏好；Solid Pod 接口已预留
+2. ✅ 偏好存储抽象（`FilePreferencesProvider`、`SolidPodPreferencesProvider`），Agent 从 `profile.json` 或自托管 Solid Pod 读取偏好（推荐自托管，符合数据主权）
 
 ---
 

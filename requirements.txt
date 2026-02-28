@@ -5,3 +5,7 @@ nats-py>=2.6.0
 # 可选：DID 身份与签名 (Phase 2)
 # pip install open-a2a[identity]  或 make install-full
 # didlite>=0.2.4
+
+# 可选：Solid Pod 偏好存储 (Phase 2)
+# pip install open-a2a[solid]  或 make install-solid
+# solid-file>=0.2.0
