@@ -1,5 +1,24 @@
 # System Architecture
 
+## 0. Design Premises & Positioning
+
+### 0.1 Design Premises
+
+- **Compute is cheap**: Assume inference cost is acceptable; no extreme optimization at this layer
+- **Each user has an Agent**: Consumers, merchants, riders each run their own AI Agent; no reliance on centralized platforms
+
+### 0.2 Positioning: Protocol Layer, Not Agent Runtime
+
+| Layer | Open-A2A | OpenClaw / ZeroClaw etc. |
+|-------|----------|---------------------------|
+| Role | Define how Agents communicate (intent, offer, topics) | Provide Agent inference, tools, multimodal capabilities |
+| Output | Protocol specs, message format, NATS topics | Runnable AI assistant |
+| Analogy | TCP/IP protocol | Browser / application |
+
+**Open-A2A does not implement core AI functionality**. It integrates with mature Agent runtimes such as [OpenClaw](https://github.com/openclaw/openclaw) and [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw), which provide natural language understanding, decision-making, and tool-calling.
+
+---
+
 ## 1. Core Architecture: Three-Tier Mesh
 
 To achieve seamless auto-collaboration like "ordering noodles", the architecture is split into three layers:
@@ -18,7 +37,7 @@ graph TD
 
     subgraph L1 [Self-Sovereign Base Layer]
         G[DID Identity] --> H[Solid Pod Personal Data]
-        H --> I[Local Execution Ollama/OpenClaw]
+        H --> I[Agent Runtime OpenClaw/ZeroClaw/Ollama]
     end
 ```
 
@@ -56,7 +75,24 @@ graph TD
   - **LLM Auto-Negotiation**: Multi-round private dialogue; A: "Spicy?" B: "No spice, 15"
   - **Contract Generation**: After agreement, generate temporary JSON with signatures and delivery terms
 
-### 2.4 Settlement & Delivery (Value Flow) — "No platform cut"
+### 2.4 Integration with Agent Runtimes
+
+Open-A2A as a **protocol layer** integrates with Agent runtimes via:
+
+| Integration | Description | Use Case |
+|-------------|-------------|----------|
+| **Tool / Skill** | Expose Open-A2A as an Agent-callable tool | User says "want noodles" → Agent calls tool to publish intent |
+| **Channel** | Similar to OpenClaw's WhatsApp/Telegram channels | Agent subscribes to intent topics, decides whether to respond |
+| **Bridge** | Adapter connecting Open-A2A SDK to Agent runtime | Runtime need not know NATS details |
+
+**Recommended integration targets**:
+
+- [OpenClaw](https://github.com/openclaw/openclaw): Personal AI assistant, multi-channel (WhatsApp, Telegram, etc.), TypeScript, has `sessions_*` tools for Agent-to-Agent
+- [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw): Lightweight Rust runtime (<5MB RAM), trait-driven, pluggable Provider/Channel/Tool
+
+---
+
+### 2.5 Settlement & Delivery (Value Flow) — "No platform cut"
 
 - **Tools**: `HTLC` + `Lightning Network/L2`
 - **Tasks**:

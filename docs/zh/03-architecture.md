@@ -1,5 +1,24 @@
 # 系统架构
 
+## 0. 设计前提与定位
+
+### 0.1 设计前提
+
+- **算力便宜**：假设推理成本可接受，不在此层面做极致优化
+- **每用户拥有 Agent**：消费者、商家、骑手各自运行自己的 AI Agent，不依赖中心化平台
+
+### 0.2 项目定位：协议层，非 Agent 运行时
+
+| 层级 | Open-A2A | OpenClaw / ZeroClaw 等 |
+|------|----------|------------------------|
+| 职责 | 定义 Agent 间如何通信（意图、报价、主题） | 提供 Agent 的推理、工具、多模态能力 |
+| 产出 | 协议规范、消息格式、NATS 主题 | 可运行的 AI 助手 |
+| 类比 | TCP/IP 协议 | 浏览器 / 应用程序 |
+
+**Open-A2A 不实现核心 AI 功能**，而是与成熟的 Agent 运行时（如 [OpenClaw](https://github.com/openclaw/openclaw)、[ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw)）集成，由它们提供自然语言理解、决策、工具调用等能力。
+
+---
+
 ## 1. 核心架构：三层智能网格 (The Three-Tier Mesh)
 
 为了实现「面条订单」那种无感知的自动协作，架构分为三层：
@@ -18,7 +37,7 @@ graph TD
 
     subgraph L1 [数字舱基础层 - Self-Sovereign Base]
         G[DID 身份标识] --> H[Solid Pod 个人数据]
-        H --> I[本地执行引擎 Ollama/OpenClaw]
+        H --> I[Agent 运行时 OpenClaw/ZeroClaw/Ollama]
     end
 ```
 
@@ -56,7 +75,24 @@ graph TD
   - **LLM 自动博弈**：双方 Agent 启动多轮私密对话，A 问：「加辣吗？」 B 答：「不加辣 15 元」
   - **合同生成**：协商达成后，生成包含双方签名和交付条件的临时 JSON 对象
 
-### 2.4 结算与交付（价值流）— 解决「去平台抽成」
+### 2.4 与 Agent 运行时的集成
+
+Open-A2A 作为**协议层**，通过以下方式与 Agent 运行时集成：
+
+| 集成方式 | 说明 | 适用场景 |
+|----------|------|----------|
+| **Tool / Skill** | 将 Open-A2A 封装为 Agent 可调用的工具 | 用户说「想吃面」→ Agent 调用工具发布意图 |
+| **Channel** | 类似 OpenClaw 的 WhatsApp/Telegram 通道 | Agent 订阅意图主题，收到后决策是否响应 |
+| **Bridge** | 适配层连接 Open-A2A SDK 与 Agent 运行时 | 运行时无需关心 NATS 细节 |
+
+**推荐集成目标**：
+
+- [OpenClaw](https://github.com/openclaw/openclaw)：个人 AI 助手，多通道（WhatsApp、Telegram 等），TypeScript，已有 `sessions_*` 等 Agent 间工具
+- [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw)：轻量 Rust 运行时（<5MB RAM），Trait 驱动，Provider/Channel/Tool 可插拔
+
+---
+
+### 2.5 结算与交付（价值流）— 解决「去平台抽成」
 
 - **核心工具**：`HTLC (哈希时间锁定合约)` + `闪电网络/L2`
 - **开发任务**：

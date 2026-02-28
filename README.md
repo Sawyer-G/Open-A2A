@@ -73,6 +73,7 @@
 | [系统架构](./docs/zh/03-architecture.md) | [Architecture](./docs/en/03-architecture.md) | 三层网格、技术栈 / Three-tier mesh |
 | [开发路线图](./docs/zh/04-roadmap.md) | [Roadmap](./docs/en/04-roadmap.md) | MVP 步骤 / MVP phases |
 | [开发指南](./docs/zh/05-development-guide.md) | [Dev Guide](./docs/en/05-development-guide.md) | 资源栈、竞品 / Resources, competitors |
+| [项目进度](./docs/zh/06-progress.md) | [Progress](./docs/en/06-progress.md) | 当前完成项 / Current status |
 
 ## 参与贡献 / Contributing
 

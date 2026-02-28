@@ -27,6 +27,12 @@
 
 我们的目标是定义 **「后互联网时代的 TCP/IP 协议」**。我们不卖软件，我们构建规则。
 
+### 设计前提
+
+- **算力便宜**：假设推理成本可接受
+- **每用户拥有 Agent**：消费者、商家、骑手各自运行 AI Agent
+- **不重复造轮子**：核心 AI 能力由 [OpenClaw](https://github.com/openclaw/openclaw)、[ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) 等成熟运行时提供，Open-A2A 专注协议层
+
 ### 开源仓库结构预想
 
 | 目录 | 说明 |

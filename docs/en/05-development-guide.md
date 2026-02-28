@@ -19,13 +19,16 @@ Follow the layered architecture; integrate in this order:
 | [Community Solid Server (CSS)](https://github.com/CommunitySolidServer/CommunitySolidServer) | **Recommended**. Official Solid implementation, `npx @solid/community-server` |
 | [Inrupt JavaScript SDK](https://docs.inrupt.com/developer-tools/javascript/client-libraries/) | Agent logic for reading/writing Pod data |
 
-### Step 3: Agent & MCP
+### Step 3: Agent Runtime (Capability Layer)
 
-| Tool | Description |
-|------|-------------|
-| [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) | **Essential**. Anthropic-led, agent interconnect standard. See [Python SDK](https://github.com/modelcontextprotocol/python-sdk) |
-| [Ollama](https://ollama.com/) | Local Llama 3 / DeepSeek etc. |
-| [OpenClaw / LangGraph](https://github.com/langchain-ai/langgraph) | Agent logic flows |
+Open-A2A **does not implement** Agent inference. Integrate with mature runtimes:
+
+| Project | Description | Open-A2A Integration |
+|---------|-------------|----------------------|
+| [OpenClaw](https://github.com/openclaw/openclaw) | Personal AI assistant, multi-channel (WhatsApp, Telegram, etc.), TypeScript | As Tool/Skill or Channel, connect to Open-A2A protocol |
+| [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) | Lightweight Rust runtime (<5MB RAM), trait-driven | Pluggable Provider/Channel implementing Open-A2A |
+| [Ollama](https://ollama.com/) | Local LLM inference | As Agent's model backend |
+| [MCP](https://modelcontextprotocol.io/) | Model Context Protocol | Tool exposure, semantic handshake |
 
 ### Step 4: A2A & P2P
 
@@ -52,7 +55,37 @@ Follow the layered architecture; integrate in this order:
 
 ---
 
-## 3. Competitors & Alternatives
+## 3. Integration with Agent Runtimes
+
+### 3.1 Integration Architecture
+
+```
+User / Merchant / Rider
+        │
+        ▼
+┌─────────────────────────────────────┐
+│  OpenClaw / ZeroClaw (Agent Runtime) │
+│  - NLU, decision, tool calling      │
+│  - Pluggable: Open-A2A Tool/Channel │
+└─────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────┐
+│  Open-A2A Protocol Layer             │
+│  - RFC-001 intent/offer format      │
+│  - NATS topics, pub/sub             │
+└─────────────────────────────────────┘
+```
+
+### 3.2 Integration Modes
+
+| Mode | Description |
+|------|-------------|
+| **Tool** | Wrap as Agent-callable tool; user says "want noodles" → tool publishes intent and returns offers |
+| **Channel** | Like OpenClaw's WhatsApp channel; Agent subscribes to Open-A2A topics and responds |
+| **Bridge** | Adapter connecting Open-A2A SDK to Agent runtime; runtime need not know NATS |
+
+### 3.3 Competitors & Alternatives
 
 | Project | Focus | Insight for Open-A2A |
 |---------|-------|----------------------|

@@ -27,6 +27,12 @@
 
 Our goal is to define **"the TCP/IP of the post-internet era"**. We don't sell software; we build rules.
 
+### Design Premises
+
+- **Compute is cheap**: Assume inference cost is acceptable
+- **Each user has an Agent**: Consumers, merchants, riders each run their own AI Agent
+- **No reinventing the wheel**: Core AI capabilities come from mature runtimes like [OpenClaw](https://github.com/openclaw/openclaw) and [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw); Open-A2A focuses on the protocol layer
+
 ### Repository Structure
 
 | Directory | Description |

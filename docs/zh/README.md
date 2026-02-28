@@ -11,6 +11,7 @@
 | [03-architecture.md](./03-architecture.md) | 系统架构：三层智能网格、技术栈实现 |
 | [04-roadmap.md](./04-roadmap.md) | 开发路线图：MVP 落地步骤 |
 | [05-development-guide.md](./05-development-guide.md) | 开发指南：资源栈、架构优化、竞品分析 |
+| [06-progress.md](./06-progress.md) | **项目进度**：当前完成项与验证结果 |
 
 ## 规范与标准
 

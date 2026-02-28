@@ -19,13 +19,16 @@
 | [Community Solid Server (CSS)](https://github.com/CommunitySolidServer/CommunitySolidServer) | **核心推荐**，Solid 官方开源实现，`npx @solid/community-server` 启动 |
 | [Inrupt JavaScript SDK](https://docs.inrupt.com/developer-tools/javascript/client-libraries/) | 智能体读写 Pod 数据的逻辑 |
 
-### Step 3: 能力执行层 (Agent & MCP)
+### Step 3: 能力执行层 (Agent 运行时)
 
-| 工具 | 说明 |
-|------|------|
-| [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) | **必修课**，Anthropic 主导，智能体互联标准，参考 [Python SDK](https://github.com/modelcontextprotocol/python-sdk) |
-| [Ollama](https://ollama.com/) | 本地运行 Llama 3 或 DeepSeek 等模型的底座 |
-| [OpenClaw / LangGraph](https://github.com/langchain-ai/langgraph) | 构建 Agent 的逻辑流 |
+Open-A2A **不实现** Agent 推理能力，建议与成熟运行时集成：
+
+| 项目 | 说明 | 与 Open-A2A 的集成点 |
+|------|------|---------------------|
+| [OpenClaw](https://github.com/openclaw/openclaw) | 个人 AI 助手，多通道（WhatsApp、Telegram 等），TypeScript | 可作为 Tool/Skill 或 Channel，接入 Open-A2A 协议 |
+| [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) | 轻量 Rust 运行时（<5MB RAM），Trait 驱动 | 可插拔 Provider/Channel 实现 Open-A2A |
+| [Ollama](https://ollama.com/) | 本地 LLM 推理 | 作为 Agent 的模型底座 |
+| [MCP](https://modelcontextprotocol.io/) | 模型上下文协议 | 工具暴露、语义握手 |
 
 ### Step 4: 交互协作层 (A2A & P2P)
 
@@ -52,7 +55,37 @@
 
 ---
 
-## 3. 竞品与替代方案分析
+## 3. 与 Agent 运行时的集成
+
+### 3.1 集成架构
+
+```
+用户 / 商户 / 骑手
+        │
+        ▼
+┌─────────────────────────────────────┐
+│  OpenClaw / ZeroClaw（Agent 运行时）  │
+│  - 自然语言理解、决策、工具调用        │
+│  - 可插拔：Open-A2A Tool / Channel   │
+└─────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────┐
+│  Open-A2A 协议层                     │
+│  - RFC-001 意图/报价格式             │
+│  - NATS 主题、发布/订阅               │
+└─────────────────────────────────────┘
+```
+
+### 3.2 集成方式
+
+| 方式 | 说明 |
+|------|------|
+| **Tool** | 封装为 Agent 可调用的工具，用户说「想吃面」→ 工具发布意图并返回报价 |
+| **Channel** | 类似 OpenClaw 的 WhatsApp 通道，Agent 订阅 Open-A2A 主题并响应 |
+| **Bridge** | 适配层连接 Open-A2A SDK 与 Agent 运行时，运行时无需关心 NATS |
+
+### 3.3 竞品与替代方案分析
 
 | 方案 | 核心差异点 | 对 Open-A2A 的启示 |
 |------|------------|---------------------|
