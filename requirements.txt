@@ -1,0 +1,2 @@
+# Open-A2A Core Dependencies
+nats-py>=2.6.0
