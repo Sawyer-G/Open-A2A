@@ -13,6 +13,7 @@ from typing import Any, Optional
 from open_a2a.discovery import DISCOVERY_QUERY_PREFIX, DiscoveryProvider
 from open_a2a.transport import TransportAdapter
 
+
 # 延迟导入，避免循环依赖
 def _default_transport(nats_url: str) -> TransportAdapter:
     from open_a2a.transport_nats import NatsTransportAdapter

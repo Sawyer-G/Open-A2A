@@ -8,16 +8,14 @@ import asyncio
 from typing import TYPE_CHECKING, Awaitable, Callable, Optional
 
 from open_a2a.intent import (
+    TOPIC_INTENT_FOOD_ORDER,
+    TOPIC_LOGISTICS_REQUEST,
+    TOPIC_ORDER_CONFIRM,
     Intent,
+    LogisticsAccept,
+    LogisticsRequest,
     Offer,
     OrderConfirm,
-    LogisticsRequest,
-    LogisticsAccept,
-    TOPIC_INTENT_FOOD_ORDER,
-    TOPIC_INTENT_FOOD_OFFER_PREFIX,
-    TOPIC_ORDER_CONFIRM,
-    TOPIC_LOGISTICS_REQUEST,
-    TOPIC_LOGISTICS_ACCEPT_PREFIX,
 )
 from open_a2a.transport import TransportAdapter
 

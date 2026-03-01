@@ -1,7 +1,7 @@
 # Open-A2A 开发命令
 # 使用 make 或 make help 查看可用命令
 
-.PHONY: venv install install-full install-solid install-bridge install-relay install-dht install-e2e run-merchant run-merchant-2 run-merchant-3 run-consumer run-carrier run-bridge run-relay run-relay-e2e-verify run-multi-merchant-demo run-discovery-demo run-discovery-dht-demo help
+.PHONY: venv install install-full install-solid install-bridge install-relay install-dht install-e2e run-merchant run-merchant-2 run-merchant-3 run-consumer run-carrier run-bridge run-relay run-relay-e2e-verify run-multi-merchant-demo run-discovery-demo run-discovery-dht-demo lint test help
 
 # 默认使用 .venv
 VENV := .venv
@@ -28,6 +28,8 @@ help:
 	@echo "  make install-e2e         - 安装 Relay 负载 E2E 加密依赖（cryptography）"
 	@echo "  make run-relay           - 运行 Relay 服务（WebSocket <-> NATS，可选 TLS：RELAY_WS_TLS=1）"
 	@echo "  make run-relay-e2e-verify - 验证 Relay 负载 E2E 加密（需先 make install-e2e，NATS+Relay 已启）"
+	@echo "  make lint                - 运行 ruff check（open_a2a/ relay/ tests/）"
+	@echo "  make test                - 运行 pytest（需 make install 含 dev 依赖）"
 	@echo ""
 	@echo "首次使用: make venv && make install"
 
@@ -100,3 +102,9 @@ run-relay:
 
 run-relay-e2e-verify:
 	$(PYTHON) example/relay_e2e_verify.py
+
+lint:
+	$(PYTHON) -m ruff check open_a2a/ relay/ tests/
+
+test:
+	$(PYTHON) -m pytest tests/ -v --tb=short

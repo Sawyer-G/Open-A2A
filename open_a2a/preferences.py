@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Optional
 
+
 def _ensure_trailing_slash(url: str) -> str:
     """确保 URL 以 / 结尾"""
     return url.rstrip("/") + "/" if url else "/"

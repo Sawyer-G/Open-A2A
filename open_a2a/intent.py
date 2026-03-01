@@ -2,11 +2,11 @@
 意图与报价消息模型 (RFC-001)
 """
 
+import json
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Optional
-import json
-import uuid
 
 
 @dataclass
