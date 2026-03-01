@@ -132,4 +132,5 @@
 5. **Optional**: Solid Pod client credentials auth (current: username/password)
 6. ~~**Relay transport (outbound-first)**~~ ✅ Done (`relay/main.py`, `RelayClientTransport`, RFC-003)
 7. ~~**NATS cluster federation or DHT discovery**~~ ✅ Done (NATS cluster: 10-nats-cluster-federation + deploy/nats-cluster; DHT: DhtDiscoveryProvider, RFC-002)
-8. ~~**Optional: Public DHT bootstrap**~~ ✅ Done (env `OPEN_A2A_DHT_BOOTSTRAP`, `get_default_dht_bootstrap()`); Relay E2E encryption remains optional
+8. ~~**Optional: Public DHT bootstrap**~~ ✅ Done (env `OPEN_A2A_DHT_BOOTSTRAP`, `get_default_dht_bootstrap()`)
+9. ~~**Optional: Relay E2E encryption**~~ ✅ Done: Relay server TLS (wss, RELAY_WS_TLS/SSL_CERT/KEY); payload E2E via `EncryptedTransportAdapter` (open-a2a[e2e]), RFC-003 §6

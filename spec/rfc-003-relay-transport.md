@@ -52,3 +52,16 @@
 - 单 Relay：适合开发与小规模；Agent 配置 `RELAY_WS_URL` 即可（如 `ws://relay.example.com`）。
 - 多 Relay / 高可用：可部署多个 Relay 实例，均连接同一 NATS 集群；Agent 任选其一或按地域选择。
 - 与直连 NATS 的 Agent 互通：Relay 仅做传输桥接，主题与消息与 NATS 一致，故直连 NATS 的 Merchant 与经 Relay 的 Consumer 可正常交互。
+
+## 6. 端到端加密（E2E）
+
+### 6.1 传输层 TLS（wss）
+
+- Relay 服务端可通过 `RELAY_WS_TLS=1`、`RELAY_WS_SSL_CERT`、`RELAY_WS_SSL_KEY` 启用 TLS，对外提供 **wss://**。
+- 客户端将 `RELAY_WS_URL` 设为 `wss://...` 即可加密信道，防止窃听与篡改。
+
+### 6.2 负载加密（Relay 不可见明文）
+
+- 可选：使用 `EncryptedTransportAdapter` 包装 `RelayClientTransport`（或其它 Transport），对消息体进行对称加密。
+- 通信双方配置相同密钥（`OPEN_A2A_RELAY_PAYLOAD_SECRET` 或构造时传入 `shared_secret`），Relay 与 NATS 仅能看到密文。
+- 依赖：`pip install open-a2a[e2e]`（cryptography）。

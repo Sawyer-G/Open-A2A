@@ -14,6 +14,7 @@ import asyncio
 import base64
 import json
 import os
+import ssl
 import sys
 from pathlib import Path
 from typing import Any, Optional
@@ -33,6 +34,18 @@ except ImportError:
 NATS_URL = os.getenv("NATS_URL", "nats://localhost:4222")
 RELAY_WS_HOST = os.getenv("RELAY_WS_HOST", "0.0.0.0")
 RELAY_WS_PORT = int(os.getenv("RELAY_WS_PORT", "8765"))
+RELAY_WS_TLS = os.getenv("RELAY_WS_TLS", "").strip().lower() in ("1", "true", "yes")
+RELAY_WS_SSL_CERT = os.getenv("RELAY_WS_SSL_CERT", "").strip()
+RELAY_WS_SSL_KEY = os.getenv("RELAY_WS_SSL_KEY", "").strip()
+
+
+def _make_ssl_context() -> Optional[ssl.SSLContext]:
+    """启用 TLS 时构建 SSL 上下文，用于 wss://"""
+    if not RELAY_WS_TLS or not RELAY_WS_SSL_CERT or not RELAY_WS_SSL_KEY:
+        return None
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(RELAY_WS_SSL_CERT, RELAY_WS_SSL_KEY)
+    return ctx
 
 # 每个 subject 一个 NATS 订阅，收到后广播给所有订阅了该 subject 的 WebSocket
 _nats: Optional[Any] = None
@@ -125,8 +138,19 @@ async def main() -> None:
     if websockets is None:
         raise RuntimeError("websockets is required for relay. pip install open-a2a[relay]")
     await _run_nats()
-    async with websockets.serve(_handle_ws, RELAY_WS_HOST, RELAY_WS_PORT, ping_interval=20, ping_timeout=20):
-        print(f"[Relay] WebSocket 监听 {RELAY_WS_HOST}:{RELAY_WS_PORT}，Agent 可出站连接此处参与网络")
+    ssl_ctx = _make_ssl_context()
+    if ssl_ctx:
+        print(f"[Relay] 已启用 TLS (wss://)，证书: {RELAY_WS_SSL_CERT}")
+    async with websockets.serve(
+        _handle_ws,
+        RELAY_WS_HOST,
+        RELAY_WS_PORT,
+        ping_interval=20,
+        ping_timeout=20,
+        ssl=ssl_ctx,
+    ):
+        scheme = "wss" if ssl_ctx else "ws"
+        print(f"[Relay] WebSocket 监听 {scheme}://{RELAY_WS_HOST}:{RELAY_WS_PORT}，Agent 可出站连接此处参与网络")
         await asyncio.Future()
 
 

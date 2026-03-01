@@ -43,6 +43,9 @@ relay = [
 dht = [
     "kademlia>=2.0.0",
 ]
+e2e = [
+    "cryptography>=41.0.0",
+]
 dev = [
     "pytest>=7.0",
     "ruff>=0.1.0",

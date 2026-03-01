@@ -36,6 +36,11 @@ except ImportError:
     RelayClientTransport = None  # type: ignore
 
 try:
+    from open_a2a.transport_encrypt import EncryptedTransportAdapter
+except ImportError:
+    EncryptedTransportAdapter = None  # type: ignore
+
+try:
     from open_a2a.discovery_dht import (
         DhtDiscoveryProvider,
         get_default_dht_bootstrap,
@@ -71,6 +76,7 @@ __all__ = [
     "ENV_DHT_BOOTSTRAP",
     "DISCOVERY_QUERY_PREFIX",
     "RelayClientTransport",
+    "EncryptedTransportAdapter",
 ]
 
 __version__ = "0.1.0"

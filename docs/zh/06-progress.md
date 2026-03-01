@@ -195,4 +195,5 @@ Carrier 模拟送达
 5. **可选**：Solid Pod 客户端凭证认证（当前为用户名/密码）
 6. ~~**Relay 传输（出站优先）**~~ ✅ 已实现（`relay/main.py`、`RelayClientTransport`、RFC-003）
 7. ~~**多 NATS 集群联邦 或 DHT 发现后端**~~ ✅ 已实现（NATS 集群见 10-nats-cluster-federation + deploy/nats-cluster；DHT 见 DhtDiscoveryProvider、RFC-002）
-8. ~~**可选：公共 DHT bootstrap 节点**~~ ✅ 已实现（环境变量 `OPEN_A2A_DHT_BOOTSTRAP`、`get_default_dht_bootstrap()`）；Relay 端到端加密仍为可选
+8. ~~**可选：公共 DHT bootstrap 节点**~~ ✅ 已实现（环境变量 `OPEN_A2A_DHT_BOOTSTRAP`、`get_default_dht_bootstrap()`）
+9. ~~**可选：Relay 端到端加密**~~ ✅ 已实现：Relay 服务端 TLS（wss，RELAY_WS_TLS/SSL_CERT/KEY）；负载 E2E 见 `EncryptedTransportAdapter`（open-a2a[e2e]），RFC-003 §6
