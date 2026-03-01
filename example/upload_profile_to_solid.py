@@ -5,11 +5,11 @@
 用法:
   1. 启动自托管 Solid: docker compose -f docker-compose.solid.yml up -d
   2. 访问 https://localhost:8443 注册账号
-  3. 配置环境变量后执行:
-     export SOLID_IDP=https://localhost:8443/
-     export SOLID_POD_ENDPOINT=https://localhost:8443/你的用户名/
-     export SOLID_USERNAME=你的用户名
-     export SOLID_PASSWORD=你的密码
+  3. 配置环境变量后执行（二选一）:
+     OAuth2 客户端凭证（推荐）:
+       SOLID_CLIENT_ID=... SOLID_CLIENT_SECRET=... SOLID_POD_ENDPOINT=... SOLID_IDP=...
+     或 用户名/密码（需 pip install open-a2a[solid]）:
+       SOLID_IDP=... SOLID_POD_ENDPOINT=... SOLID_USERNAME=... SOLID_PASSWORD=...
      python example/upload_profile_to_solid.py
 
 或: python example/upload_profile_to_solid.py --profile example/profile.json
@@ -54,7 +54,7 @@ def main() -> None:
         sys.exit(1)
     except ValueError as e:
         print(f"错误: {e}")
-        print("请设置环境变量: SOLID_IDP, SOLID_USERNAME, SOLID_PASSWORD, SOLID_POD_ENDPOINT")
+        print("请设置环境变量: 客户端凭证 SOLID_CLIENT_ID/SOLID_CLIENT_SECRET 或 用户名/密码 SOLID_IDP/SOLID_USERNAME/SOLID_PASSWORD，以及 SOLID_POD_ENDPOINT")
         sys.exit(1)
     except Exception as e:
         print(f"上传失败: {e}")

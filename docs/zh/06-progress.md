@@ -192,7 +192,7 @@ Carrier 模拟送达
 2. ~~**传输层抽象**~~ ✅ 已实现（`TransportAdapter`、`NatsTransportAdapter`）
 3. ~~**Agent 跨服务器发现**~~ ✅ 已实现（`DiscoveryProvider`、`NatsDiscoveryProvider`，RFC-002）
 4. **可选**：多 Merchant 场景测试、真实支付通道对接
-5. **可选**：Solid Pod 客户端凭证认证（当前为用户名/密码）
+5. ~~**可选：Solid Pod 客户端凭证认证**~~ ✅ 已实现：`SolidPodPreferencesProvider` 支持 OAuth2 客户端凭证（SOLID_CLIENT_ID/SOLID_CLIENT_SECRET），可选 SOLID_IDP 发现或 SOLID_TOKEN_URL；保留用户名/密码兼容，见 docs/zh/08-solid-self-hosted.md
 6. ~~**Relay 传输（出站优先）**~~ ✅ 已实现（`relay/main.py`、`RelayClientTransport`、RFC-003）
 7. ~~**多 NATS 集群联邦 或 DHT 发现后端**~~ ✅ 已实现（NATS 集群见 10-nats-cluster-federation + deploy/nats-cluster；DHT 见 DhtDiscoveryProvider、RFC-002）
 8. ~~**可选：公共 DHT bootstrap 节点**~~ ✅ 已实现（环境变量 `OPEN_A2A_DHT_BOOTSTRAP`、`get_default_dht_bootstrap()`）

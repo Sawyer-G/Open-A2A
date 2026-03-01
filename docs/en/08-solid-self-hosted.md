@@ -28,7 +28,22 @@ docker compose -f docker-compose.solid.yml up -d
 
 ## 3. Configure Open-A2A
 
-Set in `.env` or environment:
+Two auth options; **client credentials take precedence** (recommended for production).
+
+### 3.1 OAuth2 Client Credentials (recommended)
+
+No extra deps beyond stdlib. Set in `.env` or environment:
+
+```bash
+SOLID_CLIENT_ID=your-client-id
+SOLID_CLIENT_SECRET=your-client-secret
+SOLID_POD_ENDPOINT=https://localhost:8443/your-username/
+SOLID_IDP=https://localhost:8443/   # optional, for token endpoint discovery; or set SOLID_TOKEN_URL
+```
+
+### 3.2 Username / Password (dev / compatibility)
+
+Requires `pip install open-a2a[solid]`:
 
 ```bash
 SOLID_IDP=https://localhost:8443/
@@ -54,6 +69,7 @@ make run-consumer
 
 ## 6. Production
 
-- Set `SOLID_SERVER_URI` to your domain (e.g. `https://solid.yourdomain.com`)
+- Use your Solid domain for `SOLID_POD_ENDPOINT`, `SOLID_IDP` or `SOLID_TOKEN_URL`
+- **Prefer OAuth2 client credentials** (`SOLID_CLIENT_ID`, `SOLID_CLIENT_SECRET`) to avoid storing user passwords in the app
 - Mount real certificates (e.g. Let's Encrypt)
 - See [docker-solid-server examples](https://github.com/angelo-v/docker-solid-server/tree/main/examples)

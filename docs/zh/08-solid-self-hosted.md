@@ -29,7 +29,27 @@ docker compose -f docker-compose.solid.yml up -d
 
 ## 3. 配置 Open-A2A
 
-在 `.env` 或环境中设置：
+支持两种认证方式，**客户端凭证优先**（推荐生产环境）。
+
+### 3.1 OAuth2 客户端凭证（推荐）
+
+无需安装 solid-file，仅用标准库。在 `.env` 或环境中设置：
+
+```bash
+SOLID_CLIENT_ID=你的客户端 ID
+SOLID_CLIENT_SECRET=你的客户端密钥
+SOLID_POD_ENDPOINT=https://localhost:8443/你的用户名/
+# 以下二选一：自动发现 token 端点 或 直接指定
+SOLID_IDP=https://localhost:8443/
+# SOLID_TOKEN_URL=https://localhost:8443/idp/credentials/token
+```
+
+客户端凭证需在 Solid 服务端注册（如 Community Solid Server 支持动态注册或管理端配置）。  
+Token 端点可由 `SOLID_IDP` 的 `/.well-known/openid-configuration` 自动发现。
+
+### 3.2 用户名/密码（开发/兼容）
+
+需 `pip install open-a2a[solid]`：
 
 ```bash
 SOLID_IDP=https://localhost:8443/
@@ -55,6 +75,7 @@ make run-consumer
 
 ## 6. 生产环境
 
-- 将 `SOLID_SERVER_URI` 改为你的域名（如 `https://solid.yourdomain.com`）
+- 将 Solid 服务改为你的域名（如 `https://solid.yourdomain.com`），并配置 `SOLID_POD_ENDPOINT`、`SOLID_IDP` 或 `SOLID_TOKEN_URL`
+- **推荐使用 OAuth2 客户端凭证**（`SOLID_CLIENT_ID`、`SOLID_CLIENT_SECRET`），避免在应用内保存用户密码
 - 挂载 Let's Encrypt 等真实证书
 - 参考 [docker-solid-server 示例](https://github.com/angelo-v/docker-solid-server/tree/main/examples)

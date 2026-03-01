@@ -129,7 +129,7 @@
 2. ~~**Transport layer abstraction**~~ ✅ Done
 3. ~~**Agent cross-server discovery**~~ ✅ Done (`DiscoveryProvider`, `NatsDiscoveryProvider`, RFC-002)
 4. **Optional**: Multi-Merchant test, real payment channel
-5. **Optional**: Solid Pod client credentials auth (current: username/password)
+5. ~~**Optional: Solid Pod client credentials auth**~~ ✅ Done: `SolidPodPreferencesProvider` supports OAuth2 client credentials (SOLID_CLIENT_ID/SOLID_CLIENT_SECRET), optional SOLID_IDP discovery or SOLID_TOKEN_URL; username/password remains supported, see docs/zh/08-solid-self-hosted.md
 6. ~~**Relay transport (outbound-first)**~~ ✅ Done (`relay/main.py`, `RelayClientTransport`, RFC-003)
 7. ~~**NATS cluster federation or DHT discovery**~~ ✅ Done (NATS cluster: 10-nats-cluster-federation + deploy/nats-cluster; DHT: DhtDiscoveryProvider, RFC-002)
 8. ~~**Optional: Public DHT bootstrap**~~ ✅ Done (env `OPEN_A2A_DHT_BOOTSTRAP`, `get_default_dht_bootstrap()`)
