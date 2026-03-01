@@ -86,7 +86,11 @@ asyncio.run(run())
 "
 ```
 
-或用脚本跑完整流程：在 `consumer_via_relay.py` 里用 `wss://` 且 `ssl=ssl.create_default_context()` 时，自签名需设置 `ssl.check_hostname=False` 或加载该证书。**推荐**：本地验证 TLS 时用上面的小脚本确认 wss 握手成功即可；完整 Consumer 示例若要走 wss+自签名，需在 `RelayClientTransport` 里传自定义 `ssl` 上下文（当前 `websockets.connect` 默认会校验）。
+**直接跑 Consumer 示例（wss + 自签名）**：`RelayClientTransport` 已支持可选 `ssl` 参数及环境变量 `RELAY_WS_SSL_VERIFY=0`（不校验服务端证书，仅开发/测试）。示例：
+
+```bash
+RELAY_WS_URL=wss://localhost:8765 RELAY_WS_SSL_VERIFY=0 .venv/bin/python example/consumer_via_relay.py
+```
 
 **预期**：wss 连接成功，说明 TLS 通道建立正常。
 
