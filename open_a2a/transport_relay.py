@@ -65,7 +65,8 @@ class RelayClientTransport(TransportAdapter):
         self._ssl: Optional[ssl.SSLContext] = ssl
         self._ws = None
         self._recv_task: Optional[asyncio.Task] = None
-        self._subs: dict[str, dict[str, Callable[[bytes], Awaitable[None]]]] = {}  # subject -> {sub_id -> cb}
+        self._subs: dict[str, dict[str, Callable[[bytes], Awaitable[None]]]] = {}
+        # subject -> {sub_id -> cb}
         self._lock = asyncio.Lock()
 
     def _resolve_ssl(self) -> Any:

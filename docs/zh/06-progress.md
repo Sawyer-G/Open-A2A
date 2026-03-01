@@ -200,6 +200,16 @@ Carrier 模拟送达
 
 ---
 
+## CI / 自动化测试
+
+- **GitHub Actions**：`.github/workflows/ci.yml`，在 push 到 main 及 PR 时运行
+  - **Lint**：`ruff check open_a2a/ relay/ tests/`
+  - **Test**：`pytest tests/`（Python 3.9、3.11 矩阵）
+- **本地**：`make lint`、`make test`（需 `make install` 含 dev 依赖）
+- **tests/**：最小冒烟测试（包导入、版本、Intent 序列化往返），无 NATS 依赖
+
+---
+
 ## 多 Merchant 场景验证
 
 - **目的**：验证同一意图被多个商家同时接收并各自回复报价，Consumer 能收集到多份报价。

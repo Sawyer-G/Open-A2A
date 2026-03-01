@@ -74,7 +74,9 @@ class DhtDiscoveryProvider(DiscoveryProvider):
                 "kademlia is required for DHT discovery. Install with: pip install open-a2a[dht]"
             )
         self._dht_port = dht_port
-        self._bootstrap = bootstrap_nodes if bootstrap_nodes is not None else get_default_dht_bootstrap()
+        self._bootstrap = (
+            bootstrap_nodes if bootstrap_nodes is not None else get_default_dht_bootstrap()
+        )
         self._node: Optional[KademliaServer] = None
         self._my_regs: dict[str, str] = {}  # capability -> _reg_id
 

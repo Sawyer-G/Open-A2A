@@ -11,10 +11,11 @@ from typing import Awaitable, Callable, Optional
 from open_a2a.transport import MessageSubscription, TransportAdapter
 
 try:
+    import base64 as b64
+
     from cryptography.fernet import Fernet, InvalidToken
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-    import base64 as b64
     _FERNET_AVAILABLE = True
 except ImportError:
     _FERNET_AVAILABLE = False
@@ -28,7 +29,9 @@ _E2E_PBKDF2_SALT = b"open-a2a-relay-e2e-v1"
 def _derive_fernet_key(shared_secret: bytes) -> bytes:
     if not _FERNET_AVAILABLE:
         raise ImportError("cryptography is required. Install with: pip install open-a2a[e2e]")
-    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=_E2E_PBKDF2_SALT, iterations=100_000)
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(), length=32, salt=_E2E_PBKDF2_SALT, iterations=100_000
+    )
     key = kdf.derive(shared_secret)
     return b64.urlsafe_b64encode(key)
 

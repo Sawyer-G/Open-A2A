@@ -2,8 +2,7 @@
 Base Agent - Agent 基类，供 Consumer/Merchant 继承
 """
 
-from abc import ABC, abstractmethod
-from typing import Any
+from abc import ABC
 
 from open_a2a.broadcaster import IntentBroadcaster
 

@@ -150,7 +150,10 @@ async def main() -> None:
         ssl=ssl_ctx,
     ):
         scheme = "wss" if ssl_ctx else "ws"
-        print(f"[Relay] WebSocket 监听 {scheme}://{RELAY_WS_HOST}:{RELAY_WS_PORT}，Agent 可出站连接此处参与网络")
+        print(
+            f"[Relay] WebSocket 监听 {scheme}://{RELAY_WS_HOST}:{RELAY_WS_PORT}，"
+            "Agent 可出站连接此处参与网络"
+        )
         await asyncio.Future()
 
 
