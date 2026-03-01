@@ -200,6 +200,14 @@ Carrier 模拟送达
 
 ---
 
+## 跨 IP / 跨网络测试（必要验证）
+
+- **前提**：算力便宜、每人都有自己的 Agent、各自网络部署 → 跨 IP 测试是**必要**的。
+- **文档**：[12-cross-ip-testing.md](./12-cross-ip-testing.md)：双机 NATS 集群、公网+私网 Relay 出站，步骤与验证点。
+- **建议**：至少完成「双机集群」与「Relay 出站」两类场景，再视需求做 DHT/多集群。
+
+---
+
 ## CI / 自动化测试
 
 - **GitHub Actions**：`.github/workflows/ci.yml`，在 push 到 main 及 PR 时运行

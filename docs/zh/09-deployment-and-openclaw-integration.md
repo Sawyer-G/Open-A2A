@@ -183,7 +183,52 @@ curl -X POST http://localhost:8080/api/publish_intent \
 
 ---
 
-## 7. 下一步
+## 7. OpenClaw 已在 Docker 时如何自动接入
+
+若 OpenClaw 已经跑在 Docker（同一台机或同一编排内），只要让 **Bridge 与 OpenClaw 网络互通**，即可实现「自动」调用框架：
+
+| 方向 | 行为 | 说明 |
+|------|------|------|
+| **NATS → OpenClaw** | 自动 | Bridge 订阅 NATS 意图主题，收到后自动 `POST` 到 OpenClaw `/hooks/agent`，无需人工转发 |
+| **OpenClaw → 框架** | 自动 | 在 OpenClaw 中配置 Open-A2A Tool（见 [openclaw-tool-example.md](./openclaw-tool-example.md)），用户说「订面」等时 Agent 自动调用 Tool，即调用 Bridge 的 `POST /api/publish_intent` |
+
+### 7.1 网络互通方式
+
+**方式 A：Bridge 与 OpenClaw 在同一 Docker 网络**
+
+- 若 OpenClaw 由独立 compose 部署，先查其网络名（如 `openclaw_default`）。启动 Bridge 时加入该网络：
+  ```yaml
+  # 在 docker-compose.deploy.yml 的 open-a2a-bridge 下增加
+  networks:
+    - default
+    - openclaw_default  # 与 OpenClaw 同一网络
+  ```
+  并设置：
+  ```bash
+  OPENCLAW_GATEWAY_URL=http://<OpenClaw Gateway 服务名>:<端口>
+  ```
+  例如 OpenClaw Gateway 服务名为 `gateway`、端口 3000，则 `OPENCLAW_GATEWAY_URL=http://gateway:3000`。
+- 若你把 Bridge 和 OpenClaw 写进**同一份** compose：给 Bridge 和 OpenClaw 同一 `networks`，用 OpenClaw 的**服务名**填 `OPENCLAW_GATEWAY_URL` 即可。
+
+**方式 B：OpenClaw 在宿主机、Bridge 在 Docker**
+
+- 使用文档中的 `host.docker.internal`（Linux 需 Docker 20.10+ 或 `extra_hosts`）：
+  ```bash
+  OPENCLAW_GATEWAY_URL=http://host.docker.internal:3000
+  ```
+
+**方式 C：OpenClaw 在 Docker、其他机器通过 Bridge 发布意图**
+
+- Bridge 对外暴露 `8080`，OpenClaw 内配置 Tool 的 URL 为「能访问到 Bridge 的地址」：若 OpenClaw 与 Bridge 同机同网，Tool URL 填 `http://open-a2a-bridge:8080`（服务名）或 `http://主机IP:8080`。
+
+### 7.2 小结
+
+- **可以**在已部署 OpenClaw（含 Docker）的服务器上再部署 NATS + Bridge；配置好 `OPENCLAW_GATEWAY_URL` 与 `OPENCLAW_HOOKS_TOKEN` 后，**意图会自动从 NATS 转发到 OpenClaw**，OpenClaw 侧**无需改代码**，只需能收到 webhook 并配置 Tool。
+- OpenClaw 作为「消费者」时，通过配置好的 Tool **自动调用** Bridge 的发布接口，即完成对框架的调用。
+
+---
+
+## 8. 下一步
 
 1. ~~实现 **Open-A2A Bridge** 完整代码（含 Dockerfile）~~ ✅ 已完成
 2. ~~编写 OpenClaw 的 **Open-A2A Tool** 配置示例~~ ✅ 见 [openclaw-tool-example.md](./openclaw-tool-example.md)
