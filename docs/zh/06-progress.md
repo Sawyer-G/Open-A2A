@@ -191,9 +191,17 @@ Carrier 模拟送达
 1. ~~**Open-A2A Bridge**~~ ✅ 已实现（`bridge/main.py`、`Dockerfile.bridge`、`make run-bridge`）
 2. ~~**传输层抽象**~~ ✅ 已实现（`TransportAdapter`、`NatsTransportAdapter`）
 3. ~~**Agent 跨服务器发现**~~ ✅ 已实现（`DiscoveryProvider`、`NatsDiscoveryProvider`，RFC-002）
-4. **可选**：多 Merchant 场景测试、真实支付通道对接
+4. ~~**可选：多 Merchant 场景测试**~~ ✅ 已实现：`example/multi_merchant_demo.py`、`make run-multi-merchant-demo`；可选 `make run-merchant-2`/`run-merchant-3` 手动多终端验证；**可选**：真实支付通道对接
 5. ~~**可选：Solid Pod 客户端凭证认证**~~ ✅ 已实现：`SolidPodPreferencesProvider` 支持 OAuth2 客户端凭证（SOLID_CLIENT_ID/SOLID_CLIENT_SECRET），可选 SOLID_IDP 发现或 SOLID_TOKEN_URL；保留用户名/密码兼容，见 docs/zh/08-solid-self-hosted.md
 6. ~~**Relay 传输（出站优先）**~~ ✅ 已实现（`relay/main.py`、`RelayClientTransport`、RFC-003）
 7. ~~**多 NATS 集群联邦 或 DHT 发现后端**~~ ✅ 已实现（NATS 集群见 10-nats-cluster-federation + deploy/nats-cluster；DHT 见 DhtDiscoveryProvider、RFC-002）
 8. ~~**可选：公共 DHT bootstrap 节点**~~ ✅ 已实现（环境变量 `OPEN_A2A_DHT_BOOTSTRAP`、`get_default_dht_bootstrap()`）
 9. ~~**可选：Relay 端到端加密**~~ ✅ 已实现：Relay 服务端 TLS（wss，RELAY_WS_TLS/SSL_CERT/KEY）；负载 E2E 见 `EncryptedTransportAdapter`（open-a2a[e2e]），RFC-003 §6
+
+---
+
+## 多 Merchant 场景验证
+
+- **目的**：验证同一意图被多个商家同时接收并各自回复报价，Consumer 能收集到多份报价。
+- **自动化**：`make run-multi-merchant-demo`（需 NATS 已启动）。脚本启动 N 个 Merchant 进程（默认 3，可设 `MULTI_MERCHANT_N=5`），Consumer 发布一次意图，验证收到 ≥ N 个报价后退出。
+- **手动**：终端 1–3 分别运行 `make run-merchant`、`make run-merchant-2`、`make run-merchant-3`，终端 4 运行 `make run-consumer`，应看到 3 个报价。

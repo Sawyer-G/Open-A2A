@@ -1,7 +1,7 @@
 # Open-A2A 开发命令
 # 使用 make 或 make help 查看可用命令
 
-.PHONY: venv install install-full install-solid install-bridge install-relay install-dht install-e2e run-merchant run-consumer run-carrier run-bridge run-relay run-relay-e2e-verify run-discovery-demo run-discovery-dht-demo help
+.PHONY: venv install install-full install-solid install-bridge install-relay install-dht install-e2e run-merchant run-merchant-2 run-merchant-3 run-consumer run-carrier run-bridge run-relay run-relay-e2e-verify run-multi-merchant-demo run-discovery-demo run-discovery-dht-demo help
 
 # 默认使用 .venv
 VENV := .venv
@@ -16,6 +16,8 @@ help:
 	@echo "  make install-full - 安装项目及 identity、dev 等可选依赖"
 	@echo "  make install-solid - 安装项目及自托管 Solid Pod 支持"
 	@echo "  make run-merchant - 运行 Merchant 示例"
+	@echo "  make run-merchant-2 / run-merchant-3 - 运行第 2/3 个 Merchant（多商家手动验证）"
+	@echo "  make run-multi-merchant-demo - 多 Merchant 场景自动化验证（需 NATS 已启）"
 	@echo "  make run-consumer - 运行 Consumer 示例"
 	@echo "  make run-carrier  - 运行 Carrier 示例"
 	@echo "  make run-bridge   - 运行 Open-A2A Bridge（需 make install-bridge）"
@@ -71,6 +73,15 @@ run-bridge:
 
 run-merchant:
 	$(PYTHON) example/merchant.py
+
+run-merchant-2:
+	MERCHANT_ID=merchant-002 $(PYTHON) example/merchant.py
+
+run-merchant-3:
+	MERCHANT_ID=merchant-003 $(PYTHON) example/merchant.py
+
+run-multi-merchant-demo:
+	$(PYTHON) example/multi_merchant_demo.py
 
 run-consumer:
 	$(PYTHON) example/consumer.py

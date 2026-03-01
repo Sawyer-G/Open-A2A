@@ -128,9 +128,17 @@
 1. ~~**Open-A2A Bridge**~~ ✅ Done
 2. ~~**Transport layer abstraction**~~ ✅ Done
 3. ~~**Agent cross-server discovery**~~ ✅ Done (`DiscoveryProvider`, `NatsDiscoveryProvider`, RFC-002)
-4. **Optional**: Multi-Merchant test, real payment channel
+4. ~~**Optional: Multi-Merchant test**~~ ✅ Done: `example/multi_merchant_demo.py`, `make run-multi-merchant-demo`; optional `run-merchant-2`/`run-merchant-3` for manual verification; **Optional**: real payment channel
 5. ~~**Optional: Solid Pod client credentials auth**~~ ✅ Done: `SolidPodPreferencesProvider` supports OAuth2 client credentials (SOLID_CLIENT_ID/SOLID_CLIENT_SECRET), optional SOLID_IDP discovery or SOLID_TOKEN_URL; username/password remains supported, see docs/zh/08-solid-self-hosted.md
 6. ~~**Relay transport (outbound-first)**~~ ✅ Done (`relay/main.py`, `RelayClientTransport`, RFC-003)
 7. ~~**NATS cluster federation or DHT discovery**~~ ✅ Done (NATS cluster: 10-nats-cluster-federation + deploy/nats-cluster; DHT: DhtDiscoveryProvider, RFC-002)
 8. ~~**Optional: Public DHT bootstrap**~~ ✅ Done (env `OPEN_A2A_DHT_BOOTSTRAP`, `get_default_dht_bootstrap()`)
 9. ~~**Optional: Relay E2E encryption**~~ ✅ Done: Relay server TLS (wss, RELAY_WS_TLS/SSL_CERT/KEY); payload E2E via `EncryptedTransportAdapter` (open-a2a[e2e]), RFC-003 §6
+
+---
+
+## Multi-Merchant scenario
+
+- **Goal**: Verify one intent is received by multiple merchants and each replies with an offer; consumer collects multiple offers.
+- **Automated**: `make run-multi-merchant-demo` (NATS must be running). Script starts N merchants (default 3, set `MULTI_MERCHANT_N=5`), consumer publishes once, verifies ≥ N offers.
+- **Manual**: Run `make run-merchant`, `make run-merchant-2`, `make run-merchant-3` in three terminals, then `make run-consumer` in a fourth; you should see 3 offers.
