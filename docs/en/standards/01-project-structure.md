@@ -6,34 +6,64 @@
 Open-A2A/
 ├── .cursor/                    # Cursor IDE config
 │   └── rules/                  # AI rules (incl. venv convention)
-├── docs/                       # Project documentation
+├── docs/                       # Project documentation (zh/en mirror)
 │   ├── zh/                     # Chinese docs
-│   ├── en/                     # English docs
-│   └── standards/              # Standards
+│   │   ├── 00-design-principles.md through 11-relay-e2e-verify.md
+│   │   ├── openclaw-tool-example.md
+│   │   ├── reference/
+│   │   └── standards/          # This file, git, documentation, contribution
+│   └── en/                     # English docs (same structure as zh)
+│       ├── 00-… through 09-deployment-and-openclaw-integration.md
+│       ├── reference/
+│       └── standards/
 ├── spec/                       # Core protocol specs (RFC)
+│   ├── rfc-001-intent-protocol.md
+│   ├── rfc-002-discovery.md
+│   └── rfc-003-relay-transport.md
 ├── open_a2a/                   # Python reference implementation (SDK)
 │   ├── intent.py               # Message models
-│   ├── broadcaster.py         # Intent broadcast (TransportAdapter-based)
-│   ├── transport.py           # Transport layer abstract interface
-│   ├── transport_nats.py      # NATS transport adapter
-│   ├── identity.py            # DID identity (Phase 2)
-│   ├── preferences.py         # Preferences abstraction (Phase 2)
-│   └── agent.py               # BaseAgent
+│   ├── broadcaster.py          # Intent broadcast (TransportAdapter-based)
+│   ├── transport.py            # Transport layer abstract interface
+│   ├── transport_nats.py       # NATS transport adapter
+│   ├── transport_relay.py      # Relay transport adapter (outbound)
+│   ├── transport_encrypt.py    # Payload E2E encryption wrapper (Relay)
+│   ├── discovery.py            # Agent discovery abstract
+│   ├── discovery_nats.py       # NATS discovery implementation
+│   ├── discovery_dht.py        # DHT discovery (cross-network)
+│   ├── identity.py             # DID identity (Phase 2)
+│   ├── preferences.py          # Preferences (Phase 2, Solid OAuth2 client credentials)
+│   ├── agent.py                # BaseAgent
+│   └── __init__.py
 ├── bridge/                     # Open-A2A Bridge (OpenClaw adapter)
 │   ├── __init__.py
 │   └── main.py
+├── relay/                      # Open-A2A Relay (WebSocket <-> NATS, outbound-first)
+│   ├── __init__.py
+│   └── main.py
+├── deploy/                     # Deployment examples
+│   └── nats-cluster/           # Two-node NATS cluster (docker-compose, conf)
 ├── example/                    # Examples & Demos
 │   ├── consumer.py
 │   ├── merchant.py
 │   ├── carrier.py
-│   ├── profile.json           # Preferences example (Phase 2)
+│   ├── consumer_via_relay.py   # Consumer via Relay (outbound)
+│   ├── discovery_demo.py       # NATS discovery demo
+│   ├── discovery_dht_demo.py   # DHT discovery demo
+│   ├── multi_merchant_demo.py   # Multi-Merchant scenario verification
+│   ├── relay_e2e_verify.py     # Relay payload E2E verification
+│   ├── profile.json            # Preferences example (Phase 2)
 │   └── upload_profile_to_solid.py
 ├── .venv/                      # Virtual env (not committed)
-├── Makefile                    # venv, install, install-full, install-solid, install-bridge, run-*
+├── .gitignore
+├── .env.example                # Env var template
+├── Makefile                    # venv, install, install-*, run-*
 ├── pyproject.toml
+├── requirements.txt            # Optional, can coexist with pyproject.toml
 ├── Dockerfile.bridge
 ├── docker-compose.solid.yml
 ├── docker-compose.deploy.yml
+├── LICENSE
+├── NOTICE
 └── README.md
 ```
 
@@ -45,7 +75,9 @@ Open-A2A/
 | `open_a2a/` | Reference implementation | Python SDK for other projects |
 | `bridge/` | Adapter layer | Open-A2A Bridge, connects NATS with OpenClaw |
 | `example/` | Sample code | Consumer, Merchant, Carrier demos |
-| `docs/` | Project docs | Architecture, requirements, guides (bilingual) |
+| `docs/` | Project docs | Architecture, requirements, guides; `zh/` and `en/` mirror, each with `standards/`, `reference/` |
+| `relay/` | Relay server | WebSocket↔NATS, outbound-first, optional TLS |
+| `deploy/` | Deployment examples | NATS cluster etc. |
 
 ---
 
@@ -100,7 +132,7 @@ See [git.md](./git.md).
 ## 4. Tech Stack Conventions
 
 - **Language**: Python 3.9+
-- **Package management**: `pyproject.toml` (PEP 621); optional deps `[identity]`, `[dev]`
+- **Package management**: `pyproject.toml` (PEP 621); optional deps `[identity]`, `[solid]`, `[bridge]`, `[relay]`, `[dht]`, `[e2e]`, `[dev]`; root may keep `requirements.txt` for `pip install -r` compatibility
 - **Style**: PEP 8, format with `ruff`
 - **Types**: Encourage type hints
 - **Virtual env**: Use `.venv/bin/python`, `.venv/bin/pip`, or `make` targets; avoid polluting system

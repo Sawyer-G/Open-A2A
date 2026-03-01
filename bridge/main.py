@@ -129,7 +129,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Open-A2A Bridge",
     description="连接 NATS 与 OpenClaw 的适配层",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
