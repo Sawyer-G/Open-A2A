@@ -1,0 +1,32 @@
+# NATS 两节点集群，用于 Open-A2A 跨服务器发现与消息互通
+# 用法: docker compose -f deploy/nats-cluster/docker-compose.yml up -d
+# Agent/Relay 可连 NATS_URL=nats://localhost:4222 或 nats://localhost:4223
+
+services:
+  nats-a:
+    image: nats:latest
+    command: ["-c", "/config/nats.conf"]
+    volumes:
+      - ./nats-a.conf:/config/nats.conf
+    ports:
+      - "4222:4222"
+      - "6222:6222"
+    networks:
+      - nats-net
+
+  nats-b:
+    image: nats:latest
+    command: ["-c", "/config/nats.conf"]
+    volumes:
+      - ./nats-b.conf:/config/nats.conf
+    ports:
+      - "4223:4222"
+      - "6223:6222"
+    networks:
+      - nats-net
+    depends_on:
+      - nats-a
+
+networks:
+  nats-net:
+    driver: bridge

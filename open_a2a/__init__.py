@@ -27,6 +27,26 @@ from open_a2a.preferences import (
 )
 from open_a2a.transport import TransportAdapter
 from open_a2a.transport_nats import NatsTransportAdapter
+from open_a2a.discovery import DiscoveryProvider, DISCOVERY_QUERY_PREFIX
+from open_a2a.discovery_nats import NatsDiscoveryProvider
+
+try:
+    from open_a2a.transport_relay import RelayClientTransport
+except ImportError:
+    RelayClientTransport = None  # type: ignore
+
+try:
+    from open_a2a.discovery_dht import (
+        DhtDiscoveryProvider,
+        get_default_dht_bootstrap,
+        DEFAULT_DHT_BOOTSTRAP,
+        ENV_DHT_BOOTSTRAP,
+    )
+except ImportError:
+    DhtDiscoveryProvider = None  # type: ignore
+    get_default_dht_bootstrap = None  # type: ignore
+    DEFAULT_DHT_BOOTSTRAP = []  # type: ignore
+    ENV_DHT_BOOTSTRAP = "OPEN_A2A_DHT_BOOTSTRAP"  # type: ignore
 
 __all__ = [
     "Intent",
@@ -43,6 +63,14 @@ __all__ = [
     "SolidPodPreferencesProvider",
     "TransportAdapter",
     "NatsTransportAdapter",
+    "DiscoveryProvider",
+    "NatsDiscoveryProvider",
+    "DhtDiscoveryProvider",
+    "get_default_dht_bootstrap",
+    "DEFAULT_DHT_BOOTSTRAP",
+    "ENV_DHT_BOOTSTRAP",
+    "DISCOVERY_QUERY_PREFIX",
+    "RelayClientTransport",
 ]
 
 __version__ = "0.1.0"

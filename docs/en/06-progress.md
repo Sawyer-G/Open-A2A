@@ -94,10 +94,42 @@
 - **broadcaster.py**: `IntentBroadcaster` accepts `transport` parameter; defaults to NATS, backward compatible
 - Future: HTTP, WebSocket, DHT, P2P adapters
 
+## Agent Discovery (Cross-Server Discovery)
+
+- **discovery.py**: `DiscoveryProvider` abstract; `register`, `unregister`, `discover`
+- **discovery_nats.py**: `NatsDiscoveryProvider`, NATS request-reply, no central registry
+- **Subject**: `open_a2a.discovery.query.{capability}` (e.g. `intent.food.order`)
+- **spec/rfc-002-discovery.md**: Discovery protocol draft
+- **example/discovery_demo.py**: `make run-discovery-demo`
+- **Extension**: Same NATS/cluster; multi-cluster see NATS cluster doc; cross-network see DHT backend
+
+## DHT Discovery Backend (Cross-Network)
+
+- **discovery_dht.py**: `DhtDiscoveryProvider`, Kademlia DHT; register/discover in DHT, independent of NATS
+- **Use case**: Agents on different NATS clusters or transports join same DHT (bootstrap) to discover each other
+- **Public bootstrap list**: When `bootstrap_nodes` is not passed, `get_default_dht_bootstrap()` is used; it reads env `OPEN_A2A_DHT_BOOTSTRAP` (format `host1:port1,host2:port2`) first, else `DEFAULT_DHT_BOOTSTRAP`. Everyone using the same list joins the same DHT.
+- **Install**: `pip install open-a2a[dht]` (kademlia); example `make run-discovery-dht-demo`, `example/discovery_dht_demo.py`
+
+## NATS Cluster Federation
+
+- **Doc**: [10-nats-cluster-federation.md](../zh/10-nats-cluster-federation.md) (config, two-node example, Docker Compose)
+- **Deploy**: `deploy/nats-cluster/` with nats-a.conf, nats-b.conf, docker-compose.yml
+
+## Relay Transport (Outbound-First, RFC-003)
+
+- **relay/main.py**: WebSocket server, connects to NATS, bridges client subscribe/unsubscribe/publish to NATS subjects
+- **transport_relay.py**: `RelayClientTransport` implements TransportAdapter; agents connect outbound via `relay_ws_url` to join the network
+- **Protocol**: JSON over WebSocket (subscribe/unsubscribe/publish; message downstream), see spec/rfc-003-relay-transport.md
+- **Example**: `example/consumer_via_relay.py`, `make run-relay`, `make install-relay`
+- **Purpose**: Agents without public IP/domain/webhook get reachability from the framework
+
 ## Next Steps
 
 1. ~~**Open-A2A Bridge**~~ ✅ Done
 2. ~~**Transport layer abstraction**~~ ✅ Done
-3. **Optional**: Multi-Merchant test, real payment channel
-4. **Optional**: Solid Pod client credentials auth (current: username/password)
-5. **Optional**: Agent cross-server discovery (DHT, NATS cluster federation)
+3. ~~**Agent cross-server discovery**~~ ✅ Done (`DiscoveryProvider`, `NatsDiscoveryProvider`, RFC-002)
+4. **Optional**: Multi-Merchant test, real payment channel
+5. **Optional**: Solid Pod client credentials auth (current: username/password)
+6. ~~**Relay transport (outbound-first)**~~ ✅ Done (`relay/main.py`, `RelayClientTransport`, RFC-003)
+7. ~~**NATS cluster federation or DHT discovery**~~ ✅ Done (NATS cluster: 10-nats-cluster-federation + deploy/nats-cluster; DHT: DhtDiscoveryProvider, RFC-002)
+8. ~~**Optional: Public DHT bootstrap**~~ ✅ Done (env `OPEN_A2A_DHT_BOOTSTRAP`, `get_default_dht_bootstrap()`); Relay E2E encryption remains optional

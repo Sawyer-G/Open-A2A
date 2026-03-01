@@ -37,6 +37,12 @@ bridge = [
     "uvicorn[standard]>=0.22.0",
     "httpx>=0.24.0",
 ]
+relay = [
+    "websockets>=12.0",
+]
+dht = [
+    "kademlia>=2.0.0",
+]
 dev = [
     "pytest>=7.0",
     "ruff>=0.1.0",

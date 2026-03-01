@@ -1,7 +1,7 @@
 # Open-A2A 开发命令
 # 使用 make 或 make help 查看可用命令
 
-.PHONY: venv install install-full install-solid install-bridge run-merchant run-consumer run-carrier run-bridge help
+.PHONY: venv install install-full install-solid install-bridge install-relay install-dht run-merchant run-consumer run-carrier run-bridge run-relay run-discovery-demo run-discovery-dht-demo help
 
 # 默认使用 .venv
 VENV := .venv
@@ -19,6 +19,11 @@ help:
 	@echo "  make run-consumer - 运行 Consumer 示例"
 	@echo "  make run-carrier  - 运行 Carrier 示例"
 	@echo "  make run-bridge   - 运行 Open-A2A Bridge（需 make install-bridge）"
+	@echo "  make run-discovery-demo  - 运行 Discovery 注册/发现示例（NATS）"
+	@echo "  make run-discovery-dht-demo - 运行 DHT 发现示例（跨网络）"
+	@echo "  make install-relay       - 安装 Relay 依赖（websockets）"
+	@echo "  make install-dht         - 安装 DHT 发现依赖（kademlia）"
+	@echo "  make run-relay           - 运行 Relay 服务（WebSocket <-> NATS）"
 	@echo ""
 	@echo "首次使用: make venv && make install"
 
@@ -47,6 +52,14 @@ install-bridge: venv
 	$(PIP) install -e ".[bridge]"
 	@echo "依赖（含 Bridge）已安装到虚拟环境"
 
+install-relay: venv
+	$(PIP) install -e ".[relay]"
+	@echo "依赖（含 Relay）已安装到虚拟环境"
+
+install-dht: venv
+	$(PIP) install -e ".[dht]"
+	@echo "依赖（含 DHT 发现）已安装到虚拟环境"
+
 run-bridge:
 	$(PYTHON) -m uvicorn bridge.main:app --host 0.0.0.0 --port 8080
 
@@ -58,3 +71,12 @@ run-consumer:
 
 run-carrier:
 	$(PYTHON) example/carrier.py
+
+run-discovery-demo:
+	$(PYTHON) example/discovery_demo.py
+
+run-discovery-dht-demo:
+	$(PYTHON) example/discovery_dht_demo.py
+
+run-relay:
+	$(PYTHON) relay/main.py

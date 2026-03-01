@@ -148,10 +148,51 @@ Carrier 模拟送达
 
 ---
 
+## Agent 发现（跨服务器发现）
+
+- **discovery.py**：`DiscoveryProvider` 抽象，定义 `register`、`unregister`、`discover`
+- **discovery_nats.py**：`NatsDiscoveryProvider`，基于 NATS 请求-响应，无需中心化注册表
+- **主题**：`open_a2a.discovery.query.{capability}`，capability 与意图主题对应（如 `intent.food.order`）
+- **spec/rfc-002-discovery.md**：发现协议草稿
+- **example/discovery_demo.py**：`make run-discovery-demo` 运行示例
+- **扩展**：同 NATS/集群内已可用；多 NATS 集群见 [10-nats-cluster-federation.md](./10-nats-cluster-federation.md)；跨网络发现见 DHT 后端
+
+---
+
+## DHT 发现后端（跨网络，无中心索引）
+
+- **discovery_dht.py**：`DhtDiscoveryProvider`，基于 Kademlia DHT；能力注册/发现写入 DHT，不依赖同一 NATS
+- **适用**：不同 NATS 集群、不同传输的 Agent 通过公共或自建 bootstrap 加入同一 DHT 网即可互相发现
+- **公共 bootstrap 列表**：未传 `bootstrap_nodes` 时使用 `get_default_dht_bootstrap()`；优先读环境变量 `OPEN_A2A_DHT_BOOTSTRAP`（格式 `host1:port1,host2:port2`），未设置时使用 `DEFAULT_DHT_BOOTSTRAP`（可预置社区公共节点）。所有人配置同一列表即加入同一 DHT 网。
+- **依赖**：`pip install open-a2a[dht]`（kademlia）；示例 `make run-discovery-dht-demo`、`example/discovery_dht_demo.py`
+- **与 NATS 发现关系**：NATS 发现适用于「同一 NATS/集群」；DHT 发现适用于「跨集群/完全异构网络」
+
+---
+
+## NATS 集群联邦
+
+- **文档**：[10-nats-cluster-federation.md](./10-nats-cluster-federation.md)：配置说明、两节点示例、Docker Compose
+- **部署**：`deploy/nats-cluster/` 下 `nats-a.conf`、`nats-b.conf`、`docker-compose.yml`，多台服务器共享主题空间后，发现与意图互通
+
+---
+
+## Relay 传输（出站优先，RFC-003）
+
+- **relay/main.py**：WebSocket 服务，连接 NATS，桥接 Client 的 subscribe/unsubscribe/publish 与 NATS 主题
+- **transport_relay.py**：`RelayClientTransport`，实现 TransportAdapter；Agent 通过 `relay_ws_url` 出站连接即可参与网络
+- **协议**：JSON over WebSocket（subscribe / unsubscribe / publish；message 下行），见 spec/rfc-003-relay-transport.md
+- **示例**：`example/consumer_via_relay.py`、`make run-relay`、`make install-relay`
+- **意义**：无公网 IP/域名/webhook 的 Agent 由框架提供可达性，无需用户自建回调
+
+---
+
 ## 下一步计划
 
 1. ~~**Open-A2A Bridge**~~ ✅ 已实现（`bridge/main.py`、`Dockerfile.bridge`、`make run-bridge`）
 2. ~~**传输层抽象**~~ ✅ 已实现（`TransportAdapter`、`NatsTransportAdapter`）
-3. **可选**：多 Merchant 场景测试、真实支付通道对接
-4. **可选**：Solid Pod 客户端凭证认证（当前为用户名/密码）
-5. **可选**：Agent 跨服务器发现（DHT、NATS 集群联邦）
+3. ~~**Agent 跨服务器发现**~~ ✅ 已实现（`DiscoveryProvider`、`NatsDiscoveryProvider`，RFC-002）
+4. **可选**：多 Merchant 场景测试、真实支付通道对接
+5. **可选**：Solid Pod 客户端凭证认证（当前为用户名/密码）
+6. ~~**Relay 传输（出站优先）**~~ ✅ 已实现（`relay/main.py`、`RelayClientTransport`、RFC-003）
+7. ~~**多 NATS 集群联邦 或 DHT 发现后端**~~ ✅ 已实现（NATS 集群见 10-nats-cluster-federation + deploy/nats-cluster；DHT 见 DhtDiscoveryProvider、RFC-002）
+8. ~~**可选：公共 DHT bootstrap 节点**~~ ✅ 已实现（环境变量 `OPEN_A2A_DHT_BOOTSTRAP`、`get_default_dht_bootstrap()`）；Relay 端到端加密仍为可选

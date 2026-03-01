@@ -64,8 +64,12 @@ graph TD
 
 ### 2.2 发现与广播（意图网格）— 解决「谁在附近，谁能响应」
 
-- **传输层抽象**：`TransportAdapter` 接口（`open_a2a/transport.py`），当前实现 `NatsTransportAdapter`，未来可扩展 HTTP、WebSocket、DHT、P2P
-- **核心工具**：`NATS.io` + `Hypercore`
+- **传输层抽象**：`TransportAdapter` 接口（`open_a2a/transport.py`），已实现 `NatsTransportAdapter`、`RelayClientTransport`（出站优先，见 [RFC-003](../../spec/rfc-003-relay-transport.md)）；可扩展 HTTP、WebSocket、P2P
+- **Agent 发现**：`DiscoveryProvider` 接口（`open_a2a/discovery.py`），已实现：
+  - **NATS 发现**：`NatsDiscoveryProvider`（同 NATS/集群内能力注册与查询，主题 `open_a2a.discovery.query.{capability}`）
+  - **DHT 发现**：`DhtDiscoveryProvider`（跨网络、无中心索引，见 [06-progress](./06-progress.md)#DHT 发现后端）；支持环境变量 `OPEN_A2A_DHT_BOOTSTRAP` 与公共 bootstrap 列表
+  - **多 NATS 集群**：见 [10-nats-cluster-federation.md](./10-nats-cluster-federation.md)
+- **核心工具**：`NATS.io`、Kademlia DHT（可选）、Relay（WebSocket↔NATS）
 - **开发任务**：
   - **意图广播 (Publish)**：Agent 向 `intent.{domain}.{action}` 主题发布消息（示例：`intent.food.order`）
   - **能力监听 (Subscribe)**：具备能力的 Agent 订阅对应主题并响应

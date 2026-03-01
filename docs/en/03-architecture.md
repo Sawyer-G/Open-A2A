@@ -60,11 +60,13 @@ graph TD
 
 ### 2.2 Discovery & Broadcast (Intent Mesh) — "Where are noodles, who can deliver?"
 
-- **Tools**: `NATS.io` + `Hypercore`
+- **Transport**: `TransportAdapter` (`open_a2a/transport.py`); implemented: `NatsTransportAdapter`, `RelayClientTransport` (outbound-first, [RFC-003](../../spec/rfc-003-relay-transport.md))
+- **Discovery**: `DiscoveryProvider` (`open_a2a/discovery.py`); implemented: `NatsDiscoveryProvider` (same NATS/cluster), `DhtDiscoveryProvider` (cross-network, env `OPEN_A2A_DHT_BOOTSTRAP`); multi-cluster: [10-nats-cluster-federation](../zh/10-nats-cluster-federation.md). See [06-progress](./06-progress.md).
+- **Tools**: NATS.io, Kademlia DHT (optional), Relay (WebSocket↔NATS)
 - **Tasks**:
-  - **Intent Publish**: Consumer Agent publishes Protobuf to NATS `intent.food.*`
-  - **Capability Subscribe**: All noodle shop Agents subscribe
-  - **Geo-fencing**: Hypercore maintains nearby node cache so "want noodles" doesn't reach shops 1000 km away
+  - **Intent Publish**: Agent publishes to NATS `intent.{domain}.{action}` (e.g. `intent.food.order`)
+  - **Capability Subscribe**: Agents with capability subscribe and respond
+  - **Geo-fencing**: DHT or local cache so intent reaches relevant parties only
 
 ### 2.3 Semantic Negotiation (AI Dialogue) — "Dietary restrictions, price, time"
 

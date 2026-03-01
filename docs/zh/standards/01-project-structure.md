@@ -16,12 +16,21 @@ Open-A2A/
 │   ├── broadcaster.py          # 意图广播（基于 TransportAdapter）
 │   ├── transport.py            # 传输层抽象接口
 │   ├── transport_nats.py       # NATS 传输适配器
+│   ├── discovery.py            # Agent 发现抽象
+│   ├── discovery_nats.py       # NATS 发现实现
+│   ├── discovery_dht.py       # DHT 发现实现（跨网络）
+│   ├── transport_relay.py     # Relay 传输适配器（出站连接）
 │   ├── identity.py             # DID 身份（Phase 2）
 │   ├── preferences.py          # 偏好存储抽象（Phase 2）
 │   └── agent.py                # BaseAgent 基类
 ├── bridge/                     # Open-A2A Bridge（OpenClaw 适配层）
 │   ├── __init__.py
 │   └── main.py
+├── relay/                      # Open-A2A Relay（WebSocket <-> NATS，出站优先）
+│   ├── __init__.py
+│   └── main.py
+├── deploy/                     # 部署示例（如 NATS 集群）
+│   └── nats-cluster/           # 两节点 NATS 集群 docker-compose
 ├── example/                    # 示例与 Demo
 │   ├── consumer.py
 │   ├── merchant.py

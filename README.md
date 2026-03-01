@@ -118,6 +118,7 @@ make install-bridge && make run-bridge
 | 全链路闭环（A-B-C + 模拟结算） | ✅ 已完成 |
 | 传输层抽象（TransportAdapter） | ✅ 已完成 |
 | Open-A2A Bridge（OpenClaw 适配） | ✅ 已完成 |
+| Agent 发现（NATS/DHT）、Relay 传输、NATS 集群联邦 | ✅ 已完成 |
 
 详见 [开发路线图](./docs/zh/04-roadmap.md) / [Roadmap](./docs/en/04-roadmap.md)、[项目进度](./docs/zh/06-progress.md)。
 
@@ -166,4 +167,4 @@ make install-bridge && make run-bridge
 
 **Vision**: The Agentic Economy. Consumer Agent ↔ Merchant Agent ↔ Delivery Agent. Value flows 100% to participants.
 
-**Status**: Phase 1–3 done; transport abstraction and OpenClaw Bridge implemented. See [docs/en/](./docs/en/) for architecture, roadmap, and contribution guidelines.
+**Status**: Phase 1–3 done; transport abstraction, OpenClaw Bridge, Agent discovery (NATS/DHT), Relay transport, and NATS cluster federation implemented. See [docs/en/](./docs/en/) for architecture, roadmap, and contribution guidelines.
