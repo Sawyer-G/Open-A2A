@@ -6,7 +6,7 @@
 
 > 去中心化 Agent 间协作协议 —— 后互联网时代的 TCP/IP
 
-[English](#english) | 简体中文
+[English](./docs/en/README.md) | [简体中文](./docs/zh/README.md)
 
 ---
 
@@ -159,12 +159,4 @@ make install-bridge && make run-bridge
 
 <a name="english"></a>
 
-## English
-
-**Open-A2A** is an open-source, decentralized protocol for AI Agent-to-Agent collaboration. We define the rules—no platform, no middleman.
-
-**Positioning**: Protocol and transport layer—we define how Agents communicate (message format, topics, interaction patterns), not business semantics. The “food delivery” scenario is an example to validate the protocol.
-
-**Vision**: The Agentic Economy. Consumer Agent ↔ Merchant Agent ↔ Delivery Agent. Value flows 100% to participants.
-
-**Status**: Phase 1–3 done; transport abstraction, OpenClaw Bridge, Agent discovery (NATS/DHT), Relay transport, and NATS cluster federation implemented. See [docs/en/](./docs/en/) for architecture, roadmap, and contribution guidelines.
+> For the full English documentation, please refer to [`docs/en/`](./docs/en/README.md). The rest of this `README.md` uses Simplified Chinese as the primary language; English readers should start from the English docs entrypoint.
