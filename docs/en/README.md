@@ -16,6 +16,10 @@
 | [07-multi-language-sdk.md](./07-multi-language-sdk.md) | Multi-language SDK planning: future expansion reference |
 | [08-solid-self-hosted.md](./08-solid-self-hosted.md) | **Self-hosted Solid Pod**: recommended for data sovereignty |
 | [09-deployment-and-openclaw-integration.md](./09-deployment-and-openclaw-integration.md) | **Deployment & OpenClaw integration** |
+| [10-nats-cluster-federation.md](./10-nats-cluster-federation.md) | NATS cluster & federation: multi-node shared subject space |
+| [11-relay-e2e-verify.md](./11-relay-e2e-verify.md) | Relay end-to-end encryption verification |
+| [12-cross-ip-testing.md](./12-cross-ip-testing.md) | **Cross-IP testing guide**: real-world network validation |
+| [openclaw-tool-example.md](./openclaw-tool-example.md) | OpenClaw Tool configuration example |
 
 ## Standards
 
