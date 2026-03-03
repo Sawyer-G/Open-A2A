@@ -41,6 +41,20 @@ The food delivery scenario is an **inspiration** and **example implementation** 
 - Agent identity does not rely on centralized accounts; uses decentralized identifiers (DID).
 - Data interaction follows minimal disclosure; supports Verifiable Credentials (VC).
 
+### 2.5 Decentralization vs Public Infrastructure Nodes
+
+- **Decentralized at the protocol layer**:
+  - Anyone can run their own NATS / Relay / Bridge / DHT nodes that speak the Open-A2A protocols.
+  - Nodes interconnect via open specifications; Agents are not bound to a single entrypoint.
+  - The protocol does not mandate a single gateway or official platform; it encourages multiple operators to coexist.
+- **Public nodes at the infrastructure layer**:
+  - Similar to Ethereum's Infura/Alchemy, IPFS bootstrap nodes, or Bitcoin DNS seeds.
+  - To lower the barrier for regular users, the project or community may provide a set of long-running public entrypoints (NATS/Relay/Bridge with domain names) as **default examples**.
+  - These nodes are **replaceable**: users or other communities can run their own nodes or switch to different providers.
+- **End-users should only need outbound connectivity**:
+  - A typical user's Agent runs behind NAT / WiFi / dynamic IP. It should only need to make outbound connections to some public entry (NATS/Relay/Bridge), without opening ports on their router.
+  - A smaller number of participants who are willing to operate infrastructure can run public nodes and publish their connection details in documentation, collectively forming the broader Open-A2A network.
+
 ---
 
 ## 3. Relationship to Example Scenarios
