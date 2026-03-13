@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open-A2A – Decentralized Agent-to-Agent Protocol</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="oa2a-header">
+    <div class="oa2a-container oa2a-header-inner">
+      <div class="oa2a-logo">
+        <img src="logo.svg" alt="Open-A2A logo" class="oa2a-logo-img" />
+      </div>
+      <nav class="oa2a-nav">
+        <a href="#why">Why</a>
+        <a href="#how">How it works</a>
+        <a href="#get-started">Get started</a>
+        <a href="#openclaw">OpenClaw</a>
+        <a href="#docs">Docs</a>
+        <a href="https://github.com/Sawyer-G/Open-A2A" target="_blank" rel="noreferrer">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="oa2a-section oa2a-hero">
+      <div class="oa2a-container oa2a-hero-grid">
+        <div class="oa2a-hero-text">
+          <h1>Open‑A2A: Decentralized Agent‑to‑Agent protocol</h1>
+          <p class="oa2a-hero-subtitle">
+            Like TCP/IP for AI Agents: let Agents talk directly, across networks and runtimes — not through centralized platforms.
+          </p>
+          <ul class="oa2a-hero-bullets">
+            <li>Zero platform fee: value flows directly between participants.</li>
+            <li>Pluggable transport: NATS, Relay, HTTP/WebSocket, DHT, P2P.</li>
+            <li>Runtime adapters: OpenClaw, ZeroClaw, MCP, local Agents.</li>
+          </ul>
+          <div class="oa2a-hero-actions">
+            <a class="oa2a-btn oa2a-btn-primary" href="https://github.com/Sawyer-G/Open-A2A" target="_blank" rel="noreferrer">
+              View on GitHub
+            </a>
+            <a class="oa2a-btn oa2a-btn-secondary" href="https://github.com/Sawyer-G/Open-A2A/blob/main/docs/en/README.md" target="_blank" rel="noreferrer">
+              Read the docs
+            </a>
+          </div>
+        </div>
+        <div class="oa2a-hero-diagram">
+          <div class="oa2a-diagram-card">
+            <div class="oa2a-diagram-col">
+              <div class="oa2a-pill oa2a-pill-consumer">Consumer Agent</div>
+            </div>
+            <div class="oa2a-diagram-col oa2a-diagram-center">
+              <div class="oa2a-pill oa2a-pill-core">Open‑A2A Network</div>
+              <div class="oa2a-diagram-stack">
+                <span>NATS / Relay</span>
+                <span>Discovery</span>
+                <span>Intent protocol</span>
+              </div>
+            </div>
+            <div class="oa2a-diagram-col">
+              <div class="oa2a-pill">Merchant Agent</div>
+              <div class="oa2a-pill">Carrier Agent</div>
+              <div class="oa2a-pill oa2a-pill-runtime">OpenClaw runtime</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why -->
+    <section id="why" class="oa2a-section oa2a-section-alt">
+      <div class="oa2a-container">
+        <h2>Why Open‑A2A?</h2>
+        <p class="oa2a-section-lead">
+          Today, most “agent collaboration” is still trapped inside platforms. Open‑A2A moves collaboration down to an open protocol layer.
+        </p>
+        <div class="oa2a-grid oa2a-grid-2">
+          <div class="oa2a-card">
+            <h3>Today</h3>
+            <ul>
+              <li>Platforms charge 10–30% in fees.</li>
+              <li>Platforms own data, ranking, and discovery.</li>
+              <li>All collaboration goes through centralized apps and APIs.</li>
+            </ul>
+          </div>
+          <div class="oa2a-card">
+            <h3>Open‑A2A vision</h3>
+            <ul>
+              <li>Zero platform fee; value settles directly between Agents.</li>
+              <li>Data sovereignty belongs to individuals; AI serves its owner.</li>
+              <li>Agents discover and negotiate directly using open protocols.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="how" class="oa2a-section">
+      <div class="oa2a-container oa2a-grid oa2a-grid-2 oa2a-how-grid">
+        <div class="oa2a-how-text">
+          <h2>How it works</h2>
+          <p class="oa2a-section-lead">
+            Open‑A2A is a three‑layer mesh: digital cabin, communication, and intent &amp; collaboration.
+          </p>
+          <ul>
+            <li>
+              <strong>L1 Digital Cabin</strong> — DID identity, Solid Pod / profile.json for preferences,
+              local Agent runtimes (OpenClaw, ZeroClaw, MCP, Ollama…).
+            </li>
+            <li>
+              <strong>L2 Communication</strong> — transport abstraction (NATS reference implementation, extensible
+              to HTTP/WebSocket/DHT/P2P), discovery (NATS/DHT), clustering &amp; federation.
+            </li>
+            <li>
+              <strong>L3 Collaboration</strong> — Intent protocol (RFC‑001), Offers, Logistics, OrderConfirm
+              and settlement primitives to express “broadcast + collect”, “request + reply”, “delegate + confirm”.
+            </li>
+          </ul>
+          <p>
+            This repository ships a Python reference SDK (<code>open_a2a/</code>) and a Bridge/adapter
+            (<code>bridge/</code>) for OpenClaw and other runtimes.
+          </p>
+        </div>
+        <div class="oa2a-how-diagram">
+          <div class="oa2a-how-card oa2a-how-card-top">
+            <div class="oa2a-how-label">L1 Digital Cabin</div>
+            <ul>
+              <li>DID identity, Solid Pod, runtimes</li>
+            </ul>
+          </div>
+          <div class="oa2a-how-card oa2a-how-card-middle">
+            <div class="oa2a-how-label">L2 Communication &amp; Routing</div>
+            <ul>
+              <li>NATS / Relay / HTTP / DHT / P2P</li>
+              <li>Discovery &amp; federation</li>
+            </ul>
+          </div>
+          <div class="oa2a-how-card oa2a-how-card-bottom">
+            <div class="oa2a-how-label">L3 Intent &amp; Collaboration</div>
+            <ul>
+              <li>Intent / Offer / Confirm</li>
+              <li>Logistics &amp; settlement primitives</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Get started -->
+    <section id="get-started" class="oa2a-section oa2a-section-alt">
+      <div class="oa2a-container">
+        <h2>Get started</h2>
+        <p class="oa2a-section-lead">
+          Run a local demo, deploy a full node, or plug your existing Agent runtime into the network.
+        </p>
+        <div class="oa2a-grid oa2a-grid-3">
+          <div class="oa2a-card">
+            <h3>1. Local demo (A→B→C)</h3>
+            <p>
+              Run the full Consumer → Merchant(s) → Carrier flow on your machine using the Python SDK
+              and a local NATS node.
+            </p>
+            <a class="oa2a-link" href="#quick-start">Follow the README quick start</a>
+          </div>
+          <div class="oa2a-card">
+            <h3>2. Run a full node</h3>
+            <p>
+              Use <code>docker-compose.deploy.yml</code> to start NATS + Relay + Solid + Bridge on a server.
+              Turn it into a public or private entry node.
+            </p>
+            <a class="oa2a-link" href="https://github.com/Sawyer-G/Open-A2A/blob/main/docs/en/09-deployment-and-openclaw-integration.md" target="_blank" rel="noreferrer">
+              Deployment &amp; OpenClaw integration guide
+            </a>
+          </div>
+          <div class="oa2a-card">
+            <h3>3. Integrate your runtime</h3>
+            <p>
+              Connect OpenClaw, ZeroClaw, or your own Agent runtime via the HTTP Bridge. Use simple
+              HTTP tools and webhooks — no need to speak NATS directly.
+            </p>
+            <a class="oa2a-link" href="#openclaw">See OpenClaw integration</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OpenClaw integration -->
+    <section id="openclaw" class="oa2a-section">
+      <div class="oa2a-container">
+        <h2>OpenClaw integration</h2>
+        <p class="oa2a-section-lead">
+          If you already run OpenClaw, you can attach it to Open‑A2A with one command and two HTTP endpoints.
+        </p>
+        <div class="oa2a-grid oa2a-grid-2">
+          <div class="oa2a-card">
+            <h3>One‑click setup (Docker)</h3>
+            <p>
+              On the same server as OpenClaw, use the helper script to start NATS + Relay + Solid + Bridge
+              via Docker Compose.
+            </p>
+            <pre><code>bash scripts/setup-openclaw-bridge.sh
+# optional diagnostics:
+bash scripts/setup-openclaw-bridge.sh diagnose</code></pre>
+            <p>
+              The script creates/updates <code>.env</code>, auto‑detects the OpenClaw Gateway container name
+              when possible, and brings up the full stack.
+            </p>
+          </div>
+          <div class="oa2a-card">
+            <h3>Bare‑metal bridge (no Docker)</h3>
+            <p>
+              Prefer to avoid Docker? Run the Bridge directly on the host using the bare‑metal helper script.
+            </p>
+            <pre><code>bash scripts/setup-openclaw-bridge-baremetal.sh</code></pre>
+            <p>
+              This uses a local virtualenv (<code>.venv</code>) and Uvicorn to start the Bridge on
+              <code>0.0.0.0:8080</code>, then you configure OpenClaw to call
+              <code>POST /api/publish_intent</code> and receive <code>/hooks/agent</code>.
+            </p>
+          </div>
+        </div>
+        <div class="oa2a-links-row">
+          <a class="oa2a-link" href="../docs/en/09-deployment-and-openclaw-integration.md">
+            OpenClaw integration guide (English)
+          </a>
+          <a class="oa2a-link" href="https://github.com/Sawyer-G/Open-A2A/blob/main/docs/zh/09-openclaw-docker-quickstart.md" target="_blank" rel="noreferrer">
+            OpenClaw Docker quickstart (中文)
+          </a>
+          <a class="oa2a-link" href="https://github.com/Sawyer-G/Open-A2A/blob/main/docs/en/openclaw-tool-example.md" target="_blank" rel="noreferrer">
+            OpenClaw Tool configuration example
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Docs & specs -->
+    <section id="docs" class="oa2a-section oa2a-section-alt">
+      <div class="oa2a-container">
+        <h2>Specs &amp; documentation</h2>
+        <p class="oa2a-section-lead">
+          Dive into the protocol RFCs, SDK, and architecture docs.
+        </p>
+        <div class="oa2a-grid oa2a-grid-2">
+          <div class="oa2a-card">
+            <h3>Core specs &amp; SDK</h3>
+            <ul>
+              <li><a class="oa2a-link" href="../spec/">Protocol specs (RFCs)</a></li>
+              <li><a class="oa2a-link" href="../open_a2a/">Python SDK source (<code>open_a2a/</code>)</a></li>
+              <li><a class="oa2a-link" href="https://github.com/Sawyer-G/Open-A2A/blob/main/docs/en/03-architecture.md" target="_blank" rel="noreferrer">Architecture (English)</a></li>
+            </ul>
+          </div>
+          <div class="oa2a-card">
+            <h3>Full documentation</h3>
+            <ul>
+              <li><a class="oa2a-link" href="https://github.com/Sawyer-G/Open-A2A/blob/main/docs/en/README.md" target="_blank" rel="noreferrer">English docs entrypoint</a></li>
+              <li><a class="oa2a-link" href="https://github.com/Sawyer-G/Open-A2A/blob/main/docs/zh/README.md" target="_blank" rel="noreferrer">中文文档入口</a></li>
+              <li><a class="oa2a-link" href="https://github.com/Sawyer-G/Open-A2A/blob/main/docs/en/07-multi-language-sdk.md" target="_blank" rel="noreferrer">Multi‑language SDK roadmap</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="oa2a-footer">
+    <div class="oa2a-container oa2a-footer-inner">
+      <div>© Open‑A2A • Apache 2.0</div>
+      <div class="oa2a-footer-links">
+        <a href="https://github.com/Sawyer-G/Open-A2A" target="_blank" rel="noreferrer">GitHub</a>
+        <a href="../LICENSE">License</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
+
