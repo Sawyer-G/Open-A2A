@@ -30,6 +30,39 @@
 
 ---
 
+## 1.1 一键部署完整节点（NATS + Relay + Solid + Bridge）
+
+> 若你希望在一台服务器上快速起一套 **完整的 Open-A2A 节点栈**（作为公共入口或测试网节点），可以使用根目录的 `docker-compose.deploy.yml`。
+
+### 步骤（示例）
+
+```bash
+# 1. 在服务器上克隆仓库
+git clone https://github.com/Sawyer-G/Open-A2A.git
+cd Open-A2A
+
+# 2. 如有需要，先配置 .env（例如 NATS_URL、OPENCLAW_GATEWAY_URL 等）
+cp .env.example .env
+# 根据你的环境修改 .env 中的占位符
+
+# 3. 一键启动
+docker-compose -f docker-compose.deploy.yml up -d --build
+
+# 4. 查看服务状态
+docker ps
+```
+
+启动后默认包含：
+
+- `nats`：NATS 消息总线（默认 `4222`）；
+- `relay`：Open-A2A Relay（默认 `8765`，WebSocket 出站入口）；
+- `solid`：自托管 Solid Pod（默认 `8443`）；
+- `open-a2a-bridge`：Bridge 服务（默认 `8080`），用于与 OpenClaw 等运行时集成。
+
+你可以根据需要在云厂商防火墙中开放对应端口，并通过 DNS 将子域（如 `nats.open-a2a.org`、`relay.open-a2a.org`）解析到这台服务器（建议使用 **仅 DNS** 模式，不通过 HTTP 代理）。
+
+---
+
 ## 2. 部署步骤
 
 ### 2.1 前置条件

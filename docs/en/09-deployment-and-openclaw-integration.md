@@ -40,40 +40,21 @@
 
 ## 3. One-Click Deploy (Docker Compose)
 
-At the project root, you can use the provided `docker-compose.deploy.yml`:
+At the project root, you can use the provided `docker-compose.deploy.yml` to spin up a full node stack:
 
-```yaml
-# Open-A2A full deployment (NATS + Solid + Bridge)
-# Designed to work alongside an existing OpenClaw deployment.
-
-services:
-  nats:
-    image: nats:latest
-    ports:
-      - "4222:4222"
-    restart: unless-stopped
-
-  solid:
-    image: aveltens/solid-server:latest
-    ports:
-      - "8443:8443"
-    restart: unless-stopped
-
-  open-a2a-bridge:
-    build:
-      context: .
-      dockerfile: Dockerfile.bridge
-    ports:
-      - "8080:8080"
-    environment:
-      - NATS_URL=nats://nats:4222
-      - OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL:-}
-      - OPENCLAW_HOOKS_TOKEN=${OPENCLAW_HOOKS_TOKEN:-}
-      - BRIDGE_ENABLE_FORWARD=${BRIDGE_ENABLE_FORWARD:-1}
-    depends_on:
-      - nats
-    restart: unless-stopped
+```bash
+cd Open-A2A
+cp .env.example .env  # then edit .env as needed
+docker-compose -f docker-compose.deploy.yml up -d --build
+docker ps  # nats / relay / solid / open-a2a-bridge should be running
 ```
+
+This compose file starts:
+
+- `nats`: NATS message bus (`4222`);
+- `relay`: Open-A2A Relay (`8765`, WebSocket outbound entrypoint);
+- `solid`: self-hosted Solid Pod (`8443`);
+- `open-a2a-bridge`: Bridge service (`8080`) for integration with OpenClaw or other runtimes.
 
 ### 3.1 Environment Variables
 

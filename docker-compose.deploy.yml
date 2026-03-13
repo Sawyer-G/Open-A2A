@@ -13,6 +13,20 @@ services:
       - "4222:4222"
     restart: unless-stopped
 
+  relay:
+    build:
+      context: .
+      dockerfile: Dockerfile.relay
+    environment:
+      - NATS_URL=${NATS_URL:-nats://nats:4222}
+      - RELAY_WS_HOST=0.0.0.0
+      - RELAY_WS_PORT=8765
+    ports:
+      - "8765:8765"
+    depends_on:
+      - nats
+    restart: unless-stopped
+
   solid:
     image: aveltens/solid-server:latest
     ports:

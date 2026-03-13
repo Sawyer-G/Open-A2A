@@ -53,6 +53,186 @@ If we only test on a single machine or in a single NATS instance, we cannot be s
 
 ---
 
+### Scenario 3: Single Public NATS Node (Testnet Entry)
+
+> This scenario matches your current setup: you run a single **public NATS node** on a cloud VM, and local machines connect directly via public IP or domain to run the A-B-C flow end-to-end.
+
+**Topology**:
+
+```
+┌─────────────────────────────┐
+│  Public node (e.g. GCP, IP_S)│
+│  - NATS :4222               │
+│                             │
+│  (Optional) future Relay/DHT│
+└─────────────────────────────┘
+             ▲
+             │ NATS_URL=nats://user:pass@IP_S:4222
+             ▼
+┌─────────────────────────────┐
+│  Local dev / other machines │
+│  - Consumer / Merchant, etc.│
+└─────────────────────────────┘
+```
+
+**Goal**: With only a single NATS node running on the public server, you can run `example/merchant.py` and `example/consumer.py` locally and complete the full intent → offer → confirm → logistics-request flow across the Internet.
+
+#### 2.3.1 Public NATS Node Deployment (Example)
+
+On the cloud server (e.g. GCP):
+
+1. Install Docker (per your distro's docs).
+2. Create a NATS config:
+
+```conf
+# ~/nats/nats.conf
+port: 4222
+
+authorization {
+  users = [
+    { user: "opena2a", password: "your-strong-password" }
+  ]
+}
+```
+
+3. Start the NATS container:
+
+```bash
+docker run -d \
+  --name open-a2a-nats \
+  -p 4222:4222 \
+  -v ~/nats/nats.conf:/etc/nats/nats.conf:ro \
+  nats:latest \
+  -c /etc/nats/nats.conf
+```
+
+4. In your cloud firewall, open `tcp:4222` to this instance (at least from your own IP).
+
+> **Domain & DNS configuration note**  
+> - If you want to access the node via a hostname (e.g. `nats.open-a2a.org`), create an **A record** pointing that subdomain to the server's public IP.  
+> - If you are using Cloudflare or similar, make sure this record is set to **DNS only** (no HTTP proxy/CDN in front; in Cloudflare this is the grey cloud, not orange). HTTP proxies typically do not support arbitrary TCP ports like 4222, and will cause connection timeouts from NATS clients.
+
+#### 2.3.2 Local Examples Using the Public Node
+
+On your local dev machine (project cloned, `.venv` created):
+
+```bash
+cd Open-A2A
+
+export NATS_URL='nats://opena2a:your-strong-password@IP_S:4222'
+.venv/bin/python example/merchant.py
+```
+
+In another terminal:
+
+```bash
+cd Open-A2A
+
+export NATS_URL='nats://opena2a:your-strong-password@IP_S:4222'
+.venv/bin/python example/consumer.py
+```
+
+If the `consumer` terminal shows logs like “received 1 offer, order submitted”, and the `merchant` terminal shows “received intent → replied with offer → received order confirm → published logistics request”, then:
+
+- The public NATS node is working correctly;
+- Local Agents can already participate in the Open-A2A network over the public Internet.
+
+---
+
+### Scenario 4: Public Relay Node (Outbound WebSocket Only)
+
+> Building on Scenario 2 and 3, you now run a Relay on the same server and expose it as `relay.open-a2a.org`. Any client can join the network using **outbound WebSocket only**, without running NATS locally.
+
+**Topology**:
+
+```
+┌─────────────────────────────────────────┐
+│  Public node (GCP, IP_S)               │
+│  - NATS :4222 (nats.open-a2a.org)      │
+│  - Relay :8765 (ws://relay.open-a2a.org:8765) │
+│  - Merchant (NATS)                     │
+└─────────────────────────────────────────┘
+             ▲
+             │ NATS_URL=nats://user:pass@nats.open-a2a.org:4222
+             ▼
+┌─────────────────────────────┐
+│  Local dev / other machines │
+│  - Consumer via Relay       │
+│    RELAY_WS_URL=ws://relay.open-a2a.org:8765 │
+└─────────────────────────────┘
+```
+
+#### 2.4.1 Public Relay Deployment (Example)
+
+On the same server as the public NATS:
+
+1. Clone project and create virtualenv (if not already done):
+
+```bash
+git clone https://github.com/Sawyer-G/Open-A2A.git
+cd Open-A2A
+python3 -m venv .venv
+. .venv/bin/activate
+```
+
+2. Install Relay extras:
+
+```bash
+.venv/bin/pip install ".[relay]"
+```
+
+3. Configure environment and start Relay:
+
+```bash
+export NATS_URL='nats://user:pass@nats.open-a2a.org:4222'
+export RELAY_WS_HOST='0.0.0.0'
+export RELAY_WS_PORT='8765'
+
+.venv/bin/python relay/main.py
+```
+
+You should see logs like:
+
+```text
+[Relay] Connected to NATS: nats://user:pass@nats.open-a2a.org:4222
+[Relay] WebSocket listening on ws://0.0.0.0:8765, Agents can connect outbound to join the network
+```
+
+In your cloud firewall, open `tcp:8765` to this instance.  
+In DNS, add `relay.open-a2a.org -> IP_S` as an A record, set to **DNS only** (no HTTP proxy/CDN).
+
+#### 2.4.2 Clients Using the Public Relay
+
+On a local dev machine:
+
+```bash
+cd Open-A2A
+. .venv/bin/activate
+.venv/bin/pip install ".[relay]"  # skip if already installed
+
+export RELAY_WS_URL='ws://relay.open-a2a.org:8765'
+.venv/bin/python example/consumer_via_relay.py
+```
+
+In parallel, run Merchant (directly connected to NATS) either locally or on the server:
+
+```bash
+export NATS_URL='nats://user:pass@nats.open-a2a.org:4222'
+.venv/bin/python example/merchant.py
+```
+
+If `consumer_via_relay.py` shows:
+
+- “connected via Relay: ws://relay.open-a2a.org:8765”; and
+- “received 1 offer” and completes the flow;
+
+and `merchant.py` logs intents from `consumer-relay-001` and replies with offers, then:
+
+- The public Relay node is working correctly; and
+- Agents without local NATS can join the Open-A2A network using outbound WebSocket only.
+
+---
+
 ## 3. Scenario 1: Dual-Server NATS Cluster — Steps
 
 ### 3.1 Preparation

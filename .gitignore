@@ -46,7 +46,12 @@ htmlcov/
 .pytest_cache/
 .mypy_cache/
 
+# Local research/notes (not tracked)
+research/
+
 # 本地 TLS 测试证书（勿提交）
 *.pem
 relay-cert.pem
 relay-key.pem
+
+/temp

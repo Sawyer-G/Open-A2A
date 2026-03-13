@@ -200,6 +200,34 @@ Carrier 模拟送达
 
 ---
 
+## 后续工作建议（工程与生态）
+
+> 注：以下为在当前 MVP 已完成基础上的「增强路线」，不影响现有功能使用。
+
+1. **多运行时 / 多语言接入**
+   - 在现有 Python SDK + Bridge 的基础上，优先提供至少一个 TypeScript/Node SDK 或简单 HTTP 客户端封装，方便 JS 生态的 Agent 直接接入 Open-A2A。
+   - 为 OpenClaw / ZeroClaw 等运行时整理「官方推荐接入方式」和完整示例（Tool / Channel / Bridge 模式）。
+
+2. **Discovery & Registry 的产品化**
+   - 在 `DiscoveryProvider` + NATS/DHT 实现之上，抽象出一个更易用的「Agent 能力目录 / 注册中心」：
+     - 提供简单的 HTTP API 或 Python 封装，用于注册/查询 Agent 能力；
+     - 附带权限/可见性选项（公开、私有、仅联盟内可见等）。
+
+3. **安全与运营 best practice 下沉为默认配置**
+   - 将 `13-security-considerations.md` 中的建议逐步固化到默认配置与脚本中：
+     - 提供开启账号/密码、NKEY、TLS 的示例配置与一键脚本；
+     - 为公共节点运营者给出基础的限流、日志与监控示例。
+
+4. **开发者体验与 Quick Start**
+   - 在文档中新增一个极简「快速上手」路径：
+     - 使用公共 NATS / Relay 节点，5 分钟跑通第一条 Intent → Offer；
+     - 然后按层次引导到：本地起节点 / 集成运行时 / 使用 DID & 偏好 / Discovery。
+
+5. **论文与标准化输出**
+   - 基于 `research/open-a2a-paper-outline.md`，完成一版可投 Workshop/预印本的论文草稿：
+     - 系统描述现有协议、实现与实验（包括当前 GCP 公共节点与跨 IP / Relay 测试）；
+     - 明确 Open-A2A 在现有 MAS / MCP / Web3 工作中的定位与贡献。
+
 ## 跨 IP / 跨网络测试（必要验证）
 
 - **前提**：算力便宜、每人都有自己的 Agent、各自网络部署 → 跨 IP 测试是**必要**的。

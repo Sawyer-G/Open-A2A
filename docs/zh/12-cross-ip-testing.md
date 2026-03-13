@@ -52,6 +52,185 @@
 
 ---
 
+### 场景三：单公共 NATS 节点（测试网入口）
+
+> 本场景对应你现在的实际操作：在一台云服务器上跑「公共 NATS 节点」，本地机器通过公网 IP 或域名直接连入，同一节点上完成 A-B-C 流程。
+
+**拓扑**：
+
+```
+┌─────────────────────────────┐
+│  公共节点 (如 GCP, IP_S)      │
+│  - NATS :4222               │
+│                             │
+│  （可选）未来加 Relay / DHT    │
+└─────────────────────────────┘
+             ▲
+             │ NATS_URL=nats://user:pass@IP_S:4222
+             ▼
+┌─────────────────────────────┐
+│  本地开发机 / 其他用户机器        │
+│  - Consumer / Merchant 等     │
+└─────────────────────────────┘
+```
+
+**验证目标**：在公共节点只跑一个 NATS 的情况下，本地运行 `example/merchant.py` 与 `example/consumer.py`，确认可以跨公网完成完整意图→报价→确认→配送请求的闭环。
+
+#### 2.3.1 公共 NATS 节点部署（示例）
+
+在云服务器（例如 GCP）上：
+
+1. 安装 Docker（略，按各发行版文档执行）。
+2. 创建 NATS 配置（示例）：
+
+```conf
+# ~/nats/nats.conf
+port: 4222
+
+authorization {
+  users = [
+    { user: "opena2a", password: "你的强密码" }
+  ]
+}
+```
+
+3. 启动 NATS 容器：
+
+```bash
+docker run -d \
+  --name open-a2a-nats \
+  -p 4222:4222 \
+  -v ~/nats/nats.conf:/etc/nats/nats.conf:ro \
+  nats:latest \
+  -c /etc/nats/nats.conf
+```
+
+4. 在云厂商防火墙中放行 `tcp:4222` 到这台实例（至少允许你自己的 IP 访问）。
+
+> **域名与 DNS 设置提示**  
+> - 若你希望通过域名访问该节点（如 `nats.open-a2a.org`），请在 DNS 中为该子域配置 **A 记录** 指向服务器公网 IP。  
+> - 若使用 Cloudflare 等提供「代理/加速」的服务，务必将该 A 记录设置为 **仅 DNS (DNS only)**（灰色小云朵），不要开启 HTTP 代理（橙色云朵），否则 4222 这类自定义 TCP 端口会被中间层拦截，客户端会一直超时连不上 NATS。
+
+#### 2.3.2 本地示例通过公共节点测试
+
+在本地开发机上（已克隆项目并创建 `.venv`）：
+
+```bash
+cd Open-A2A
+
+export NATS_URL='nats://opena2a:你的强密码@IP_S:4222'
+.venv/bin/python example/merchant.py
+```
+
+另开一个终端：
+
+```bash
+cd Open-A2A
+
+export NATS_URL='nats://opena2a:你的强密码@IP_S:4222'
+.venv/bin/python example/consumer.py
+```
+
+若在 `consumer` 终端中能看到「收到 1 个报价、订单已提交」等日志，而在 `merchant` 终端中能看到「收到意图→已回复报价→收到订单确认→发布配送请求」，则说明：
+
+- 公共 NATS 节点工作正常；
+- 本地 Agent 已能通过公网参与 Open-A2A 网络。
+
+---
+
+### 场景四：公共 Relay 节点（仅出站 WebSocket 接入）
+
+> 在场景二的基础上，你现在已经在同一台服务器上运行了 Relay，并通过 `relay.open-a2a.org` 暴露出来。任何客户端只需出站连 WebSocket，即可通过该 Relay 参与 NATS 网络。
+
+**拓扑**：
+
+```
+┌─────────────────────────────────────────┐
+│  公共节点 (GCP, IP_S)                    │
+│  - NATS :4222 (nats.open-a2a.org)       │
+│  - Relay :8765 (ws://relay.open-a2a.org:8765) │
+│  - Merchant (连 NATS)                    │
+└─────────────────────────────────────────┘
+             ▲
+             │ NATS_URL=nats://user:pass@nats.open-a2a.org:4222
+             ▼
+┌─────────────────────────────┐
+│  本地开发机 / 其他用户机器        │
+│  - Consumer via Relay       │
+│    RELAY_WS_URL=ws://relay.open-a2a.org:8765 │
+└─────────────────────────────┘
+```
+
+#### 2.4.1 公共 Relay 部署（示例）
+
+在与公共 NATS 相同的服务器上：
+
+1. 拉取项目并创建虚拟环境（若已完成可略过）：
+
+```bash
+git clone https://github.com/Sawyer-G/Open-A2A.git
+cd Open-A2A
+python3 -m venv .venv
+. .venv/bin/activate
+```
+
+2. 安装 Relay 所需依赖：
+
+```bash
+.venv/bin/pip install ".[relay]"
+```
+
+3. 配置环境变量并启动 Relay：
+
+```bash
+export NATS_URL='nats://user:pass@nats.open-a2a.org:4222'
+export RELAY_WS_HOST='0.0.0.0'
+export RELAY_WS_PORT='8765'
+
+.venv/bin/python relay/main.py
+```
+
+终端应打印类似：
+
+```text
+[Relay] 已连接 NATS: nats://user:pass@nats.open-a2a.org:4222
+[Relay] WebSocket 监听 ws://0.0.0.0:8765，Agent 可出站连接此处参与网络
+```
+
+在云厂商防火墙中放行 `tcp:8765` 到该实例；在 DNS 中添加 `relay.open-a2a.org -> IP_S` 的 A 记录，且同样设置为 **仅 DNS (DNS only)**，不要开启 HTTP 代理。
+
+#### 2.4.2 客户端通过公共 Relay 验证
+
+在本地开发机上：
+
+```bash
+cd Open-A2A
+. .venv/bin/activate
+.venv/bin/pip install ".[relay]"  # 若已安装可略过
+
+export RELAY_WS_URL='ws://relay.open-a2a.org:8765'
+.venv/bin/python example/consumer_via_relay.py
+```
+
+同时在本地或服务器任一处运行 Merchant（直连 NATS）：
+
+```bash
+export NATS_URL='nats://user:pass@nats.open-a2a.org:4222'
+.venv/bin/python example/merchant.py
+```
+
+若在 `consumer_via_relay.py` 中看到：
+
+- 「已通过 Relay 连接: ws://relay.open-a2a.org:8765」；
+- 「收到 1 个报价」并完成流程；
+
+且在 `merchant.py` 中看到来自 `consumer-relay-001` 的意图与报价记录，则说明：
+
+- 公共 Relay 节点正常工作；
+- 无需本地 NATS，只通过出站 WebSocket 即可参与 Open-A2A 网络。
+
+---
+
 ## 3. 场景一：双机 NATS 集群 — 操作步骤
 
 ### 3.1 准备
