@@ -2,10 +2,8 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# 安装基础构建依赖（若未来某些依赖需要，可在此扩展）
 RUN pip install --no-cache-dir --upgrade pip
 
-# 复制项目文件（仅用于构建镜像）
 COPY . /app
 
 # 安装 Relay 所需依赖（使用 pyproject.toml 的 [relay] 可选依赖）

@@ -1,5 +1,5 @@
 # Open-A2A Bridge - 连接 NATS 与 OpenClaw
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
