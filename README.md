@@ -177,14 +177,28 @@ The script will:
 
 - Create or update `.env` based on `.env.example`;
 - Prompt for `NATS_URL` / `OPENCLAW_GATEWAY_URL` / `OPENCLAW_HOOKS_TOKEN`;
+- Try to auto-detect an OpenClaw Gateway container name and propose a sensible default `OPENCLAW_GATEWAY_URL` (e.g. `http://openclaw-openclaw-gateway-1:18789`);
 - Run `docker-compose -f docker-compose.deploy.yml up -d --build`.
+
+You can also diagnose common connectivity issues with:
+
+```bash
+bash scripts/setup-openclaw-bridge.sh diagnose
+```
+
+For advanced users who prefer not to use Docker, there is a bare-metal helper:
+
+```bash
+bash scripts/setup-openclaw-bridge-baremetal.sh
+```
 
 Then, in OpenClaw:
 
 - Configure an HTTP Tool that calls the Bridge at `/api/publish_intent`;
 - Configure a webhook at `{OPENCLAW_GATEWAY_URL}/hooks/agent` with the provided token.
 
-See [`docs/en/openclaw-tool-example.md`](./docs/en/openclaw-tool-example.md) for detailed Tool + Hook configuration, and the Chinese version under `docs/zh/openclaw-tool-example.md` if you prefer Chinese.
+See [`docs/en/openclaw-tool-example.md`](./docs/en/openclaw-tool-example.md) for detailed Tool + Hook configuration, and the Chinese version under `docs/zh/openclaw-tool-example.md` if you prefer Chinese.  
+For a Docker-specific OpenClaw integration guide, see [`docs/zh/09-openclaw-docker-quickstart.md`](./docs/zh/09-openclaw-docker-quickstart.md) (Chinese only for now).
 
 ---
 

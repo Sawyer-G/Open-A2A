@@ -33,18 +33,62 @@
 ## 2. Prerequisites
 
 - OpenClaw is already deployed and its **Gateway** is reachable.
-- Docker and Docker Compose are installed on the server.
+- Docker and Docker Compose are installed on the server (for the Docker path).
 - Network connectivity: NATS, Solid, and OpenClaw can reach each other on the necessary ports.
 
 ---
 
 ## 3. One-Click Deploy (Docker Compose)
 
-At the project root, you can use the provided `docker-compose.deploy.yml` to spin up a full node stack:
+At the project root, you can use the provided `docker-compose.deploy.yml` and helper script to spin up a full node stack.
+
+### 3.1 Using the helper script (recommended)
+
+On the same server where OpenClaw is running:
 
 ```bash
+git clone https://github.com/Sawyer-G/Open-A2A.git
 cd Open-A2A
-cp .env.example .env  # then edit .env as needed
+
+bash scripts/setup-openclaw-bridge.sh
+```
+
+The script will:
+
+1. Create or update `.env` based on `.env.example`;
+2. Prompt for `NATS_URL`, `OPENCLAW_GATEWAY_URL`, and `OPENCLAW_HOOKS_TOKEN`, then append them to `.env`;
+3. Run:
+
+```bash
+docker-compose -f docker-compose.deploy.yml up -d --build
+```
+
+In addition, the script:
+
+- Tries to auto-detect an OpenClaw Gateway container (by matching names that contain `gateway`) and uses it to propose a sensible default `OPENCLAW_GATEWAY_URL` (e.g. `http://openclaw-openclaw-gateway-1:18789`);
+- Provides a `diagnose` subcommand to quickly check configuration and connectivity:
+
+```bash
+bash scripts/setup-openclaw-bridge.sh diagnose
+```
+
+`diagnose` will:
+
+- Show `NATS_URL` / `OPENCLAW_GATEWAY_URL` / `OPENCLAW_HOOKS_TOKEN` from `.env`;
+- Inspect environment variables inside the Bridge container;
+- Test connectivity from the host to `OPENCLAW_GATEWAY_URL` via `curl`;
+- Call `http://localhost:8080/health` to verify that Bridge can see NATS and (optionally) OpenClaw.
+
+### 3.2 Manual docker-compose (equivalent to the script)
+
+If you prefer to manage `.env` yourself:
+
+```bash
+git clone https://github.com/Sawyer-G/Open-A2A.git
+cd Open-A2A
+
+cp .env.example .env  # then edit .env as needed (NATS_URL / OPENCLAW_GATEWAY_URL / OPENCLAW_HOOKS_TOKEN)
+
 docker-compose -f docker-compose.deploy.yml up -d --build
 docker ps  # nats / relay / solid / open-a2a-bridge should be running
 ```
@@ -56,7 +100,7 @@ This compose file starts:
 - `solid`: self-hosted Solid Pod (`8443`);
 - `open-a2a-bridge`: Bridge service (`8080`) for integration with OpenClaw or other runtimes.
 
-### 3.1 Environment Variables
+### 3.3 Environment Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
@@ -161,6 +205,39 @@ curl -X POST http://localhost:8080/api/publish_intent \
 ```
 
 For a concrete OpenClaw Tool configuration example, see `docs/zh/openclaw-tool-example.md`.
+
+---
+
+## 5.1 Bare-metal deployment (advanced)
+
+If you prefer **not** to use Docker on the server, you can run the Open-A2A Bridge directly on the host using the provided helper script:
+
+```bash
+git clone https://github.com/Sawyer-G/Open-A2A.git
+cd Open-A2A
+
+bash scripts/setup-openclaw-bridge-baremetal.sh
+```
+
+This script will:
+
+- Ensure `python3` and `make` are available on the host;
+- Create or update `.env` with `NATS_URL`, `OPENCLAW_GATEWAY_URL`, and `OPENCLAW_HOOKS_TOKEN`;
+- Run `make install-bridge` to install Bridge dependencies into `.venv/`;
+- Start the Bridge via `.venv/bin/uvicorn bridge.main:app --host 0.0.0.0 --port 8080` in the background, writing logs to `logs/bridge.log`.
+
+Prerequisites:
+
+- You already have a reachable NATS server (local or public) and set its address in `NATS_URL`;
+- OpenClaw’s Gateway is reachable from this host at `OPENCLAW_GATEWAY_URL`.
+
+After the script finishes, you can verify connectivity via:
+
+```bash
+curl http://localhost:8080/health | jq .
+```
+
+The Tool/Webhook configuration steps in OpenClaw are identical to the Docker deployment; the only difference is that `BRIDGE_URL` now points to the host (e.g. `http://<server-ip>:8080`) instead of a Docker container.
 
 ---
 
