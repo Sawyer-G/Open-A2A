@@ -16,9 +16,11 @@
 | [07-multi-language-sdk.md](./07-multi-language-sdk.md) | 多语言 SDK 规划：未来扩展参考 |
 | [08-solid-self-hosted.md](./08-solid-self-hosted.md) | **自托管 Solid Pod**：数据主权推荐方案 |
 | [09-deployment-and-openclaw-integration.md](./09-deployment-and-openclaw-integration.md) | **服务器部署与 OpenClaw 集成**：与现有服务共存 |
+| [09-openclaw-docker-quickstart.md](./09-openclaw-docker-quickstart.md) | **OpenClaw（Docker）环境快速集成指南**：在容器中运行的 OpenClaw 与 Open-A2A 的对接实践 |
 | [10-nats-cluster-federation.md](./10-nats-cluster-federation.md) | NATS 集群与联邦：多机共享主题空间 |
 | [11-relay-e2e-verify.md](./11-relay-e2e-verify.md) | Relay 端到端加密验证 |
 | [12-cross-ip-testing.md](./12-cross-ip-testing.md) | **跨 IP 测试指南**：各自网络部署下的必要验证 |
+| [13-security-considerations.md](./13-security-considerations.md) | **安全考量**：威胁模型、风险清单与最佳实践 |
 | [openclaw-tool-example.md](./openclaw-tool-example.md) | OpenClaw Tool 配置示例 |
 
 ## 规范与标准

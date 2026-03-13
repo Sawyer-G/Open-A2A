@@ -6,7 +6,7 @@
 
 > Decentralized Agent-to-Agent protocol — the TCP/IP of the post‑internet era.
 
-English (this page) | [简体中文文档](./docs/zh/README.md)
+English | [简体中文文档](./docs/zh/README.md)
 
 ---
 
@@ -109,13 +109,15 @@ See [`docs/en/03-architecture.md`](./docs/en/03-architecture.md) for details.
 
 > Run all Python commands in a virtualenv (`.venv/bin/python` or `make`) to avoid polluting your system Python.
 
-### 1. Start NATS
+### 1. Local demo (A→B→C flow)
+
+#### 1.1 Start a local NATS
 
 ```bash
 docker run -p 4222:4222 nats:latest
 ```
 
-### 2. Install and run the examples
+#### 1.2 Install and run the examples
 
 ```bash
 make venv && make install
@@ -132,13 +134,71 @@ make run-consumer    # Terminal 3
 
 This runs the full A→B→C flow: Consumer → Merchant(s) → Carrier.
 
-### 3. Integrate with OpenClaw
+---
+
+### 2. Run a full node (NATS + Relay + Solid + Bridge)
+
+To spin up a full Open-A2A node stack on a server (or locally with Docker), use the provided compose file:
 
 ```bash
-make install-bridge && make run-bridge
+git clone https://github.com/Sawyer-G/Open-A2A.git
+cd Open-A2A
+
+cp .env.example .env  # then edit .env as needed (NATS_URL, etc.)
+
+docker-compose -f docker-compose.deploy.yml up -d --build
+
+docker ps  # you should see nats / relay / solid / open-a2a-bridge containers
 ```
 
-See [`docs/en/09-deployment-and-openclaw-integration.md`](./docs/en/09-deployment-and-openclaw-integration.md) for deployment & integration details.
+This brings up:
+
+- `nats`: NATS message bus (`4222`);
+- `relay`: WebSocket Relay (`8765`) for outbound-only Agents;
+- `solid`: self-hosted Solid Pod (`8443`) for preferences (optional);
+- `open-a2a-bridge`: HTTP Bridge (`8080`) for integrating runtimes like OpenClaw.
+
+See [`docs/en/09-deployment-and-openclaw-integration.md`](./docs/en/09-deployment-and-openclaw-integration.md) and [`docs/en/12-cross-ip-testing.md`](./docs/en/12-cross-ip-testing.md) for deployment and cross-IP testing details.
+
+---
+
+### 3. Integrate with OpenClaw
+
+If you already have OpenClaw running on a server, you can use the helper script to run Bridge + NATS + Relay + Solid alongside it:
+
+```bash
+git clone https://github.com/Sawyer-G/Open-A2A.git
+cd Open-A2A
+
+bash scripts/setup-openclaw-bridge.sh
+```
+
+The script will:
+
+- Create or update `.env` based on `.env.example`;
+- Prompt for `NATS_URL` / `OPENCLAW_GATEWAY_URL` / `OPENCLAW_HOOKS_TOKEN`;
+- Try to auto-detect an OpenClaw Gateway container name and propose a sensible default `OPENCLAW_GATEWAY_URL` (e.g. `http://openclaw-openclaw-gateway-1:18789`);
+- Run `docker-compose -f docker-compose.deploy.yml up -d --build`.
+
+You can also diagnose common connectivity issues with:
+
+```bash
+bash scripts/setup-openclaw-bridge.sh diagnose
+```
+
+For advanced users who prefer not to use Docker, there is a bare-metal helper:
+
+```bash
+bash scripts/setup-openclaw-bridge-baremetal.sh
+```
+
+Then, in OpenClaw:
+
+- Configure an HTTP Tool that calls the Bridge at `/api/publish_intent`;
+- Configure a webhook at `{OPENCLAW_GATEWAY_URL}/hooks/agent` with the provided token.
+
+See [`docs/en/openclaw-tool-example.md`](./docs/en/openclaw-tool-example.md) for detailed Tool + Hook configuration, and the Chinese version under `docs/zh/openclaw-tool-example.md` if you prefer Chinese.  
+For a Docker-specific OpenClaw integration guide, see [`docs/zh/09-openclaw-docker-quickstart.md`](./docs/zh/09-openclaw-docker-quickstart.md) (Chinese only for now).
 
 ---
 

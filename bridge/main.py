@@ -54,8 +54,10 @@ class PublishIntentResponse(BaseModel):
     message: str = ""
 
 
-# --- 全局 Broadcaster（在 lifespan 中初始化）---
+# --- 全局 Broadcaster 与状态（在 lifespan 中初始化）---
 broadcaster: Optional[IntentBroadcaster] = None
+_nats_status: str = "unknown"
+_nats_error: str = ""
 
 
 async def forward_intent_to_openclaw(intent: Intent) -> None:
@@ -84,14 +86,32 @@ async def forward_intent_to_openclaw(intent: Intent) -> None:
         async with httpx.AsyncClient(timeout=30.0) as client:
             r = await client.post(url, json=payload, headers=headers)
             r.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        resp = e.response
+        body_preview = resp.text[:200] if resp.text else ""
+        print(
+            f"[Bridge] 转发意图到 OpenClaw 失败（HTTP {resp.status_code}）: "
+            f"url={url}, body_preview={body_preview}"
+        )
+    except httpx.RequestError as e:
+        print(
+            f"[Bridge] 转发意图到 OpenClaw 失败（请求错误，可能是网络/域名问题）: {e}"
+        )
     except Exception as e:
-        print(f"[Bridge] 转发意图到 OpenClaw 失败: {e}")
+        print(f"[Bridge] 转发意图到 OpenClaw 失败（未知错误）: {e}")
 
 
 async def _run_nats_subscriber() -> None:
     """后台任务：订阅 NATS 意图，转发给 OpenClaw"""
     global broadcaster
-    if not broadcaster or not BRIDGE_ENABLE_FORWARD or not OPENCLAW_GATEWAY_URL:
+    if not broadcaster:
+        print("[Bridge] NATS Broadcaster 未初始化，跳过转发订阅。")
+        return
+    if not BRIDGE_ENABLE_FORWARD:
+        print("[Bridge] BRIDGE_ENABLE_FORWARD=0，已禁用向 OpenClaw 转发意图。")
+        return
+    if not OPENCLAW_GATEWAY_URL:
+        print("[Bridge] OPENCLAW_GATEWAY_URL 未配置，无法向 OpenClaw 转发意图。")
         return
     try:
         await broadcaster.subscribe_intents(forward_intent_to_openclaw)
@@ -105,10 +125,18 @@ async def _run_nats_subscriber() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期：连接 NATS，启动订阅任务"""
-    global broadcaster
+    global broadcaster, _nats_status, _nats_error
     broadcaster = IntentBroadcaster(NATS_URL)
-    await broadcaster.connect()
-    print(f"[Bridge] 已连接 NATS: {NATS_URL}")
+    try:
+        await broadcaster.connect()
+        _nats_status = "connected"
+        _nats_error = ""
+        print(f"[Bridge] 已连接 NATS: {NATS_URL}")
+    except Exception as e:
+        _nats_status = "error"
+        _nats_error = str(e)
+        broadcaster = None
+        print(f"[Bridge] 连接 NATS 失败: {e}")
     task = None
     if BRIDGE_ENABLE_FORWARD and OPENCLAW_GATEWAY_URL:
         task = asyncio.create_task(_run_nats_subscriber())
@@ -135,9 +163,53 @@ app = FastAPI(
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
-    """健康检查"""
-    return {"status": "ok", "service": "open-a2a-bridge"}
+async def health() -> dict[str, Any]:
+    """
+    健康检查：
+      - bridge: 自身状态
+      - nats: 与 NATS 的连接状态
+      - openclaw: 对 OPENCLAW_GATEWAY_URL 的连通性（若已配置）
+    """
+    # NATS 状态来自 lifespan 中的全局标记
+    nats_info = {
+        "status": _nats_status,
+        "url": NATS_URL,
+        "error": _nats_error,
+    }
+
+    # OpenClaw 状态：若未配置 URL，则视为 "disabled"
+    openclaw_status = "disabled"
+    openclaw_error = ""
+    if OPENCLAW_GATEWAY_URL:
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                resp = await client.get(f"{OPENCLAW_GATEWAY_URL}/")
+                resp.raise_for_status()
+            openclaw_status = "ok"
+        except httpx.HTTPStatusError as e:
+            openclaw_status = "error"
+            openclaw_error = f"HTTP {e.response.status_code}"
+        except httpx.RequestError as e:
+            openclaw_status = "error"
+            openclaw_error = f"request error: {e}"
+        except Exception as e:
+            openclaw_status = "error"
+            openclaw_error = f"unexpected error: {e}"
+
+    openclaw_info = {
+        "status": openclaw_status,
+        "url": OPENCLAW_GATEWAY_URL,
+        "error": openclaw_error,
+    }
+
+    return {
+        "bridge": {
+            "status": "ok",
+            "version": app.version,
+        },
+        "nats": nats_info,
+        "openclaw": openclaw_info,
+    }
 
 
 @app.post("/api/publish_intent", response_model=PublishIntentResponse)

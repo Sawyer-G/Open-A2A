@@ -30,6 +30,39 @@
 
 ---
 
+## 1.1 一键部署完整节点（Docker：NATS + Relay + Solid + Bridge）
+
+> 若你希望在一台服务器上快速起一套 **完整的 Open-A2A 节点栈**（作为公共入口或测试网节点），可以使用根目录的 `docker-compose.deploy.yml`。
+
+### 步骤（示例）
+
+```bash
+# 1. 在服务器上克隆仓库
+git clone https://github.com/Sawyer-G/Open-A2A.git
+cd Open-A2A
+
+# 2. 如有需要，先配置 .env（例如 NATS_URL、OPENCLAW_GATEWAY_URL 等）
+cp .env.example .env
+# 根据你的环境修改 .env 中的占位符
+
+# 3. 一键启动
+docker-compose -f docker-compose.deploy.yml up -d --build
+
+# 4. 查看服务状态
+docker ps
+```
+
+启动后默认包含：
+
+- `nats`：NATS 消息总线（默认 `4222`）；
+- `relay`：Open-A2A Relay（默认 `8765`，WebSocket 出站入口）；
+- `solid`：自托管 Solid Pod（默认 `8443`）；
+- `open-a2a-bridge`：Bridge 服务（默认 `8080`），用于与 OpenClaw 等运行时集成。
+
+你可以根据需要在云厂商防火墙中开放对应端口，并通过 DNS 将子域（如 `nats.open-a2a.org`、`relay.open-a2a.org`）解析到这台服务器（建议使用 **仅 DNS** 模式，不通过 HTTP 代理）。
+
+---
+
 ## 2. 部署步骤
 
 ### 2.1 前置条件
@@ -158,6 +191,41 @@ curl -X POST http://localhost:8080/api/publish_intent \
 ```
 
 **OpenClaw Tool 配置**：见 [openclaw-tool-example.md](./openclaw-tool-example.md)
+
+---
+
+## 5.1 非 Docker 部署（高级用户）
+
+对于不希望在服务器上使用 Docker 的用户，可以直接在宿主机上运行 Open-A2A Bridge（以及可选的 Relay）。推荐使用仓库自带脚本：
+
+```bash
+git clone https://github.com/Sawyer-G/Open-A2A.git
+cd Open-A2A
+
+bash scripts/setup-openclaw-bridge-baremetal.sh
+```
+
+该脚本会：
+
+- 检查本机是否已安装 `python3` 和 `make`；
+- 创建/更新 `.env` 中的 `NATS_URL`、`OPENCLAW_GATEWAY_URL`、`OPENCLAW_HOOKS_TOKEN`；
+- 使用 `make install-bridge` 在 `.venv/` 中安装 Bridge 依赖；
+- 使用 `.venv/bin/uvicorn` 在本机后台启动 Bridge 服务（默认 `0.0.0.0:8080`），日志写入 `logs/bridge.log`。
+
+前置条件：
+
+- 服务器上已经有可用的 NATS（或可以使用公共 NATS 节点），并在 `NATS_URL` 中配置正确；
+- OpenClaw Gateway 能够通过 `OPENCLAW_GATEWAY_URL` 从本机访问到。
+
+运行成功后，可以通过：
+
+```bash
+curl http://localhost:8080/health | jq .
+```
+
+来检查 Bridge 与 NATS / OpenClaw 的连通状态。
+
+后续在 OpenClaw 中配置 Tool / Webhook 的方式与 Docker 部署完全一致，唯一差异只是 Bridge 的地址从容器端口变为宿主机端口（通常是 `http://<服务器IP>:8080`）。
 
 ---
 
