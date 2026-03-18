@@ -81,6 +81,10 @@ make run-discovery-dht-demo
 在仓库根目录执行（会启动两个临时 DHT 节点 A/B，都 bootstrap 到同一个公网入口；A 写入，B 读出）：
 
 ```bash
+## 方式 1：使用脚本（推荐）
+bash scripts/e2e-dht-bootstrap.sh dht.open-a2a.org:8469
+
+## 方式 2：手动 docker run（等价）
 docker run --rm -t -v "$PWD:/repo" -w /repo python:3.12-slim bash -lc \
   "python -m pip install -q --no-cache-dir -e '.[dht]' && python - <<'PY'
 import asyncio
@@ -118,6 +122,10 @@ PY"
 
 - `discover_count` 大于 0
 - `hit True`
+
+提示：
+
+- 运行过程中可能出现类似 `Did not receive reply ...` 的日志（kademlia 路由探测/节点不可达的噪声），不一定代表失败；以最后的 `hit True` 为准。
 
 ---
 

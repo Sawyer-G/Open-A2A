@@ -81,6 +81,10 @@ Prereqs:
 From the repo root (this starts two temporary DHT nodes A/B, both bootstrapped to the same public entry; A registers, B discovers):
 
 ```bash
+## Option 1: use the script (recommended)
+bash scripts/e2e-dht-bootstrap.sh dht.open-a2a.org:8469
+
+## Option 2: manual docker run (equivalent)
 docker run --rm -t -v "$PWD:/repo" -w /repo python:3.12-slim bash -lc \
   "python -m pip install -q --no-cache-dir -e '.[dht]' && python - <<'PY'
 import asyncio
@@ -118,6 +122,10 @@ Expected output:
 
 - `discover_count` > 0
 - `hit True`
+
+Note:
+
+- You may see logs like `Did not receive reply ...` (kademlia routing probes / unreachable nodes). This is not necessarily a failure; treat the final `hit True` as the success signal.
 
 ---
 

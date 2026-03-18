@@ -22,6 +22,9 @@ You have two options:
   - **Since**: 2026-03-18
   - **Notes**: entrypoint to join the Open-A2A community DHT overlay (no trust/authority implied)
 
+> Redundancy goal (P0): the community list should have at least **2 long-running** bootstraps (preferably different hosts/operators) to avoid a single point of failure.
+> Today we still lack the 2nd entrypoint — contributions welcome.
+
 ---
 
 ## 2. Run a bootstrap node (copy & run)
@@ -61,6 +64,11 @@ Minimum recommended requirements:
 - long-lived availability (e.g. 95% uptime)
 - TCP/UDP reachable
 - can be used as a bootstrap by other nodes
+- can bootstrap into the same overlay as existing entries (recommended: start your node with `DHT_BOOTSTRAP=<existing entry>`)
+
+Recommended preflight (before publishing your node):
+
+- Run a “join + write + read” check from your laptop (see `docs/en/18-dht-bootstrap-guide.md`)
 
 ---
 

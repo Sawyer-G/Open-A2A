@@ -22,6 +22,9 @@
   - **上线**：2026-03-18
   - **备注**：用于加入 Open-A2A 社区 DHT overlay（不提供信任背书）
 
+> 冗余目标（P0）：社区列表至少应长期在线 **2 个** bootstrap（不同主机/不同运营者更佳），避免单点。
+> 当前仍缺第 2 个入口，欢迎社区按下文流程贡献。
+
 ---
 
 ## 2. 如何运行一个 Bootstrap 节点（复制即用）
@@ -61,6 +64,11 @@ docker compose -f deploy/dht-bootstrap/docker-compose.yml up -d --build
 - 节点长期在线（至少 95% uptime）
 - 端口对外可达（TCP/UDP）
 - 允许被其他节点 bootstrap
+- 与现有节点“可互相 bootstrap”（建议：节点 A 启动时设置 `DHT_BOOTSTRAP=<现有入口>`，确保加入同一张 overlay）
+
+建议的最小健康验证（上线前自测）：
+
+- 从你本机跑一次 “join + write + read” 验证（见 `docs/zh/18-dht-bootstrap-guide.md` 的 Docker 验证步骤）
 
 ---
 
