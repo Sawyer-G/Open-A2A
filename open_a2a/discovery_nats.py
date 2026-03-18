@@ -6,6 +6,7 @@ NATS 发现实现
 """
 
 import asyncio
+import inspect
 import json
 import uuid
 from typing import Any, Callable, Optional, Union
@@ -73,6 +74,8 @@ class NatsDiscoveryProvider(DiscoveryProvider):
         responder: Union[
             Callable[[], list[dict[str, Any]]],
             Callable[[dict[str, Any]], list[dict[str, Any]]],
+            Callable[[], "asyncio.Future[list[dict[str, Any]]]"],  # type: ignore[type-arg]
+            Callable[[dict[str, Any]], "asyncio.Future[list[dict[str, Any]]]"],  # type: ignore[type-arg]
         ],
     ) -> None:
         """
@@ -94,6 +97,13 @@ class NatsDiscoveryProvider(DiscoveryProvider):
                     metas = responder(payload)  # type: ignore[misc]
                 except TypeError:
                     metas = responder()  # type: ignore[misc]
+                except Exception:
+                    return
+
+                # Support async responders for operator-grade directories.
+                try:
+                    if inspect.isawaitable(metas):
+                        metas = await metas  # type: ignore[assignment]
                 except Exception:
                     return
 

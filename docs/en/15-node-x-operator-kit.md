@@ -127,6 +127,14 @@ If Node X exposes directory-style discovery, it is recommended to also enable op
 
 See `.env.example` or `deploy/node-x/.env.node-x.example` for the environment variables.
 
+### 5.2.1 (Recommended) Multi-instance/HA: use Redis as the directory registry backend
+
+If you want to run Bridge with multiple replicas (or persist directory state in shared storage), enable the Redis backend:
+
+- Set `BRIDGE_DISCOVERY_REDIS_URL=redis://redis:6379/0`
+- In this mode, the directory registry and capability indexes are stored in Redis for multi-instance consistency
+- For single-instance deployments, `BRIDGE_DISCOVERY_PERSIST_PATH` remains a lightweight alternative
+
 ## 6. Optional hardening (not required by this kit)
 
 This kit stays intentionally minimal. Common next steps:

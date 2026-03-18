@@ -31,6 +31,12 @@ from open_a2a.intent import TOPIC_INTENT_FOOD_OFFER_PREFIX
 from open_a2a.discovery_nats import NatsDiscoveryProvider
 from open_a2a.identity import AgentIdentity, build_meta_proof
 
+# Optional Redis backend for directory registry (multi-instance HA)
+try:
+    import redis.asyncio as redis  # type: ignore
+except Exception:
+    redis = None  # type: ignore
+
 # --- 配置 ---
 NATS_URL = os.getenv("NATS_URL", "nats://localhost:4222")
 OPENCLAW_GATEWAY_URL = os.getenv("OPENCLAW_GATEWAY_URL", "").rstrip("/")
@@ -57,6 +63,7 @@ BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS = float(
     os.getenv("BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS", "5")
 )
 BRIDGE_DISCOVERY_PERSIST_PATH = os.getenv("BRIDGE_DISCOVERY_PERSIST_PATH", "").strip()
+BRIDGE_DISCOVERY_REDIS_URL = os.getenv("BRIDGE_DISCOVERY_REDIS_URL", "").strip()
 BRIDGE_DISCOVERY_REGISTER_TOKEN = os.getenv("BRIDGE_DISCOVERY_REGISTER_TOKEN", "").strip()
 BRIDGE_DISCOVERY_DISCOVER_TOKEN = os.getenv("BRIDGE_DISCOVERY_DISCOVER_TOKEN", "").strip()
 BRIDGE_DISCOVERY_RL_PER_MINUTE = int(os.getenv("BRIDGE_DISCOVERY_RL_PER_MINUTE", "60"))
@@ -180,10 +187,183 @@ _capability_subscriptions: set[str] = set()
 _last_cleanup_at: str = ""
 _last_discovery_ops_error: str = ""
 _rl_buckets: dict[str, tuple[int, float]] = {}  # key -> (count, window_start_ts)
+_redis: Optional[Any] = None
+
+
+def _redis_enabled() -> bool:
+    return bool(BRIDGE_DISCOVERY_REDIS_URL)
+
+
+def _redis_require_available() -> None:
+    if redis is None:
+        raise RuntimeError(
+            "Redis backend requested but redis is not installed. Install with: pip install open-a2a[bridge]"
+        )
+
+
+def _rk_agents() -> str:
+    return "open_a2a:bridge:discovery:agents"
+
+
+def _rk_caps() -> str:
+    return "open_a2a:bridge:discovery:caps"
+
+
+def _rk_reg(agent_id: str) -> str:
+    return f"open_a2a:bridge:discovery:reg:{agent_id}"
+
+
+def _rk_cap(cap: str) -> str:
+    return f"open_a2a:bridge:discovery:cap:{cap}"
+
+
+async def _redis_get_reg(agent_id: str) -> Optional[dict[str, Any]]:
+    if not _redis:
+        return None
+    raw = await _redis.get(_rk_reg(agent_id))
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except Exception:
+        return None
+
+
+async def _redis_upsert_registration(reg: _Registration) -> None:
+    """
+    Store one provider registration and index by capability.
+
+    Data model (MVP):
+    - reg JSON at open_a2a:bridge:discovery:reg:{agent_id} with key expiry at expires_at_ts
+    - global ZSET agents: member=agent_id, score=expires_at_ts
+    - per-capability ZSET cap:{cap}: member=agent_id, score=expires_at_ts
+    - SET caps: all seen capabilities
+    """
+    if not _redis:
+        return
+    prev = await _redis_get_reg(reg.agent_id)
+    prev_caps = prev.get("capabilities") if isinstance(prev, dict) else None
+    prev_caps = prev_caps if isinstance(prev_caps, list) else []
+
+    # remove from old capability indexes if changed
+    for c in prev_caps:
+        c = str(c).strip()
+        if c and c not in reg.capabilities:
+            await _redis.zrem(_rk_cap(c), reg.agent_id)
+
+    # write reg and index
+    reg_doc = {
+        "agent_id": reg.agent_id,
+        "capabilities": list(reg.capabilities),
+        "meta": reg.meta,
+        "expires_at_ts": float(reg.expires_at_ts),
+        "updated_at": reg.updated_at,
+    }
+    exp_ts = int(reg.expires_at_ts)
+    await _redis.set(_rk_reg(reg.agent_id), json.dumps(reg_doc, ensure_ascii=False), exat=exp_ts)
+    await _redis.zadd(_rk_agents(), {reg.agent_id: float(reg.expires_at_ts)})
+    if reg.capabilities:
+        await _redis.sadd(_rk_caps(), *list(reg.capabilities))
+    for c in reg.capabilities:
+        await _redis.zadd(_rk_cap(c), {reg.agent_id: float(reg.expires_at_ts)})
+
+
+async def _redis_list_active_metas_for_capability(cap: str) -> list[dict[str, Any]]:
+    if not _redis:
+        return []
+    now_ts = datetime.now(timezone.utc).timestamp()
+    ids = await _redis.zrangebyscore(_rk_cap(cap), min=now_ts, max="+inf")
+    if not ids:
+        return []
+    # decode
+    agent_ids = [x.decode("utf-8") if isinstance(x, (bytes, bytearray)) else str(x) for x in ids]
+    keys = [_rk_reg(aid) for aid in agent_ids]
+    raws = await _redis.mget(keys)
+    out: list[dict[str, Any]] = []
+    missing_ids: list[str] = []
+    for aid, raw in zip(agent_ids, raws):
+        if not raw:
+            missing_ids.append(aid)
+            continue
+        try:
+            doc = json.loads(raw)
+            meta = doc.get("meta") if isinstance(doc, dict) else None
+            if isinstance(meta, dict):
+                out.append(meta)
+        except Exception:
+            continue
+    # Best-effort cleanup of index entries whose reg key is missing
+    if missing_ids:
+        try:
+            await _redis.zrem(_rk_cap(cap), *missing_ids)
+        except Exception:
+            pass
+    return out
+
+
+async def _redis_stats() -> tuple[int, int, dict[str, int]]:
+    """
+    Returns: (providers_total, providers_verified, by_capability)
+    """
+    if not _redis:
+        return 0, 0, {}
+    now_ts = datetime.now(timezone.utc).timestamp()
+    providers_total = int(await _redis.zcount(_rk_agents(), min=now_ts, max="+inf"))
+
+    # compute by_capability from caps set; keep only caps with active providers
+    by_cap: dict[str, int] = {}
+    caps = await _redis.smembers(_rk_caps())
+    for c in caps or []:
+        cap = c.decode("utf-8") if isinstance(c, (bytes, bytearray)) else str(c)
+        if not cap:
+            continue
+        cnt = int(await _redis.zcount(_rk_cap(cap), min=now_ts, max="+inf"))
+        if cnt > 0:
+            by_cap[cap] = cnt
+
+    # verified count: best-effort scan of active providers
+    verified = 0
+    ids = await _redis.zrangebyscore(_rk_agents(), min=now_ts, max="+inf")
+    if ids:
+        agent_ids = [x.decode("utf-8") if isinstance(x, (bytes, bytearray)) else str(x) for x in ids]
+        raws = await _redis.mget([_rk_reg(aid) for aid in agent_ids])
+        for raw in raws or []:
+            if not raw:
+                continue
+            try:
+                doc = json.loads(raw)
+                meta = doc.get("meta") if isinstance(doc, dict) else None
+                if isinstance(meta, dict) and _is_verified(meta):
+                    verified += 1
+            except Exception:
+                continue
+    return providers_total, verified, by_cap
+
+
+async def _redis_cleanup_expired() -> None:
+    if not _redis:
+        return
+    now_ts = datetime.now(timezone.utc).timestamp()
+    expired = await _redis.zrangebyscore(_rk_agents(), min="-inf", max=now_ts)
+    if not expired:
+        return
+    agent_ids = [x.decode("utf-8") if isinstance(x, (bytes, bytearray)) else str(x) for x in expired]
+    for aid in agent_ids:
+        doc = await _redis_get_reg(aid)
+        caps = doc.get("capabilities") if isinstance(doc, dict) else []
+        caps = caps if isinstance(caps, list) else []
+        for c in caps:
+            cap = str(c).strip()
+            if cap:
+                await _redis.zrem(_rk_cap(cap), aid)
+        await _redis.delete(_rk_reg(aid))
+        await _redis.zrem(_rk_agents(), aid)
+
 
 
 def _persist_enabled() -> bool:
-    return bool(BRIDGE_DISCOVERY_PERSIST_PATH)
+    # file persistence is only for memory backend
+    return (not _redis_enabled()) and bool(BRIDGE_DISCOVERY_PERSIST_PATH)
 
 
 def _persist_safe_reg(reg: "_Registration") -> dict[str, Any]:
@@ -335,13 +515,42 @@ def _is_verified(meta: dict[str, Any]) -> bool:
 
 
 def _get_active_metas_for_capability(cap: str) -> list[dict[str, Any]]:
+    # legacy sync wrapper (memory backend only)
     now_ts = datetime.now(timezone.utc).timestamp()
-    out: list[dict[str, Any]] = []
+    return [
+        reg.meta
+        for reg in _registrations.values()
+        if reg.expires_at_ts > now_ts and cap in reg.capabilities
+    ]
+
+
+async def _get_active_metas_for_capability_async(cap: str) -> list[dict[str, Any]]:
+    if _redis_enabled():
+        return await _redis_list_active_metas_for_capability(cap)
+    return _get_active_metas_for_capability(cap)
+
+
+async def _get_active_caps_async() -> set[str]:
+    if _redis_enabled() and _redis:
+        now_ts = datetime.now(timezone.utc).timestamp()
+        caps_raw = await _redis.smembers(_rk_caps())
+        out: set[str] = set()
+        for c in caps_raw or []:
+            cap = c.decode("utf-8") if isinstance(c, (bytes, bytearray)) else str(c)
+            if not cap:
+                continue
+            try:
+                cnt = int(await _redis.zcount(_rk_cap(cap), min=now_ts, max="+inf"))
+            except Exception:
+                continue
+            if cnt > 0:
+                out.add(cap)
+        return out
+    now_ts = datetime.now(timezone.utc).timestamp()
+    out: set[str] = set()
     for reg in _registrations.values():
-        if reg.expires_at_ts <= now_ts:
-            continue
-        if cap in reg.capabilities:
-            out.append(reg.meta)
+        if reg.expires_at_ts > now_ts:
+            out.update(reg.capabilities)
     return out
 
 
@@ -353,16 +562,14 @@ async def _sync_discovery_subscriptions() -> None:
     if not discovery or _discovery_status != "connected":
         return
 
-    now_ts = datetime.now(timezone.utc).timestamp()
-    active_caps: set[str] = set()
-    for reg in _registrations.values():
-        if reg.expires_at_ts > now_ts:
-            active_caps.update(reg.capabilities)
+    active_caps = await _get_active_caps_async()
 
     # Add missing responders
     for cap in sorted(active_caps - _capability_subscriptions):
         try:
-            await discovery.register_responder(cap, lambda _p=None, c=cap: _get_active_metas_for_capability(c))
+            await discovery.register_responder(
+                cap, lambda _p=None, c=cap: _get_active_metas_for_capability_async(c)
+            )
             _capability_subscriptions.add(cap)
         except Exception as e:
             _last_discovery_ops_error = str(e)
@@ -528,6 +735,18 @@ async def lifespan(app: FastAPI):
         broadcaster = None
         print(f"[Bridge] 连接 NATS 失败: {e}")
 
+    # Optional Redis registry backend (for HA / multi-instance directory)
+    global _redis
+    if _redis_enabled():
+        _redis_require_available()
+        _redis = redis.from_url(BRIDGE_DISCOVERY_REDIS_URL, decode_responses=False)
+        try:
+            await _redis.ping()
+            print("[Bridge] discovery registry backend: redis (connected)")
+        except Exception as e:
+            _redis = None
+            raise RuntimeError(f"Redis registry connect failed: {e}")
+
     # Discovery：用于能力注册与查询（持续被发现）
     discovery_keepalive_task = None
     cleanup_task = None
@@ -539,7 +758,8 @@ async def lifespan(app: FastAPI):
             _discovery_error = ""
 
             # Optional: restore directory registry before syncing subscriptions.
-            _load_registrations_from_disk()
+            if not _redis_enabled():
+                _load_registrations_from_disk()
 
             caps = _parse_capabilities(BRIDGE_CAPABILITIES)
             meta = _default_meta(BRIDGE_AGENT_ID)
@@ -554,15 +774,19 @@ async def lifespan(app: FastAPI):
                 ttl = max(BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS, 60.0)
                 meta["capabilities"] = list(caps)
                 _maybe_attach_identity_proof(meta)
-                _registrations[BRIDGE_AGENT_ID] = _Registration(
+                reg = _Registration(
                     agent_id=BRIDGE_AGENT_ID,
                     capabilities=list(caps),
                     meta=meta,
                     expires_at_ts=datetime.now(timezone.utc).timestamp() + ttl,
                     updated_at=_now_iso(),
                 )
+                if _redis_enabled():
+                    await _redis_upsert_registration(reg)
+                else:
+                    _registrations[BRIDGE_AGENT_ID] = reg
+                    _save_registrations_to_disk()
                 await _sync_discovery_subscriptions()
-                _save_registrations_to_disk()
                 print(f"[Bridge] Discovery 已注册能力 {len(caps)} 个: {', '.join(caps)}")
 
             # 保持一个 task 引用，便于 graceful shutdown（未来可扩展心跳/定时刷新）
@@ -572,15 +796,22 @@ async def lifespan(app: FastAPI):
                 global _last_cleanup_at, _last_discovery_ops_error
                 while True:
                     await asyncio.sleep(BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS)
-                    now_ts = datetime.now(timezone.utc).timestamp()
-                    removed = []
-                    for aid, reg in list(_registrations.items()):
-                        if reg.expires_at_ts <= now_ts:
-                            removed.append(aid)
-                            _registrations.pop(aid, None)
-                    if removed:
-                        await _sync_discovery_subscriptions()
-                        _save_registrations_to_disk()
+                    if _redis_enabled():
+                        try:
+                            await _redis_cleanup_expired()
+                            await _sync_discovery_subscriptions()
+                        except Exception as e:
+                            _last_discovery_ops_error = str(e)
+                    else:
+                        now_ts = datetime.now(timezone.utc).timestamp()
+                        removed = []
+                        for aid, reg in list(_registrations.items()):
+                            if reg.expires_at_ts <= now_ts:
+                                removed.append(aid)
+                                _registrations.pop(aid, None)
+                        if removed:
+                            await _sync_discovery_subscriptions()
+                            _save_registrations_to_disk()
                     _last_cleanup_at = _now_iso()
 
             cleanup_task = asyncio.create_task(_cleanup_loop())
@@ -627,6 +858,12 @@ async def lifespan(app: FastAPI):
         if broadcaster:
             await broadcaster.disconnect()
             print("[Bridge] 已断开 NATS")
+        if _redis:
+            try:
+                await _redis.close()
+            except Exception:
+                pass
+            _redis = None
 
 
 app = FastAPI(
@@ -735,22 +972,22 @@ async def register_capabilities(req: RegisterCapabilitiesRequest, request: Reque
         expires_at_ts = datetime.now(timezone.utc).timestamp() + ttl
         expires_at = datetime.fromtimestamp(expires_at_ts, tz=timezone.utc).isoformat()
 
-        _registrations[req.agent_id] = _Registration(
+        reg = _Registration(
             agent_id=req.agent_id,
             capabilities=list(caps),
             meta=meta,
             expires_at_ts=expires_at_ts,
             updated_at=_now_iso(),
         )
+        if _redis_enabled():
+            await _redis_upsert_registration(reg)
+        else:
+            _registrations[req.agent_id] = reg
+            _save_registrations_to_disk()
         await _sync_discovery_subscriptions()
-        _save_registrations_to_disk()
 
         # legacy view
-        union_caps: set[str] = set()
-        now_ts = datetime.now(timezone.utc).timestamp()
-        for r in _registrations.values():
-            if r.expires_at_ts > now_ts:
-                union_caps.update(r.capabilities)
+        union_caps = await _get_active_caps_async()
         global _registered_capabilities, _registered_meta
         _registered_meta = meta
         _registered_capabilities = sorted(union_caps)
@@ -788,20 +1025,25 @@ async def discover_capability(capability: str, timeout_seconds: float = 3.0, req
 async def discovery_stats(request: Request) -> DiscoveryStatsResponse:
     _require_bearer(request, BRIDGE_DISCOVERY_DISCOVER_TOKEN, name="stats")
     _rate_limit(request, bucket="stats", limit_per_minute=BRIDGE_DISCOVERY_RL_PER_MINUTE)
-    now_ts = datetime.now(timezone.utc).timestamp()
-    active = [r for r in _registrations.values() if r.expires_at_ts > now_ts]
-    by_cap: dict[str, int] = {}
-    verified = 0
-    for r in active:
-        if _is_verified(r.meta):
-            verified += 1
-        for c in r.capabilities:
-            by_cap[c] = by_cap.get(c, 0) + 1
+    if _redis_enabled():
+        total, verified, by_cap = await _redis_stats()
+        active_total = total
+    else:
+        now_ts = datetime.now(timezone.utc).timestamp()
+        active = [r for r in _registrations.values() if r.expires_at_ts > now_ts]
+        by_cap = {}
+        verified = 0
+        for r in active:
+            if _is_verified(r.meta):
+                verified += 1
+            for c in r.capabilities:
+                by_cap[c] = by_cap.get(c, 0) + 1
+        active_total = len(active)
     return DiscoveryStatsResponse(
         status=_discovery_status,
-        providers_total=len(active),
+        providers_total=active_total,
         providers_verified=verified,
-        providers_unverified=max(0, len(active) - verified),
+        providers_unverified=max(0, active_total - verified),
         capabilities_total=len(by_cap),
         by_capability=by_cap,
         last_cleanup_at=_last_cleanup_at,

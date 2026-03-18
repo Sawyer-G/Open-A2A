@@ -127,6 +127,14 @@ BRIDGE_DID_SEED_B64=BASE64_SEED
 
 对应环境变量见 `.env.example` 或 `deploy/node-x/.env.node-x.example`。
 
+### 5.2.1（推荐）多实例/HA：使用 Redis 作为目录注册表后端
+
+如果你希望 Bridge 以多副本方式运行（或希望目录状态由共享存储持久化），推荐启用 Redis 后端：
+
+- 设置 `BRIDGE_DISCOVERY_REDIS_URL=redis://redis:6379/0`
+- 该模式下目录注册表与 capability 索引会写入 Redis，适用于多实例一致性
+- 单实例场景仍可使用 `BRIDGE_DISCOVERY_PERSIST_PATH`（文件持久化）作为轻量选择
+
 ## 6. 运营者后续增强（不在本套件强制）
 
 这套 Node X kit 刻意保持“最小可用”，后续常见增强包括：

@@ -256,6 +256,7 @@ Relevant environment variables are documented in `.env.example`:
 
 - `BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS`
 - `BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS`
+- `BRIDGE_DISCOVERY_REDIS_URL` (recommended: Redis registry backend for multi-instance/HA; when set, Bridge does not rely on in-memory/file registry)
 - `BRIDGE_DISCOVERY_PERSIST_PATH` (optional: persist the directory registry for single-instance restart recovery; disabled by default)
 - `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
 - `BRIDGE_DISCOVERY_RL_PER_MINUTE`

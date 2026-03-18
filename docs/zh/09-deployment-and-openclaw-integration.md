@@ -242,6 +242,7 @@ curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_se
 
 - `BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS`
 - `BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS`
+- `BRIDGE_DISCOVERY_REDIS_URL`（推荐：Redis 注册表后端，用于多实例/HA；设定后不再依赖单实例内存/文件）
 - `BRIDGE_DISCOVERY_PERSIST_PATH`（可选：目录持久化文件路径，用于单实例重启恢复；默认关闭）
 - `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
 - `BRIDGE_DISCOVERY_RL_PER_MINUTE`
