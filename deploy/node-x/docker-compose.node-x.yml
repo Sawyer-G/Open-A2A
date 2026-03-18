@@ -21,6 +21,7 @@ services:
       dockerfile: Dockerfile.relay
     environment:
       - NATS_URL=nats://${NATS_RELAY_USER}:${NATS_RELAY_PASS}@${NATS_HOST:-nats}:${NATS_PORT:-4222}
+      - OA2A_STRICT_SECURITY=${OA2A_STRICT_SECURITY:-0}
       - RELAY_WS_HOST=${RELAY_WS_HOST:-0.0.0.0}
       - RELAY_WS_PORT=${RELAY_WS_PORT:-8765}
       - RELAY_WS_TLS=${RELAY_WS_TLS:-0}
@@ -50,6 +51,7 @@ services:
       - "${BRIDGE_PORT:-8080}:8080"
     environment:
       - NATS_URL=nats://${NATS_BRIDGE_USER}:${NATS_BRIDGE_PASS}@${NATS_HOST:-nats}:${NATS_PORT:-4222}
+      - OA2A_STRICT_SECURITY=${OA2A_STRICT_SECURITY:-0}
       - BRIDGE_ENABLE_FORWARD=${BRIDGE_ENABLE_FORWARD:-0}
       - BRIDGE_ENABLE_DISCOVERY=${BRIDGE_ENABLE_DISCOVERY:-1}
       - BRIDGE_AGENT_ID=${BRIDGE_AGENT_ID:-node-x-bridge}

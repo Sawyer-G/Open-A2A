@@ -87,6 +87,7 @@ bash scripts/diagnose-node-x.sh
 - `BRIDGE_ENABLE_FORWARD=0`（不把全网 intent 转发到某个 OpenClaw）
 - `BRIDGE_ENABLE_DISCOVERY=1`（对外提供 register/discover 的目录能力）
 - 对外主入口是 Relay（终端用户接入门槛最低）
+- （推荐）开启严格安全模式：`OA2A_STRICT_SECURITY=1`（检测到明显不安全配置会拒绝启动）
 
 如果你是“自用节点（你自己跑 OpenClaw）”，才推荐：
 

@@ -36,6 +36,7 @@ NATS_URL = os.getenv("NATS_URL", "nats://localhost:4222")
 OPENCLAW_GATEWAY_URL = os.getenv("OPENCLAW_GATEWAY_URL", "").rstrip("/")
 OPENCLAW_HOOKS_TOKEN = os.getenv("OPENCLAW_HOOKS_TOKEN", "")
 BRIDGE_ENABLE_FORWARD = os.getenv("BRIDGE_ENABLE_FORWARD", "1").lower() in ("1", "true", "yes")
+OA2A_STRICT_SECURITY = os.getenv("OA2A_STRICT_SECURITY", "").strip().lower() in ("1", "true", "yes")
 
 # --- Discovery（持续被发现）配置 ---
 # NATS Discovery 的 “register” 本质是在 NATS 上订阅 open_a2a.discovery.query.{capability}，
@@ -59,6 +60,33 @@ BRIDGE_DISCOVERY_PERSIST_PATH = os.getenv("BRIDGE_DISCOVERY_PERSIST_PATH", "").s
 BRIDGE_DISCOVERY_REGISTER_TOKEN = os.getenv("BRIDGE_DISCOVERY_REGISTER_TOKEN", "").strip()
 BRIDGE_DISCOVERY_DISCOVER_TOKEN = os.getenv("BRIDGE_DISCOVERY_DISCOVER_TOKEN", "").strip()
 BRIDGE_DISCOVERY_RL_PER_MINUTE = int(os.getenv("BRIDGE_DISCOVERY_RL_PER_MINUTE", "60"))
+
+
+def _security_boot_check() -> None:
+    """
+    Fail fast for obviously insecure operator deployments when OA2A_STRICT_SECURITY=1.
+
+    Defaults to warnings only to keep backwards compatibility.
+    """
+    issues: list[str] = []
+
+    if BRIDGE_ENABLE_DISCOVERY:
+        if not BRIDGE_DISCOVERY_REGISTER_TOKEN or not BRIDGE_DISCOVERY_DISCOVER_TOKEN:
+            issues.append("Bridge discovery 未配置 register/discover token（公网部署建议开启鉴权）")
+
+    if BRIDGE_ENABLE_FORWARD and (not OPENCLAW_GATEWAY_URL or not OPENCLAW_HOOKS_TOKEN):
+        issues.append("BRIDGE_ENABLE_FORWARD=1 但 OPENCLAW_GATEWAY_URL/OPENCLAW_HOOKS_TOKEN 未配置")
+
+    if "change-me" in NATS_URL:
+        issues.append("NATS_URL 疑似仍包含 change-me 占位密码，请先修改")
+
+    if not issues:
+        return
+
+    msg = "[Bridge][security] " + "；".join(issues)
+    if OA2A_STRICT_SECURITY:
+        raise SystemExit(msg + "。已启用 OA2A_STRICT_SECURITY=1，拒绝在不安全配置下启动。")
+    print(msg + "。你可以设置 OA2A_STRICT_SECURITY=1 来强制拒绝启动。")
 
 # --- Pydantic 模型 ---
 
@@ -487,6 +515,7 @@ async def lifespan(app: FastAPI):
         _discovery_status,
         _discovery_error,
     )
+    _security_boot_check()
     broadcaster = IntentBroadcaster(NATS_URL)
     try:
         await broadcaster.connect()

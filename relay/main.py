@@ -38,6 +38,7 @@ RELAY_WS_PORT = int(os.getenv("RELAY_WS_PORT", "8765"))
 RELAY_WS_TLS = os.getenv("RELAY_WS_TLS", "").strip().lower() in ("1", "true", "yes")
 RELAY_WS_SSL_CERT = os.getenv("RELAY_WS_SSL_CERT", "").strip()
 RELAY_WS_SSL_KEY = os.getenv("RELAY_WS_SSL_KEY", "").strip()
+OA2A_STRICT_SECURITY = os.getenv("OA2A_STRICT_SECURITY", "").strip().lower() in ("1", "true", "yes")
 
 # --- Ops/Security knobs (public entrypoint hardening) ---
 RELAY_AUTH_TOKEN = os.getenv("RELAY_AUTH_TOKEN", "").strip()
@@ -53,6 +54,34 @@ RELAY_MAX_SUBSCRIPTIONS_PER_CONN = int(os.getenv("RELAY_MAX_SUBSCRIPTIONS_PER_CO
 RELAY_MAX_MESSAGE_BYTES = int(os.getenv("RELAY_MAX_MESSAGE_BYTES", "65536"))
 RELAY_MAX_JSON_BYTES = int(os.getenv("RELAY_MAX_JSON_BYTES", "262144"))
 RELAY_RL_PUB_PER_SEC = int(os.getenv("RELAY_RL_PUB_PER_SEC", "30"))
+
+def _security_boot_check() -> None:
+    """
+    Fail fast for obviously insecure public deployments when OA2A_STRICT_SECURITY=1.
+
+    Defaults to warnings only to keep backwards compatibility.
+    """
+    issues: list[str] = []
+
+    host = (RELAY_WS_HOST or "").strip()
+    is_public_bind = host in ("0.0.0.0", "::", "")
+    if is_public_bind and not RELAY_AUTH_TOKEN:
+        issues.append("RELAY_AUTH_TOKEN 未设置（Relay 绑定公网地址时建议启用鉴权）")
+
+    allow = RELAY_SUBJECT_ALLOWLIST.strip()
+    if "_INBOX.>" in allow:
+        issues.append("RELAY_SUBJECT_ALLOWLIST 包含 _INBOX.>（过宽，建议使用 _INBOX.open_a2a.>）")
+
+    if "change-me" in NATS_URL:
+        issues.append("NATS_URL 疑似仍包含 change-me 占位密码，请先修改")
+
+    if not issues:
+        return
+
+    msg = "[Relay][security] " + "；".join(issues)
+    if OA2A_STRICT_SECURITY:
+        raise SystemExit(msg + "。已启用 OA2A_STRICT_SECURITY=1，拒绝在不安全配置下启动。")
+    print(msg + "。你可以设置 OA2A_STRICT_SECURITY=1 来强制拒绝启动。")
 
 
 def _make_ssl_context() -> Optional[ssl.SSLContext]:
@@ -243,6 +272,7 @@ async def _run_nats() -> None:
 async def main() -> None:
     if websockets is None:
         raise RuntimeError("websockets is required for relay. pip install open-a2a[relay]")
+    _security_boot_check()
     await _run_nats()
     ssl_ctx = _make_ssl_context()
     if ssl_ctx:
