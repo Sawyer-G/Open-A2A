@@ -241,6 +241,8 @@ curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_se
 相关环境变量见 `.env.example`：
 
 - `BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS`
+- `BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS`
+- `BRIDGE_DISCOVERY_PERSIST_PATH`（可选：目录持久化文件路径，用于单实例重启恢复；默认关闭）
 - `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
 - `BRIDGE_DISCOVERY_RL_PER_MINUTE`
 

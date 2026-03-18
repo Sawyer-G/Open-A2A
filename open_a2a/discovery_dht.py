@@ -10,6 +10,7 @@ Bootstrap：可通过环境变量 OPEN_A2A_DHT_BOOTSTRAP 或公共列表加入�
 import asyncio
 import json
 import os
+import time
 import uuid
 from typing import Any, List, Optional, Tuple
 
@@ -21,7 +22,9 @@ except ImportError:
     KademliaServer = None  # type: ignore
 
 DHT_KEY_PREFIX = "open_a2a:discovery:"
-DHT_VALUE_TTL = 300  # 秒，建议定期 re-register
+# Directory-quality TTL (seconds). Clients should renew periodically.
+# This is NOT enforced by the DHT layer itself; we embed expires_at_ts in each record and filter on read.
+DHT_VALUE_TTL = 300
 
 # 公共 bootstrap 列表（预留）：社区或项目提供的长期节点，使所有人加入同一 DHT 网。
 # 当前为空；后续可在此或通过 OPEN_A2A_DHT_BOOTSTRAP 配置。
@@ -54,6 +57,25 @@ def get_default_dht_bootstrap() -> List[Tuple[str, int]]:
 
 def _dht_key(capability: str) -> str:
     return f"{DHT_KEY_PREFIX}{capability}"
+
+
+def _now_ts() -> float:
+    return time.time()
+
+
+def _prune_records(lst: list[dict[str, Any]], *, now_ts: float) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for x in lst:
+        if not isinstance(x, dict):
+            continue
+        exp = x.get("_expires_at_ts")
+        try:
+            exp_ts = float(exp) if exp is not None else None
+        except (TypeError, ValueError):
+            exp_ts = None
+        if exp_ts is None or exp_ts > now_ts:
+            out.append(x)
+    return out
 
 
 class DhtDiscoveryProvider(DiscoveryProvider):
@@ -96,17 +118,26 @@ class DhtDiscoveryProvider(DiscoveryProvider):
         if not self._node:
             raise RuntimeError("Not connected. Call connect() first.")
         key = _dht_key(capability)
-        reg_id = uuid.uuid4().hex
-        meta_with_id = {**meta, "_reg_id": reg_id}
+        reg_id = self._my_regs.get(capability) or uuid.uuid4().hex
         self._my_regs[capability] = reg_id
+
+        now_ts = _now_ts()
+        expires_at_ts = now_ts + float(DHT_VALUE_TTL)
+        meta_with_id = {**meta, "_reg_id": reg_id, "_expires_at_ts": expires_at_ts}
 
         try:
             raw = await self._node.get(key)
             lst: list[dict[str, Any]] = json.loads(raw) if raw else []
         except (TypeError, json.JSONDecodeError):
             lst = []
-        lst.append(meta_with_id)
-        await self._node.set(key, json.dumps(lst, ensure_ascii=False))
+        if not isinstance(lst, list):
+            lst = []
+
+        # Prune expired and "renew" by replacing the same _reg_id if it exists.
+        lst2 = _prune_records([x for x in lst if isinstance(x, dict)], now_ts=now_ts)
+        lst2 = [x for x in lst2 if x.get("_reg_id") != reg_id]
+        lst2.append(meta_with_id)
+        await self._node.set(key, json.dumps(lst2, ensure_ascii=False))
 
     async def unregister(self, capability: str) -> None:
         if not self._node:
@@ -120,7 +151,9 @@ class DhtDiscoveryProvider(DiscoveryProvider):
             lst: list[dict[str, Any]] = json.loads(raw) if raw else []
         except (TypeError, json.JSONDecodeError):
             return
-        new_lst = [x for x in lst if x.get("_reg_id") != reg_id]
+        if not isinstance(lst, list):
+            return
+        new_lst = [x for x in lst if isinstance(x, dict) and x.get("_reg_id") != reg_id]
         if new_lst:
             await self._node.set(key, json.dumps(new_lst, ensure_ascii=False))
         else:
@@ -142,5 +175,15 @@ class DhtDiscoveryProvider(DiscoveryProvider):
             return []
         if not isinstance(lst, list):
             return []
+
+        now_ts = _now_ts()
+        kept = _prune_records([x for x in lst if isinstance(x, dict)], now_ts=now_ts)
+        # Best-effort hygiene: write back pruned list to reduce zombie records.
+        if len(kept) != len([x for x in lst if isinstance(x, dict)]):
+            try:
+                await self._node.set(key, json.dumps(kept, ensure_ascii=False))
+            except Exception:
+                pass
+
         # 去掉内部字段，只返回对外 meta
-        return [{k: v for k, v in x.items() if not k.startswith("_")} for x in lst]
+        return [{k: v for k, v in x.items() if not k.startswith("_")} for x in kept]

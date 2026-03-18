@@ -10,6 +10,7 @@ Open-A2A Bridge - 连接 NATS 与 OpenClaw 的适配层
 import asyncio
 import json
 import os
+import tempfile
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -54,6 +55,7 @@ BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS = float(os.getenv("BRIDGE_DISCOVERY_DEFAULT
 BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS = float(
     os.getenv("BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS", "5")
 )
+BRIDGE_DISCOVERY_PERSIST_PATH = os.getenv("BRIDGE_DISCOVERY_PERSIST_PATH", "").strip()
 BRIDGE_DISCOVERY_REGISTER_TOKEN = os.getenv("BRIDGE_DISCOVERY_REGISTER_TOKEN", "").strip()
 BRIDGE_DISCOVERY_DISCOVER_TOKEN = os.getenv("BRIDGE_DISCOVERY_DISCOVER_TOKEN", "").strip()
 BRIDGE_DISCOVERY_RL_PER_MINUTE = int(os.getenv("BRIDGE_DISCOVERY_RL_PER_MINUTE", "60"))
@@ -150,6 +152,94 @@ _capability_subscriptions: set[str] = set()
 _last_cleanup_at: str = ""
 _last_discovery_ops_error: str = ""
 _rl_buckets: dict[str, tuple[int, float]] = {}  # key -> (count, window_start_ts)
+
+
+def _persist_enabled() -> bool:
+    return bool(BRIDGE_DISCOVERY_PERSIST_PATH)
+
+
+def _persist_safe_reg(reg: "_Registration") -> dict[str, Any]:
+    return {
+        "agent_id": reg.agent_id,
+        "capabilities": list(reg.capabilities),
+        "meta": reg.meta,
+        "expires_at_ts": float(reg.expires_at_ts),
+        "updated_at": reg.updated_at,
+    }
+
+
+def _save_registrations_to_disk() -> None:
+    """
+    Best-effort persistence for single-instance operator deployments.
+    - Disabled by default (BRIDGE_DISCOVERY_PERSIST_PATH empty).
+    - Atomic write: write temp then replace.
+    """
+    if not _persist_enabled():
+        return
+    try:
+        path = Path(BRIDGE_DISCOVERY_PERSIST_PATH)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        now_ts = datetime.now(timezone.utc).timestamp()
+        data = {
+            "version": 1,
+            "saved_at": _now_iso(),
+            "registrations": {
+                aid: _persist_safe_reg(reg)
+                for aid, reg in _registrations.items()
+                if reg.expires_at_ts > now_ts
+            },
+        }
+        payload = json.dumps(data, ensure_ascii=False, sort_keys=True, indent=2)
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False, dir=str(path.parent)) as f:
+            f.write(payload)
+            tmp = f.name
+        os.replace(tmp, str(path))
+    except Exception as e:
+        # do not crash the service for persistence failures
+        print(f"[Bridge] discovery 持久化失败（将继续以内存模式运行）: {e}")
+
+
+def _load_registrations_from_disk() -> None:
+    if not _persist_enabled():
+        return
+    path = Path(BRIDGE_DISCOVERY_PERSIST_PATH)
+    if not path.exists():
+        return
+    try:
+        raw = path.read_text(encoding="utf-8")
+        doc = json.loads(raw)
+        regs = doc.get("registrations") or {}
+        if not isinstance(regs, dict):
+            return
+        now_ts = datetime.now(timezone.utc).timestamp()
+        loaded = 0
+        for aid, item in regs.items():
+            if not isinstance(aid, str) or not isinstance(item, dict):
+                continue
+            exp = item.get("expires_at_ts")
+            try:
+                exp_ts = float(exp)
+            except (TypeError, ValueError):
+                continue
+            if exp_ts <= now_ts:
+                continue
+            caps = item.get("capabilities") or []
+            meta = item.get("meta") or {}
+            updated_at = item.get("updated_at") or ""
+            if not isinstance(caps, list) or not isinstance(meta, dict):
+                continue
+            _registrations[aid] = _Registration(
+                agent_id=aid,
+                capabilities=[str(c).strip() for c in caps if str(c).strip()],
+                meta=meta,
+                expires_at_ts=exp_ts,
+                updated_at=str(updated_at),
+            )
+            loaded += 1
+        if loaded:
+            print(f"[Bridge] discovery 从磁盘恢复注册表: {loaded} 个 provider")
+    except Exception as e:
+        print(f"[Bridge] discovery 注册表恢复失败（忽略，继续空目录启动）: {e}")
 
 
 def _now_iso() -> str:
@@ -312,6 +402,7 @@ async def _apply_registration(agent_id: str, capabilities: list[str], meta: dict
     )
     _registrations[agent_id] = reg
     await _sync_discovery_subscriptions()
+    _save_registrations_to_disk()
 
     # Maintain a legacy union view for /health (not used for responder anymore)
     union_caps: set[str] = set()
@@ -418,6 +509,9 @@ async def lifespan(app: FastAPI):
             _discovery_status = "connected"
             _discovery_error = ""
 
+            # Optional: restore directory registry before syncing subscriptions.
+            _load_registrations_from_disk()
+
             caps = _parse_capabilities(BRIDGE_CAPABILITIES)
             meta = _default_meta(BRIDGE_AGENT_ID)
             if BRIDGE_META_JSON.strip():
@@ -439,6 +533,7 @@ async def lifespan(app: FastAPI):
                     updated_at=_now_iso(),
                 )
                 await _sync_discovery_subscriptions()
+                _save_registrations_to_disk()
                 print(f"[Bridge] Discovery 已注册能力 {len(caps)} 个: {', '.join(caps)}")
 
             # 保持一个 task 引用，便于 graceful shutdown（未来可扩展心跳/定时刷新）
@@ -456,6 +551,7 @@ async def lifespan(app: FastAPI):
                             _registrations.pop(aid, None)
                     if removed:
                         await _sync_discovery_subscriptions()
+                        _save_registrations_to_disk()
                     _last_cleanup_at = _now_iso()
 
             cleanup_task = asyncio.create_task(_cleanup_loop())
@@ -618,6 +714,7 @@ async def register_capabilities(req: RegisterCapabilitiesRequest, request: Reque
             updated_at=_now_iso(),
         )
         await _sync_discovery_subscriptions()
+        _save_registrations_to_disk()
 
         # legacy view
         union_caps: set[str] = set()

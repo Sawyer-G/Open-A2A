@@ -17,6 +17,7 @@
 - **节点 X 运营套件（可复制）**：`deploy/node-x/`（compose、nats.conf、env 模板、诊断脚本）
 - **持续被发现（Path B）产品化**：Bridge 增加 TTL/过期回收、可选鉴权与限流、`/api/discovery_stats`
 - **注册续租（客户端最佳实践）**：示例脚本 `example/bridge_discovery_renew.py`（按 TTL 周期续租）
+- **DHT 发现目录质量（续租）**：DHT 记录带过期字段并在 discover 时过滤；示例脚本 `example/dht_discovery_renew.py`
 - **多运营者互联（方式 2）**：独立 NATS + subject-bridge（`deploy/federation/x-y/`）
 - **身份与信任互操作规范**：新增 `spec/rfc-004-identity-and-trust.md`（meta 最小字段与 proof）
 

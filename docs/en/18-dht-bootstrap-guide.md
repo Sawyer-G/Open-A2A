@@ -72,4 +72,7 @@ make run-discovery-dht-demo
 - Keep bootstrap nodes online (like “entry DNS”)
 - Use at least 2 bootstrap nodes for resiliency
 - DHT provides discovery indexing only; communication still happens via endpoints (NATS/Relay/HTTP)
+- **Directory quality**: DHT won’t delete stale records automatically. Providers should **renew periodically**
+  by re-registering (repeat `register()` to refresh expiry).
+  - See: `example/dht_discovery_renew.py` (`make run-dht-discovery-renew`)
 

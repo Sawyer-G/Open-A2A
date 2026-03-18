@@ -72,4 +72,6 @@ make run-discovery-dht-demo
 - bootstrap 节点应长期在线（像“入口 DNS”一样），否则新节点加入困难
 - bootstrap 列表至少 2 个节点更稳健（避免单点）
 - DHT 只提供“发现索引”，并不替代传输层；发现后仍需通过 NATS/Relay/HTTP 等 endpoint 实际通信
+- **目录质量**：DHT 不会自动删除旧记录，建议所有注册方按 TTL 周期**定期续租**（重复 register 即可刷新过期时间）
+  - 参考：`example/dht_discovery_renew.py`（`make run-dht-discovery-renew`）
 

@@ -1,7 +1,7 @@
 # Open-A2A 开发命令
 # 使用 make 或 make help 查看可用命令
 
-.PHONY: venv install install-full install-solid install-bridge install-relay install-dht install-e2e run-merchant run-merchant-2 run-merchant-3 run-consumer run-carrier run-bridge run-relay run-relay-e2e-verify run-multi-merchant-demo run-discovery-demo run-discovery-dht-demo run-bridge-discovery-renew run-federation-xy down-federation-xy lint test help
+.PHONY: venv install install-full install-solid install-bridge install-relay install-dht install-e2e run-merchant run-merchant-2 run-merchant-3 run-consumer run-carrier run-bridge run-relay run-relay-e2e-verify run-multi-merchant-demo run-discovery-demo run-discovery-dht-demo run-dht-discovery-renew run-bridge-discovery-renew run-federation-xy down-federation-xy lint test help
 
 # 默认使用 .venv
 VENV := .venv
@@ -23,6 +23,7 @@ help:
 	@echo "  make run-bridge   - 运行 Open-A2A Bridge（需 make install-bridge）"
 	@echo "  make run-discovery-demo  - 运行 Discovery 注册/发现示例（NATS）"
 	@echo "  make run-discovery-dht-demo - 运行 DHT 发现示例（跨网络）"
+	@echo "  make run-dht-discovery-renew - DHT 注册续租示例（跨节点 discover 客户端最佳实践）"
 	@echo "  make run-bridge-discovery-renew - Bridge 注册续租示例（Path B 客户端最佳实践）"
 	@echo "  make run-federation-xy   - 运行 X↔Y subject-bridge 示例（Docker）"
 	@echo "  make down-federation-xy  - 停止 X↔Y subject-bridge 示例（Docker）"
@@ -99,6 +100,9 @@ run-discovery-demo:
 
 run-discovery-dht-demo:
 	$(PYTHON) example/discovery_dht_demo.py
+
+run-dht-discovery-renew:
+	$(PYTHON) example/dht_discovery_renew.py
 
 run-bridge-discovery-renew:
 	$(PYTHON) example/bridge_discovery_renew.py
