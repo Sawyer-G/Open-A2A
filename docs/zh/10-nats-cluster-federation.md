@@ -119,6 +119,19 @@ networks:
 
 这意味着 Open-A2A 鼓励的是「多运营者节点组成的网状结构」，而非单一中心。每个运营者可以自行决定哪些主题对外共享、哪些只在本地网络内使用。
 
+### 4.2 方式 2：独立 NATS + 只桥接部分主题（最小可用）
+
+如果你希望节点 X 与节点 Y **各自独立运行 NATS**，但只共享部分主题（例如 `intent.food.>`），可以使用「subject bridge」的方式：
+
+- 两边各自运行 NATS（自治与数据边界）
+- 仅桥接 allowlist 的 subject（避免“全量同步”）
+- Bridge 侧需要做环路/风暴防护（header/hop/去重）
+
+本仓库已提供一个最小可用实现与可复制示例：
+
+- 文档：[`16-multi-operator-federation-subject-bridge.md`](./16-multi-operator-federation-subject-bridge.md)
+- 示例：`deploy/federation/x-y/`（两套独立 NATS + subject-bridge）
+
 ---
 
 ## 5. 参考

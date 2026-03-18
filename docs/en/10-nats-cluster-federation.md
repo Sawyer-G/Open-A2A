@@ -128,6 +128,19 @@ In practice, many operators will run their **own** NATS / Relay / Bridge stack:
 
 This means Open-A2A encourages a mesh of cooperating nodes, not a single global monolith. Operators decide which topics to share and which to keep local.
 
+### 4.2 Option 2: independent NATS + selective subject bridging (MVP)
+
+If you want Node X and Node Y to run **independent NATS servers** but share only selected subjects (e.g. `intent.food.>`), use a subject-bridge approach:
+
+- Each side keeps its own NATS (autonomy and clear data boundaries)
+- Only allowlisted subjects are propagated (avoid “sync everything”)
+- The bridge must include loop/storm protections (headers/hop/dedupe)
+
+This repo provides an MVP implementation and a copyable example:
+
+- Doc: `docs/en/16-multi-operator-federation-subject-bridge.md`
+- Example: `deploy/federation/x-y/` (two independent NATS + subject-bridge)
+
 ---
 
 ## 5. References

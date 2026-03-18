@@ -23,6 +23,7 @@
 | [13-security-considerations.md](./13-security-considerations.md) | **安全考量**：威胁模型、风险清单与最佳实践 |
 | [14-user-story-pizza-delivery.md](./14-user-story-pizza-delivery.md) | **用户故事（披萨下单与配送）**：A/B/C 多方 Agent 在主节点 X 上协作的端到端流程 |
 | [15-node-x-operator-kit.md](./15-node-x-operator-kit.md) | **节点 X（运营节点）一键部署套件**：可复制配置清单、端口与自检脚本 |
+| [16-multi-operator-federation-subject-bridge.md](./16-multi-operator-federation-subject-bridge.md) | **多运营者互联（方式 2）**：独立 NATS + 选择性主题桥接（可复制示例） |
 | [openclaw-tool-example.md](./openclaw-tool-example.md) | OpenClaw Tool 配置示例 |
 
 ## 规范与标准
