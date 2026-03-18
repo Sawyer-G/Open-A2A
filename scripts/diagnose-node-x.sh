@@ -94,6 +94,29 @@ else
 fi
 echo
 
+echo "[step] Security sanity checks (recommended for public nodes)"
+warned=0
+if [[ "${NATS_RELAY_PASS:-}" == change-me-* || -z "${NATS_RELAY_PASS:-}" ]]; then
+  echo "  [warn] NATS_RELAY_PASS is default/empty; change it before public use."
+  warned=1
+fi
+if [[ "${NATS_BRIDGE_PASS:-}" == change-me-* || -z "${NATS_BRIDGE_PASS:-}" ]]; then
+  echo "  [warn] NATS_BRIDGE_PASS is default/empty; change it before public use."
+  warned=1
+fi
+if [[ -z "${RELAY_AUTH_TOKEN:-}" ]]; then
+  echo "  [warn] RELAY_AUTH_TOKEN is not set; public Relay without auth can be abused."
+  warned=1
+fi
+if [[ "${RELAY_SUBJECT_ALLOWLIST:-}" == *"_INBOX.>"* ]]; then
+  echo "  [warn] RELAY_SUBJECT_ALLOWLIST contains _INBOX.> (too broad). Prefer _INBOX.open_a2a.>."
+  warned=1
+fi
+if [[ $warned -eq 0 ]]; then
+  echo "  ok"
+fi
+echo
+
 echo "[step] Bridge /health (if exposed)"
 if command -v curl >/dev/null 2>&1; then
   curl -sS "http://127.0.0.1:${BRIDGE_PORT}/health" | sed 's/^/  /' || echo "  [warn] /health not reachable"

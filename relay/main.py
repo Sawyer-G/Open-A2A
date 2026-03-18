@@ -43,7 +43,9 @@ RELAY_WS_SSL_KEY = os.getenv("RELAY_WS_SSL_KEY", "").strip()
 RELAY_AUTH_TOKEN = os.getenv("RELAY_AUTH_TOKEN", "").strip()
 
 # Subject allow/block lists (comma-separated). Supports NATS-style ">" suffix wildcard.
-RELAY_SUBJECT_ALLOWLIST = os.getenv("RELAY_SUBJECT_ALLOWLIST", "intent.>,open_a2a.>,_INBOX.>").strip()
+RELAY_SUBJECT_ALLOWLIST = os.getenv(
+    "RELAY_SUBJECT_ALLOWLIST", "intent.>,open_a2a.>,_INBOX.open_a2a.>"
+).strip()
 RELAY_SUBJECT_BLOCKLIST = os.getenv("RELAY_SUBJECT_BLOCKLIST", "").strip()
 
 # Per-connection limits
