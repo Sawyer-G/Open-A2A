@@ -1,6 +1,6 @@
 # 项目进度
 
-> 最后更新：2026-02-28
+> 最后更新：2026-03-18
 
 ## 总体状态
 
@@ -11,6 +11,13 @@
 | **Phase 3: 复杂场景模拟** | ✅ 已完成 | A-B-C 全链路 + 模拟结算 |
 
 ---
+
+## 近期新增（运营与互联）
+
+- **节点 X 运营套件（可复制）**：`deploy/node-x/`（compose、nats.conf、env 模板、诊断脚本）
+- **持续被发现（Path B）产品化**：Bridge 增加 TTL/过期回收、可选鉴权与限流、`/api/discovery_stats`
+- **多运营者互联（方式 2）**：独立 NATS + subject-bridge（`deploy/federation/x-y/`）
+- **身份与信任互操作规范**：新增 `spec/rfc-004-identity-and-trust.md`（meta 最小字段与 proof）
 
 ## Phase 1 完成项
 

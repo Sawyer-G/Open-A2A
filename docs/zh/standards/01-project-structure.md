@@ -19,7 +19,8 @@ Open-A2A/
 ├── spec/                       # 核心协议规范（RFC 文档）
 │   ├── rfc-001-intent-protocol.md
 │   ├── rfc-002-discovery.md
-│   └── rfc-003-relay-transport.md
+│   ├── rfc-003-relay-transport.md
+│   └── rfc-004-identity-and-trust.md
 ├── open_a2a/                   # 协议参考实现（Python SDK）
 │   ├── intent.py               # 消息模型
 │   ├── broadcaster.py         # 意图广播（基于 TransportAdapter）

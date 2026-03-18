@@ -1,6 +1,6 @@
 # Project Progress
 
-> Last updated: 2026-02-28
+> Last updated: 2026-03-18
 
 ## Overall Status
 
@@ -11,6 +11,13 @@
 | **Phase 3: Complex Scenario** | ✅ Done | A-B-C full flow + simulated settlement |
 
 ---
+
+## Recent additions (operations & federation)
+
+- **Node X operator kit (copyable)**: `deploy/node-x/` (compose, nats.conf, env template, diagnose script)
+- **Path B “always discoverable” hardening**: Bridge TTL/expiration, optional auth & rate limiting, `/api/discovery_stats`
+- **Multi-operator federation (Option 2)**: independent NATS + subject-bridge (`deploy/federation/x-y/`)
+- **Identity & trust interoperability**: `spec/rfc-004-identity-and-trust.md` (meta minimum fields + proof)
 
 ## Phase 1 Completed
 

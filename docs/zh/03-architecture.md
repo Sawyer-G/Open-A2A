@@ -35,7 +35,7 @@ graph TD
     end
 
     subgraph L2 [通信调度层 - P2P & Discovery]
-        D[NATS JetStream 广播] --> E[Hypercore 分布式哈希表]
+        D[NATS Pub/Sub 广播] --> E[Kademlia DHT（跨网络发现）]
         E --> F[Gossip 传播协议]
     end
 

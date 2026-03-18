@@ -19,7 +19,8 @@ Open-A2A/
 ├── spec/                       # Core protocol specs (RFC)
 │   ├── rfc-001-intent-protocol.md
 │   ├── rfc-002-discovery.md
-│   └── rfc-003-relay-transport.md
+│   ├── rfc-003-relay-transport.md
+│   └── rfc-004-identity-and-trust.md
 ├── open_a2a/                   # Python reference implementation (SDK)
 │   ├── intent.py               # Message models
 │   ├── broadcaster.py          # Intent broadcast (TransportAdapter-based)

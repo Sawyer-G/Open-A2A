@@ -31,7 +31,7 @@ graph TD
     end
 
     subgraph L2 [P2P & Discovery Layer]
-        D[NATS JetStream Broadcast] --> E[Hypercore DHT]
+        D[NATS Pub/Sub Broadcast] --> E[Kademlia DHT (cross-network discovery)]
         E --> F[Gossip Protocol]
     end
 
