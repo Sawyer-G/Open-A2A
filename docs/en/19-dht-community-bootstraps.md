@@ -14,6 +14,14 @@ You have two options:
 
 > Note: until the project publishes official community bootstraps with stable domains, this repo provides a copyable bootstrap kit + a contribution process. Once community nodes are online, this document will list real addresses.
 
+### 1.1 Online nodes (available)
+
+- **`dht.open-a2a.org:8469`**
+  - **Protocols**: TCP + UDP
+  - **Maintainer**: Open-A2A (Sawyer)
+  - **Since**: 2026-03-18
+  - **Notes**: entrypoint to join the Open-A2A community DHT overlay (no trust/authority implied)
+
 ---
 
 ## 2. Run a bootstrap node (copy & run)
