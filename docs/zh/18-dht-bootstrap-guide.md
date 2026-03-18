@@ -51,7 +51,8 @@ export OPEN_A2A_DHT_BOOTSTRAP="1.2.3.4:8469,bootstrap.example.org:8469"
 - 将该地址作为 `OPEN_A2A_DHT_BOOTSTRAP` 提供给网络参与者
 
 2) **使用社区 bootstrap（未来）**
-- 当项目提供公共 bootstrap 节点后，会将其填入 `DEFAULT_DHT_BOOTSTRAP` 或在本文档列出
+- 当前仓库已提供可复制的 bootstrap 套件：`deploy/dht-bootstrap/`
+- 社区列表与治理流程见：`docs/zh/19-dht-community-bootstraps.md`
 
 ---
 

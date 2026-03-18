@@ -26,6 +26,7 @@
 | [16-multi-operator-federation-subject-bridge.md](./16-multi-operator-federation-subject-bridge.md) | **Multi-operator federation (Option 2)**: independent NATS + selective subject bridging (MVP) |
 | [17-identity-and-trust.md](./17-identity-and-trust.md) | **Identity & trust (operator guide)**: DID, signatures, and optional VC (RFC-004) |
 | [18-dht-bootstrap-guide.md](./18-dht-bootstrap-guide.md) | **DHT bootstrap guide**: preferred cross-node discovery path (OPEN_A2A_DHT_BOOTSTRAP) |
+| [19-dht-community-bootstraps.md](./19-dht-community-bootstraps.md) | **DHT community bootstraps**: list & governance (run/add/remove) |
 | [openclaw-tool-example.md](./openclaw-tool-example.md) | OpenClaw Tool configuration example |
 
 ## Standards

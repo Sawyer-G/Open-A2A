@@ -51,7 +51,8 @@ You have two options:
 - Publish it as `OPEN_A2A_DHT_BOOTSTRAP` for participants
 
 2) **Use community bootstrap (future)**
-- When the project provides public bootstrap nodes, they will be documented here and/or set as defaults
+- This repo already includes a copyable bootstrap kit: `deploy/dht-bootstrap/`
+- Community list & governance: `docs/en/19-dht-community-bootstraps.md`
 
 ---
 
