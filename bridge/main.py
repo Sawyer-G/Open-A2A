@@ -24,12 +24,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from open_a2a import Intent, IntentBroadcaster, Location
 from open_a2a.intent import TOPIC_INTENT_FOOD_OFFER_PREFIX
+from open_a2a.discovery_nats import NatsDiscoveryProvider
 
 # --- 配置 ---
 NATS_URL = os.getenv("NATS_URL", "nats://localhost:4222")
 OPENCLAW_GATEWAY_URL = os.getenv("OPENCLAW_GATEWAY_URL", "").rstrip("/")
 OPENCLAW_HOOKS_TOKEN = os.getenv("OPENCLAW_HOOKS_TOKEN", "")
 BRIDGE_ENABLE_FORWARD = os.getenv("BRIDGE_ENABLE_FORWARD", "1").lower() in ("1", "true", "yes")
+
+# --- Discovery（持续被发现）配置 ---
+# NATS Discovery 的 “register” 本质是在 NATS 上订阅 open_a2a.discovery.query.{capability}，
+# 当其他人查询时回复 meta，因此只要进程在线即可持续被发现（无需中心化注册表）。
+BRIDGE_ENABLE_DISCOVERY = os.getenv("BRIDGE_ENABLE_DISCOVERY", "1").lower() in ("1", "true", "yes")
+BRIDGE_AGENT_ID = os.getenv("BRIDGE_AGENT_ID", "openclaw-agent")
+BRIDGE_CAPABILITIES = os.getenv("BRIDGE_CAPABILITIES", "intent.food.order")
+BRIDGE_META_JSON = os.getenv("BRIDGE_META_JSON", "")
 
 # --- Pydantic 模型 ---
 
@@ -54,10 +63,87 @@ class PublishIntentResponse(BaseModel):
     message: str = ""
 
 
+class RegisterCapabilitiesRequest(BaseModel):
+    """注册能力（用于持续被发现）。可由 OpenClaw Tool/Skill 调用。"""
+
+    agent_id: str = Field(default="openclaw-agent", description="Agent ID")
+    capabilities: list[str] = Field(
+        default_factory=lambda: ["intent.food.order"],
+        description="能力列表（与意图主题一致，例如 intent.food.order）",
+    )
+    meta: dict[str, Any] = Field(default_factory=dict, description="能力元数据（endpoint/did/region 等）")
+
+
+class RegisterCapabilitiesResponse(BaseModel):
+    ok: bool = True
+    registered_count: int = 0
+    message: str = ""
+
+
+class DiscoverResponse(BaseModel):
+    capability: str
+    results: list[dict[str, Any]] = Field(default_factory=list)
+    count: int = 0
+
+
 # --- 全局 Broadcaster 与状态（在 lifespan 中初始化）---
 broadcaster: Optional[IntentBroadcaster] = None
 _nats_status: str = "unknown"
 _nats_error: str = ""
+
+# --- 全局 Discovery Provider 与状态 ---
+discovery: Optional[NatsDiscoveryProvider] = None
+_discovery_status: str = "unknown"
+_discovery_error: str = ""
+_registered_capabilities: list[str] = []
+_registered_meta: dict[str, Any] = {}
+
+
+def _parse_capabilities(value: str) -> list[str]:
+    caps = [c.strip() for c in (value or "").split(",") if c.strip()]
+    seen: set[str] = set()
+    out: list[str] = []
+    for c in caps:
+        if c not in seen:
+            seen.add(c)
+            out.append(c)
+    return out
+
+
+def _default_meta(agent_id: str) -> dict[str, Any]:
+    meta: dict[str, Any] = {
+        "agent_id": agent_id,
+        "runtime": "openclaw",
+        "bridge": {"kind": "open-a2a-bridge", "health": "/health"},
+    }
+    if OPENCLAW_GATEWAY_URL:
+        meta["openclaw_gateway_url"] = OPENCLAW_GATEWAY_URL
+    return meta
+
+
+async def _apply_registration(agent_id: str, capabilities: list[str], meta: dict[str, Any]) -> int:
+    """
+    使注册状态与给定输入一致：
+      1) 取消旧注册
+      2) 用新 meta 重新注册全部 capabilities
+    """
+    global discovery, _registered_capabilities, _registered_meta
+    if not discovery:
+        raise RuntimeError("discovery provider not initialized")
+
+    for cap in list(_registered_capabilities):
+        try:
+            await discovery.unregister(cap)
+        except Exception:
+            pass
+    _registered_capabilities = []
+    _registered_meta = meta
+
+    for cap in capabilities:
+        await discovery.register(cap, meta)
+        _registered_capabilities.append(cap)
+
+    return len(_registered_capabilities)
 
 
 async def forward_intent_to_openclaw(intent: Intent) -> None:
@@ -125,7 +211,14 @@ async def _run_nats_subscriber() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期：连接 NATS，启动订阅任务"""
-    global broadcaster, _nats_status, _nats_error
+    global (
+        broadcaster,
+        discovery,
+        _nats_status,
+        _nats_error,
+        _discovery_status,
+        _discovery_error,
+    )
     broadcaster = IntentBroadcaster(NATS_URL)
     try:
         await broadcaster.connect()
@@ -137,12 +230,58 @@ async def lifespan(app: FastAPI):
         _nats_error = str(e)
         broadcaster = None
         print(f"[Bridge] 连接 NATS 失败: {e}")
+
+    # Discovery：用于能力注册与查询（持续被发现）
+    discovery_keepalive_task = None
+    if BRIDGE_ENABLE_DISCOVERY and _nats_status == "connected":
+        discovery = NatsDiscoveryProvider(NATS_URL)
+        try:
+            await discovery.connect()
+            _discovery_status = "connected"
+            _discovery_error = ""
+
+            caps = _parse_capabilities(BRIDGE_CAPABILITIES)
+            meta = _default_meta(BRIDGE_AGENT_ID)
+            if BRIDGE_META_JSON.strip():
+                try:
+                    meta.update(json.loads(BRIDGE_META_JSON))
+                except json.JSONDecodeError as e:
+                    print(f"[Bridge] BRIDGE_META_JSON 解析失败，将忽略该字段: {e}")
+
+            if caps:
+                n = await _apply_registration(BRIDGE_AGENT_ID, caps, meta)
+                print(f"[Bridge] Discovery 已注册能力 {n} 个: {', '.join(caps)}")
+
+            # 保持一个 task 引用，便于 graceful shutdown（未来可扩展心跳/定时刷新）
+            discovery_keepalive_task = asyncio.create_task(asyncio.sleep(10**9))
+        except Exception as e:
+            _discovery_status = "error"
+            _discovery_error = str(e)
+            discovery = None
+            print(f"[Bridge] Discovery 连接/注册失败: {e}")
+    else:
+        _discovery_status = "disabled"
+        _discovery_error = ""
     task = None
     if BRIDGE_ENABLE_FORWARD and OPENCLAW_GATEWAY_URL:
         task = asyncio.create_task(_run_nats_subscriber())
     try:
         yield
     finally:
+        if discovery_keepalive_task:
+            discovery_keepalive_task.cancel()
+            try:
+                await discovery_keepalive_task
+            except asyncio.CancelledError:
+                pass
+        if discovery:
+            try:
+                for cap in list(_registered_capabilities):
+                    await discovery.unregister(cap)
+            except Exception:
+                pass
+            await discovery.disconnect()
+            print("[Bridge] 已断开 Discovery")
         if task:
             task.cancel()
             try:
@@ -208,9 +347,64 @@ async def health() -> dict[str, Any]:
             "version": app.version,
         },
         "nats": nats_info,
+        "discovery": {
+            "status": _discovery_status,
+            "error": _discovery_error,
+            "agent_id": BRIDGE_AGENT_ID,
+            "registered_capabilities": list(_registered_capabilities),
+            "registered_count": len(_registered_capabilities),
+        },
         "openclaw": openclaw_info,
     }
 
+
+@app.post("/api/register_capabilities", response_model=RegisterCapabilitiesResponse)
+async def register_capabilities(req: RegisterCapabilitiesRequest) -> RegisterCapabilitiesResponse:
+    """
+    注册/更新本节点（或 OpenClaw Agent）支持的能力，用于被其他节点持续 discover。
+
+    NATS Discovery 没有中心化注册表；register 的实现是订阅查询主题并在被查询时返回 meta。
+    因此要“持续被发现”，注册方需要保持进程在线（例如 Bridge 常驻运行）。
+    """
+    global _discovery_status, _discovery_error
+    if not BRIDGE_ENABLE_DISCOVERY:
+        raise HTTPException(status_code=403, detail="Discovery disabled (BRIDGE_ENABLE_DISCOVERY=0)")
+    if not discovery or _discovery_status != "connected":
+        raise HTTPException(
+            status_code=503,
+            detail=f"Discovery not connected: {_discovery_error or _discovery_status}",
+        )
+
+    caps: list[str] = []
+    for c in req.capabilities:
+        c = (c or "").strip()
+        if c:
+            caps.append(c)
+    if not caps:
+        raise HTTPException(status_code=400, detail="capabilities is empty")
+
+    meta = _default_meta(req.agent_id)
+    meta.update(req.meta or {})
+    try:
+        n = await _apply_registration(req.agent_id, caps, meta)
+        return RegisterCapabilitiesResponse(ok=True, registered_count=n, message="capabilities registered")
+    except Exception as e:
+        _discovery_status = "error"
+        _discovery_error = str(e)
+        raise HTTPException(status_code=500, detail=f"register failed: {e}")
+
+
+@app.get("/api/discover", response_model=DiscoverResponse)
+async def discover_capability(capability: str, timeout_seconds: float = 3.0) -> DiscoverResponse:
+    """查询支持某能力的 Agent 列表（NATS Discovery request-reply）。"""
+    if not discovery or _discovery_status != "connected":
+        raise HTTPException(status_code=503, detail=f"Discovery not connected: {_discovery_error or _discovery_status}")
+    cap = (capability or "").strip()
+    if not cap:
+        raise HTTPException(status_code=400, detail="capability is required")
+    timeout = max(0.5, min(float(timeout_seconds), 15.0))
+    results = await discovery.discover(cap, timeout_seconds=timeout)
+    return DiscoverResponse(capability=cap, results=results, count=len(results))
 
 @app.post("/api/publish_intent", response_model=PublishIntentResponse)
 async def publish_intent(req: PublishIntentRequest) -> PublishIntentResponse:
