@@ -339,6 +339,58 @@ Relevant environment variables are documented in `.env.example`:
 - `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
 - `BRIDGE_DISCOVERY_RL_PER_MINUTE`
 
+#### 5.2.2 Recommended operator shapes (single instance / HA)
+
+> Bridge already supports three registry backends: **in-memory / file persistence / Redis**. Below is the recommended operator guidance to make deployments copyable.
+
+**Single instance (recommended to start: file persistence)**
+
+- **When**: one node, low ops cost, you can accept a single point of failure but want the registry to survive restarts
+- **Key config**:
+  - Set `BRIDGE_DISCOVERY_PERSIST_PATH=/data/bridge_registry.json` (and mount a volume)
+  - Leave `BRIDGE_DISCOVERY_REDIS_URL` empty
+- **Pros**: minimal dependencies, fastest path to production
+- **Cons**: still single instance (no native rolling upgrades)
+
+**HA (recommended for public nodes: Redis backend + multiple instances)**
+
+- **When**: public service, rolling upgrades, failover, multiple Bridge instances
+- **Key config**:
+  - Set `BRIDGE_DISCOVERY_REDIS_URL=redis://...`
+  - Run multiple Bridge instances pointing to the same Redis
+  - Put an HTTPS reverse proxy / load balancer (nginx/Caddy/Traefik) in front, exposing a single `bridge.open-a2a.org`
+- **Pros**: shared registry, horizontal scaling
+- **Cons**: adds Redis ops cost; plan backups/monitoring
+
+Copyable artifacts:
+
+- `deploy/bridge-pathb/` (single/HA docker-compose)
+- `scripts/e2e-bridge-pathb.sh` (cross-container E2E checks)
+
+#### 5.2.3 More systematic E2E (cross-process / cross-container)
+
+From the repo root:
+
+```bash
+bash scripts/e2e-bridge-pathb.sh single-persist
+bash scripts/e2e-bridge-pathb.sh redis-ha
+```
+
+If your environment cannot access Docker Hub (cannot pull `nats` / `redis` images), you can reuse an **already-running NATS/Redis**:
+
+```bash
+export E2E_EXTERNAL_NATS_URL="nats://host.docker.internal:4222"
+export E2E_EXTERNAL_REDIS_URL="redis://host.docker.internal:6379/0"  # only needed for redis-ha-external
+
+bash scripts/e2e-bridge-pathb.sh single-persist-external
+bash scripts/e2e-bridge-pathb.sh redis-ha-external
+```
+
+What it verifies:
+
+- `single-persist`: register → discover → restart Bridge → discover still hits (validates `BRIDGE_DISCOVERY_PERSIST_PATH`)
+- `redis-ha`: register on Bridge-1 → discover on Bridge-2 (validates multi-instance consistency via `BRIDGE_DISCOVERY_REDIS_URL`)
+
 ---
 
 ## 5.1 Bare-metal deployment (advanced)

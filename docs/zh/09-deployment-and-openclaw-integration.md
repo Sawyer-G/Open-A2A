@@ -323,6 +323,60 @@ curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_se
 - `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
 - `BRIDGE_DISCOVERY_RL_PER_MINUTE`
 
+#### 4.1.2 Operator 推荐形态（单机 / HA）
+
+> 你目前的实现已经支持：**内存 / 落盘 / Redis** 三种目录注册表后端。下面给出运营侧“推荐形态”，让配置更可复制。
+
+**单机（推荐起步：落盘恢复）**
+
+- **适用**：单节点、预算有限、可接受单点；但希望重启后目录不丢
+- **配置要点**：
+  - 设置 `BRIDGE_DISCOVERY_PERSIST_PATH=/data/bridge_registry.json`（并挂载 volume）
+  - `BRIDGE_DISCOVERY_REDIS_URL` 留空（表示不启用 Redis 后端）
+- **优点**：依赖最少、可快速上线
+- **限制**：仍是单实例；无法天然做多实例滚动升级
+
+**HA（推荐公网节点：Redis 后端 + 多实例）**
+
+- **适用**：公网服务、需要滚动升级/容灾、多 Bridge 实例
+- **配置要点**：
+  - 设置 `BRIDGE_DISCOVERY_REDIS_URL=redis://...`
+  - 多个 Bridge 实例共享同一 Redis（目录注册表一致）
+  - 前面建议加 HTTPS 反代/LB（nginx/Caddy/Traefik），对外只暴露一个 `bridge.open-a2a.org`
+- **优点**：多实例共享目录、可水平扩展
+- **限制**：增加 Redis 运维成本；需要规划备份/监控
+
+对应可复制产物：
+
+- `deploy/bridge-pathb/`（单机/HA compose）
+- `scripts/e2e-bridge-pathb.sh`（跨容器 E2E 自检）
+
+#### 4.1.3 更系统的 E2E（跨进程 / 跨容器）
+
+> 目标：覆盖“落盘恢复”与“Redis 多实例共享”两条关键链路，减少 operator 上线风险。
+
+在仓库根目录执行：
+
+```bash
+bash scripts/e2e-bridge-pathb.sh single-persist
+bash scripts/e2e-bridge-pathb.sh redis-ha
+```
+
+若你的环境无法访问 Docker Hub（无法拉取 `nats` / `redis` 镜像），也可以复用你**已有在跑的 NATS/Redis**：
+
+```bash
+export E2E_EXTERNAL_NATS_URL="nats://host.docker.internal:4222"
+export E2E_EXTERNAL_REDIS_URL="redis://host.docker.internal:6379/0"  # 仅 redis-ha-external 需要
+
+bash scripts/e2e-bridge-pathb.sh single-persist-external
+bash scripts/e2e-bridge-pathb.sh redis-ha-external
+```
+
+自检覆盖：
+
+- `single-persist`：注册 → discover → 重启 Bridge → discover 仍命中（验证 `BRIDGE_DISCOVERY_PERSIST_PATH`）
+- `redis-ha`：Bridge-1 注册 → Bridge-2 discover 命中（验证 `BRIDGE_DISCOVERY_REDIS_URL` 多实例一致性）
+
 ## 5.1 非 Docker 部署（高级用户）
 
 对于不希望在服务器上使用 Docker 的用户，可以直接在宿主机上运行 Open-A2A Bridge（以及可选的 Relay）。推荐使用仓库自带脚本：
