@@ -176,6 +176,7 @@ Bridge 已实现，位于 `bridge/main.py`。
 | 暴露发布 API | `POST /api/publish_intent`，可选收集报价并返回 |
 | 健康检查 | `GET /health` |
 | 运维指标（JSON） | `GET /ops/metrics`（目录后端/在线 provider/capability 分布等） |
+| 运维指标（Prometheus） | `GET /ops/metrics/prometheus`（统一指标命名，便于采集） |
 | 能力发现（NATS） | `POST /api/register_capabilities`、`GET /api/discover`（请求-响应，无中心化注册表） |
 
 **运行方式**：
@@ -195,6 +196,49 @@ curl -X POST http://localhost:8080/api/publish_intent \
 **OpenClaw Tool 配置**：见 [openclaw-tool-example.md](./openclaw-tool-example.md)
 
 ---
+
+### 4.2 统一观测口径（Prometheus 指标 + 对照表）
+
+> 目标：Bridge / Relay / Federation（SubjectBridge）在不同运行形态下都能用同一套“指标命名”被采集。
+
+#### 4.2.1 端点对照表（建议仅内网/本机暴露）
+
+| 组件 | JSON 健康/快照 | Prometheus 指标 |
+|---|---|---|
+| Bridge（FastAPI） | `GET /health`、`GET /ops/metrics` | `GET /ops/metrics/prometheus` |
+| Relay（ops HTTP） | `GET /healthz` | `GET /metrics` |
+| SubjectBridge（ops HTTP） | `GET /healthz` | `GET /metrics` |
+
+#### 4.2.2 指标字段规范（最小集合）
+
+Bridge：
+
+- `oa2a_bridge_up`（gauge）：进程存活
+- `oa2a_bridge_nats_connected`（gauge）：NATS 连接是否正常（1/0）
+- `oa2a_bridge_discovery_backend{backend="memory|file|redis"}`（gauge）：目录后端（标签表达）
+- `oa2a_bridge_discovery_providers_total`（gauge）：在线 provider 总数
+- `oa2a_bridge_discovery_providers_verified`（gauge）：在线 verified provider 数
+- `oa2a_bridge_discovery_providers_unverified`（gauge）：在线 unverified provider 数
+- `oa2a_bridge_discovery_capabilities_total`（gauge）：当前能力种类数
+- `oa2a_bridge_discovery_capability_providers{capability="..."}`（gauge）：每个 capability 的 provider 数
+
+Relay：
+
+- `oa2a_relay_up`（gauge）：进程存活
+- `oa2a_relay_clients`（gauge）：在线 WebSocket client 数
+- `oa2a_relay_nats_subject_subscriptions`（gauge）：当前 NATS subject 订阅数
+- `oa2a_relay_auth_enabled`（gauge）：是否启用鉴权（1/0）
+- `oa2a_relay_ws_tls`（gauge）：是否启用 TLS（1/0）
+
+SubjectBridge（Federation）：
+
+- `oa2a_fed_up{bridge_id="..."}`（gauge）：进程存活
+- `oa2a_fed_a_to_b_forwarded_total{bridge_id="..."}`（counter）：A→B 转发计数
+- `oa2a_fed_b_to_a_forwarded_total{bridge_id="..."}`（counter）：B→A 转发计数
+- `oa2a_fed_skipped_self_total{bridge_id="..."}`（counter）：跳过自发转发计数
+- `oa2a_fed_skipped_hop_total{bridge_id="..."}`（counter）：hop 限制丢弃计数
+- `oa2a_fed_skipped_dedupe_total{bridge_id="..."}`（counter）：去重丢弃计数
+- `oa2a_fed_errors_total{bridge_id="..."}`（counter）：发布/转发错误计数
 
 ### 4.1 持续被发现：能力注册（register）与查询（discover）
 

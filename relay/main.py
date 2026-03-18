@@ -16,6 +16,7 @@ import json
 import os
 import ssl
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import parse_qs, urlparse
@@ -152,6 +153,7 @@ def _ops_snapshot() -> dict[str, Any]:
     return {
         "service": "open-a2a-relay",
         "status": "ok",
+        "ts": datetime.now(timezone.utc).isoformat(),
         "nats_url": NATS_URL,
         "ws": {"host": RELAY_WS_HOST, "port": RELAY_WS_PORT, "tls": bool(RELAY_WS_TLS)},
         "limits": {
@@ -172,6 +174,81 @@ def _ops_snapshot() -> dict[str, Any]:
     }
 
 
+def _prom_escape_label_value(v: str) -> str:
+    return (
+        v.replace("\\", "\\\\")
+        .replace("\n", "\\n")
+        .replace('"', '\\"')
+        .replace("\r", "")
+    )
+
+
+def _render_prometheus_metrics() -> bytes:
+    """
+    Prometheus text exposition format.
+
+    Contract:
+      - /healthz returns JSON
+      - /metrics returns Prometheus metrics
+    """
+    snap = _ops_snapshot()
+    runtime = snap.get("runtime") or {}
+    ws = snap.get("ws") or {}
+    limits = snap.get("limits") or {}
+    subjects = snap.get("subjects") or {}
+
+    allow = _prom_escape_label_value(str(subjects.get("allowlist") or ""))
+    block = _prom_escape_label_value(str(subjects.get("blocklist") or ""))
+
+    lines: list[str] = []
+    lines.append("# HELP oa2a_relay_up Relay process is up (1).")
+    lines.append("# TYPE oa2a_relay_up gauge")
+    lines.append("oa2a_relay_up 1")
+
+    lines.append("# HELP oa2a_relay_clients Connected websocket clients.")
+    lines.append("# TYPE oa2a_relay_clients gauge")
+    lines.append(f"oa2a_relay_clients {int(runtime.get('clients') or 0)}")
+
+    lines.append("# HELP oa2a_relay_nats_subject_subscriptions Active NATS subscriptions by subject.")
+    lines.append("# TYPE oa2a_relay_nats_subject_subscriptions gauge")
+    lines.append(f"oa2a_relay_nats_subject_subscriptions {int(runtime.get('nats_subject_subscriptions') or 0)}")
+
+    lines.append("# HELP oa2a_relay_auth_enabled Whether relay auth token is enabled (1/0).")
+    lines.append("# TYPE oa2a_relay_auth_enabled gauge")
+    lines.append(f"oa2a_relay_auth_enabled {1 if snap.get('auth_enabled') else 0}")
+
+    lines.append("# HELP oa2a_relay_ws_tls Whether websocket TLS is enabled (1/0).")
+    lines.append("# TYPE oa2a_relay_ws_tls gauge")
+    lines.append(f"oa2a_relay_ws_tls {1 if ws.get('tls') else 0}")
+
+    lines.append("# HELP oa2a_relay_limits_max_subscriptions_per_conn Max subscriptions allowed per connection.")
+    lines.append("# TYPE oa2a_relay_limits_max_subscriptions_per_conn gauge")
+    lines.append(f"oa2a_relay_limits_max_subscriptions_per_conn {int(limits.get('max_subscriptions_per_conn') or 0)}")
+
+    lines.append("# HELP oa2a_relay_limits_max_message_bytes Max NATS message bytes allowed.")
+    lines.append("# TYPE oa2a_relay_limits_max_message_bytes gauge")
+    lines.append(f"oa2a_relay_limits_max_message_bytes {int(limits.get('max_message_bytes') or 0)}")
+
+    lines.append("# HELP oa2a_relay_limits_max_json_bytes Max JSON frame bytes allowed.")
+    lines.append("# TYPE oa2a_relay_limits_max_json_bytes gauge")
+    lines.append(f"oa2a_relay_limits_max_json_bytes {int(limits.get('max_json_bytes') or 0)}")
+
+    lines.append("# HELP oa2a_relay_limits_rl_pub_per_sec Publish rate limit per second (best-effort).")
+    lines.append("# TYPE oa2a_relay_limits_rl_pub_per_sec gauge")
+    lines.append(f"oa2a_relay_limits_rl_pub_per_sec {int(limits.get('rl_pub_per_sec') or 0)}")
+
+    lines.append("# HELP oa2a_relay_subjects_allowlist Configured subject allowlist.")
+    lines.append("# TYPE oa2a_relay_subjects_allowlist gauge")
+    lines.append(f'oa2a_relay_subjects_allowlist{{value="{allow}"}} 1')
+
+    if block:
+        lines.append("# HELP oa2a_relay_subjects_blocklist Configured subject blocklist.")
+        lines.append("# TYPE oa2a_relay_subjects_blocklist gauge")
+        lines.append(f'oa2a_relay_subjects_blocklist{{value="{block}"}} 1')
+
+    return ("\n".join(lines) + "\n").encode("utf-8")
+
+
 async def _handle_ops(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
     try:
         line = await reader.readline()
@@ -183,7 +260,19 @@ async def _handle_ops(reader: asyncio.StreamReader, writer: asyncio.StreamWriter
         except Exception:
             path = "/"
 
-        if path.startswith("/healthz") or path.startswith("/metrics") or path.startswith("/"):
+        if path.startswith("/metrics"):
+            body = _render_prometheus_metrics()
+            headers = (
+                b"HTTP/1.1 200 OK\r\n"
+                b"Content-Type: text/plain; version=0.0.4; charset=utf-8\r\n"
+                b"Cache-Control: no-store\r\n"
+                + f"Content-Length: {len(body)}\r\n\r\n".encode("ascii")
+            )
+            writer.write(headers + body)
+            await writer.drain()
+            return
+
+        if path.startswith("/healthz") or path.startswith("/"):
             body = json.dumps(_ops_snapshot(), ensure_ascii=False).encode("utf-8")
             headers = (
                 b"HTTP/1.1 200 OK\r\n"

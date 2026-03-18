@@ -240,6 +240,48 @@ async def _run_ops_http(b: SubjectBridge, host: str, port: int) -> Any:
 
             async with b._lock:
                 s = dict(b._stats)
+            if path.startswith("/metrics"):
+                bid = b.cfg.bridge_id.replace("\\", "\\\\").replace('"', '\\"')
+                lines = [
+                    "# HELP oa2a_fed_up Subject bridge process is up (1).",
+                    "# TYPE oa2a_fed_up gauge",
+                    f'oa2a_fed_up{{bridge_id="{bid}"}} 1',
+                    "# HELP oa2a_fed_a_to_b_forwarded_total Forwarded messages from A to B.",
+                    "# TYPE oa2a_fed_a_to_b_forwarded_total counter",
+                    f'oa2a_fed_a_to_b_forwarded_total{{bridge_id="{bid}"}} {int(s.get("a_to_b_forwarded") or 0)}',
+                    "# HELP oa2a_fed_b_to_a_forwarded_total Forwarded messages from B to A.",
+                    "# TYPE oa2a_fed_b_to_a_forwarded_total counter",
+                    f'oa2a_fed_b_to_a_forwarded_total{{bridge_id="{bid}"}} {int(s.get("b_to_a_forwarded") or 0)}',
+                    "# HELP oa2a_fed_skipped_self_total Skipped messages forwarded by this bridge.",
+                    "# TYPE oa2a_fed_skipped_self_total counter",
+                    f'oa2a_fed_skipped_self_total{{bridge_id="{bid}"}} {int(s.get("skipped_self") or 0)}',
+                    "# HELP oa2a_fed_skipped_hop_total Dropped due to hop limit.",
+                    "# TYPE oa2a_fed_skipped_hop_total counter",
+                    f'oa2a_fed_skipped_hop_total{{bridge_id="{bid}"}} {int(s.get("skipped_hop") or 0)}',
+                    "# HELP oa2a_fed_skipped_dedupe_total Dropped due to dedupe.",
+                    "# TYPE oa2a_fed_skipped_dedupe_total counter",
+                    f'oa2a_fed_skipped_dedupe_total{{bridge_id="{bid}"}} {int(s.get("skipped_dedupe") or 0)}',
+                    "# HELP oa2a_fed_errors_total Forward/publish errors.",
+                    "# TYPE oa2a_fed_errors_total counter",
+                    f'oa2a_fed_errors_total{{bridge_id="{bid}"}} {int(s.get("errors") or 0)}',
+                    "# HELP oa2a_fed_config_max_hops Configured max hop limit.",
+                    "# TYPE oa2a_fed_config_max_hops gauge",
+                    f'oa2a_fed_config_max_hops{{bridge_id="{bid}"}} {int(b.cfg.max_hops)}',
+                    "# HELP oa2a_fed_config_dedupe_ttl_seconds Configured dedupe TTL seconds.",
+                    "# TYPE oa2a_fed_config_dedupe_ttl_seconds gauge",
+                    f'oa2a_fed_config_dedupe_ttl_seconds{{bridge_id="{bid}"}} {float(b.cfg.dedupe_ttl_seconds)}',
+                ]
+                body = ("\n".join(lines) + "\n").encode("utf-8")
+                writer.write(
+                    b"HTTP/1.1 200 OK\r\n"
+                    b"Content-Type: text/plain; version=0.0.4; charset=utf-8\r\n"
+                    b"Cache-Control: no-store\r\n"
+                    + f"Content-Length: {len(body)}\r\n\r\n".encode("ascii")
+                    + body
+                )
+                await writer.drain()
+                return
+
             payload = {
                 "service": "open-a2a-subject-bridge",
                 "status": "ok",

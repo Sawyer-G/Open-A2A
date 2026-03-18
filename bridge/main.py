@@ -19,6 +19,7 @@ from fastapi import Request
 
 import httpx
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 # 支持从项目根目录运行
@@ -913,6 +914,75 @@ async def ops_metrics() -> dict[str, Any]:
             "last_ops_error": _last_discovery_ops_error or _discovery_error,
         },
     }
+
+
+def _prom_escape_label_value(v: str) -> str:
+    return (
+        v.replace("\\", "\\\\")
+        .replace("\n", "\\n")
+        .replace('"', '\\"')
+        .replace("\r", "")
+    )
+
+
+@app.get("/ops/metrics/prometheus", response_class=PlainTextResponse)
+async def ops_metrics_prometheus() -> str:
+    """
+    Prometheus text exposition version of /ops/metrics (JSON).
+    Keep it dependency-free.
+    """
+    m = await ops_metrics()
+    discovery = (m.get("discovery") or {}) if isinstance(m, dict) else {}
+    nats = (m.get("nats") or {}) if isinstance(m, dict) else {}
+
+    backend = str(discovery.get("backend") or "")
+    providers_total = int(discovery.get("providers_total") or 0)
+    verified = int(discovery.get("providers_verified") or 0)
+    unverified = int(discovery.get("providers_unverified") or 0)
+    capabilities_total = int(discovery.get("capabilities_total") or 0)
+    by_cap = discovery.get("by_capability") or {}
+    nats_status = str((nats.get("status") or "")).strip().lower()
+    nats_ok = 1 if nats_status == "ok" else 0
+
+    lines: list[str] = []
+    lines.append("# HELP oa2a_bridge_up Bridge process is up (1).")
+    lines.append("# TYPE oa2a_bridge_up gauge")
+    lines.append("oa2a_bridge_up 1")
+
+    lines.append("# HELP oa2a_bridge_nats_connected Whether bridge NATS connection is ok (1/0).")
+    lines.append("# TYPE oa2a_bridge_nats_connected gauge")
+    lines.append(f"oa2a_bridge_nats_connected {nats_ok}")
+
+    if backend:
+        b = _prom_escape_label_value(backend)
+        lines.append("# HELP oa2a_bridge_discovery_backend Discovery backend selector (label only).")
+        lines.append("# TYPE oa2a_bridge_discovery_backend gauge")
+        lines.append(f'oa2a_bridge_discovery_backend{{backend="{b}"}} 1')
+
+    lines.append("# HELP oa2a_bridge_discovery_providers_total Online providers in directory registry.")
+    lines.append("# TYPE oa2a_bridge_discovery_providers_total gauge")
+    lines.append(f"oa2a_bridge_discovery_providers_total {providers_total}")
+
+    lines.append("# HELP oa2a_bridge_discovery_providers_verified Online verified providers.")
+    lines.append("# TYPE oa2a_bridge_discovery_providers_verified gauge")
+    lines.append(f"oa2a_bridge_discovery_providers_verified {verified}")
+
+    lines.append("# HELP oa2a_bridge_discovery_providers_unverified Online unverified providers.")
+    lines.append("# TYPE oa2a_bridge_discovery_providers_unverified gauge")
+    lines.append(f"oa2a_bridge_discovery_providers_unverified {unverified}")
+
+    lines.append("# HELP oa2a_bridge_discovery_capabilities_total Unique capability count in registry.")
+    lines.append("# TYPE oa2a_bridge_discovery_capabilities_total gauge")
+    lines.append(f"oa2a_bridge_discovery_capabilities_total {capabilities_total}")
+
+    if isinstance(by_cap, dict):
+        lines.append("# HELP oa2a_bridge_discovery_capability_providers Providers count per capability.")
+        lines.append("# TYPE oa2a_bridge_discovery_capability_providers gauge")
+        for cap, cnt in sorted(by_cap.items()):
+            c = _prom_escape_label_value(str(cap))
+            lines.append(f'oa2a_bridge_discovery_capability_providers{{capability="{c}"}} {int(cnt or 0)}')
+
+    return "\n".join(lines) + "\n"
 
 
 @app.get("/health")

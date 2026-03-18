@@ -188,6 +188,7 @@ The Bridge is implemented in `bridge/main.py`.
 | Publish API | `POST /api/publish_intent`, optionally collects offers and returns them |
 | Health check | `GET /health` |
 | Ops metrics (JSON) | `GET /ops/metrics` (backend, online providers, capability distribution, etc.) |
+| Ops metrics (Prometheus) | `GET /ops/metrics/prometheus` (normalized names for scraping) |
 | Capability discovery (NATS) | `POST /api/register_capabilities`, `GET /api/discover` (request-reply, no central registry) |
 
 **Run**:
@@ -207,6 +208,51 @@ curl -X POST http://localhost:8080/api/publish_intent \
 ```
 
 For a concrete OpenClaw Tool configuration example, see `docs/zh/openclaw-tool-example.md`.
+
+---
+
+### 5.1 Normalized observability (Prometheus + reference table)
+
+> Goal: Bridge / Relay / Federation (SubjectBridge) can all be scraped with one consistent metric naming scheme.
+
+#### 5.1.1 Endpoint reference (keep private by default)
+
+| Component | JSON snapshot | Prometheus metrics |
+|---|---|---|
+| Bridge (FastAPI) | `GET /health`, `GET /ops/metrics` | `GET /ops/metrics/prometheus` |
+| Relay (ops HTTP) | `GET /healthz` | `GET /metrics` |
+| SubjectBridge (ops HTTP) | `GET /healthz` | `GET /metrics` |
+
+#### 5.1.2 Metric name spec (minimal set)
+
+Bridge:
+
+- `oa2a_bridge_up` (gauge)
+- `oa2a_bridge_nats_connected` (gauge, 1/0)
+- `oa2a_bridge_discovery_backend{backend="memory|file|redis"}` (gauge)
+- `oa2a_bridge_discovery_providers_total` (gauge)
+- `oa2a_bridge_discovery_providers_verified` (gauge)
+- `oa2a_bridge_discovery_providers_unverified` (gauge)
+- `oa2a_bridge_discovery_capabilities_total` (gauge)
+- `oa2a_bridge_discovery_capability_providers{capability="..."}` (gauge)
+
+Relay:
+
+- `oa2a_relay_up` (gauge)
+- `oa2a_relay_clients` (gauge)
+- `oa2a_relay_nats_subject_subscriptions` (gauge)
+- `oa2a_relay_auth_enabled` (gauge, 1/0)
+- `oa2a_relay_ws_tls` (gauge, 1/0)
+
+SubjectBridge (Federation):
+
+- `oa2a_fed_up{bridge_id="..."}` (gauge)
+- `oa2a_fed_a_to_b_forwarded_total{bridge_id="..."}` (counter)
+- `oa2a_fed_b_to_a_forwarded_total{bridge_id="..."}` (counter)
+- `oa2a_fed_skipped_self_total{bridge_id="..."}` (counter)
+- `oa2a_fed_skipped_hop_total{bridge_id="..."}` (counter)
+- `oa2a_fed_skipped_dedupe_total{bridge_id="..."}` (counter)
+- `oa2a_fed_errors_total{bridge_id="..."}` (counter)
 
 ### 5.2 “Always discoverable” via capability registration
 
