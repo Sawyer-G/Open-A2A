@@ -31,6 +31,7 @@ from open_a2a import Intent, IntentBroadcaster, Location
 from open_a2a.intent import TOPIC_INTENT_FOOD_OFFER_PREFIX
 from open_a2a.discovery_nats import NatsDiscoveryProvider
 from open_a2a.identity import AgentIdentity, build_meta_proof
+from open_a2a.opslog import log_event
 
 # Optional Redis backend for directory registry (multi-instance HA)
 try:
@@ -728,11 +729,13 @@ async def lifespan(app: FastAPI):
         _nats_status = "connected"
         _nats_error = ""
         print(f"[Bridge] 已连接 NATS: {NATS_URL}")
+        log_event("open-a2a-bridge", "info", "nats_connected", nats_url=NATS_URL)
     except Exception as e:
         _nats_status = "error"
         _nats_error = str(e)
         broadcaster = None
         print(f"[Bridge] 连接 NATS 失败: {e}")
+        log_event("open-a2a-bridge", "warn", "nats_connect_failed", error=str(e), nats_url=NATS_URL)
 
     # Optional Redis registry backend (for HA / multi-instance directory)
     global _redis
@@ -742,6 +745,7 @@ async def lifespan(app: FastAPI):
         try:
             await _redis.ping()
             print("[Bridge] discovery registry backend: redis (connected)")
+            log_event("open-a2a-bridge", "info", "redis_connected", redis_url=BRIDGE_DISCOVERY_REDIS_URL)
         except Exception as e:
             _redis = None
             raise RuntimeError(f"Redis registry connect failed: {e}")

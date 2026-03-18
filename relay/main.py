@@ -33,6 +33,8 @@ try:
 except ImportError:
     websockets = None  # type: ignore
 
+from open_a2a.opslog import log_event
+
 NATS_URL = os.getenv("NATS_URL", "nats://localhost:4222")
 RELAY_WS_HOST = os.getenv("RELAY_WS_HOST", "0.0.0.0")
 RELAY_WS_PORT = int(os.getenv("RELAY_WS_PORT", "8765"))
@@ -88,6 +90,13 @@ def _security_boot_check() -> None:
     if OA2A_STRICT_SECURITY:
         raise SystemExit(msg + "。已启用 OA2A_STRICT_SECURITY=1，拒绝在不安全配置下启动。")
     print(msg + "。你可以设置 OA2A_STRICT_SECURITY=1 来强制拒绝启动。")
+    log_event(
+        "open-a2a-relay",
+        "warn",
+        "security_warning",
+        issues=issues,
+        strict=bool(OA2A_STRICT_SECURITY),
+    )
 
 
 def _make_ssl_context() -> Optional[ssl.SSLContext]:
@@ -416,6 +425,7 @@ async def _run_nats() -> None:
     _nats = NATSClient()
     await _nats.connect(NATS_URL)
     print(f"[Relay] 已连接 NATS: {NATS_URL}")
+    log_event("open-a2a-relay", "info", "nats_connected", nats_url=NATS_URL)
 
 
 async def main() -> None:
@@ -428,8 +438,16 @@ async def main() -> None:
         try:
             ops_server = await asyncio.start_server(_handle_ops, RELAY_HTTP_HOST, RELAY_HTTP_PORT)
             print(f"[Relay] ops endpoint: http://{RELAY_HTTP_HOST}:{RELAY_HTTP_PORT}/healthz")
+            log_event(
+                "open-a2a-relay",
+                "info",
+                "ops_endpoint_listening",
+                host=RELAY_HTTP_HOST,
+                port=RELAY_HTTP_PORT,
+            )
         except Exception as e:
             print(f"[Relay] ops endpoint 启动失败（将继续运行 WS）：{e}")
+            log_event("open-a2a-relay", "warn", "ops_endpoint_failed", error=str(e))
     ssl_ctx = _make_ssl_context()
     if ssl_ctx:
         print(f"[Relay] 已启用 TLS (wss://)，证书: {RELAY_WS_SSL_CERT}")

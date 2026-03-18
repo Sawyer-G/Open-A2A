@@ -20,6 +20,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Optional
 
+from open_a2a.opslog import log_event
+
 try:
     from nats.aio.client import Client as NATSClient
 except ImportError:
@@ -95,6 +97,13 @@ class SubjectBridge:
         await self._nc_a.connect(self.cfg.nats_a)
         await self._nc_b.connect(self.cfg.nats_b)
         print(f"[FedBridge] connected: A={self.cfg.nats_a}  B={self.cfg.nats_b}")
+        log_event(
+            "open-a2a-subject-bridge",
+            "info",
+            "nats_connected",
+            nats_a=self.cfg.nats_a,
+            nats_b=self.cfg.nats_b,
+        )
 
     async def disconnect(self) -> None:
         if self._nc_a:
@@ -174,6 +183,14 @@ class SubjectBridge:
             async with self._lock:
                 self._stats["errors"] += 1
             print(f"[FedBridge] forward error ({src}): {e}")
+            log_event(
+                "open-a2a-subject-bridge",
+                "warn",
+                "forward_error",
+                src=src,
+                error=str(e),
+                subject=subject,
+            )
 
     async def run(self) -> None:
         if not self._nc_a or not self._nc_b:
@@ -193,6 +210,15 @@ class SubjectBridge:
             "[FedBridge] loop control: headers X-OA2A-Bridge / X-OA2A-Hop; "
             f"max_hops={self.cfg.max_hops}; dedupe_ttl={self.cfg.dedupe_ttl_seconds}s"
         )
+        log_event(
+            "open-a2a-subject-bridge",
+            "info",
+            "bridge_started",
+            bridge_id=self.cfg.bridge_id,
+            subjects=self.cfg.subjects,
+            max_hops=self.cfg.max_hops,
+            dedupe_ttl_seconds=self.cfg.dedupe_ttl_seconds,
+        )
 
         async def stats_task() -> None:
             while True:
@@ -207,6 +233,12 @@ class SubjectBridge:
                     f"skip_hop={s['skipped_hop']} "
                     f"skip_dedupe={s['skipped_dedupe']} "
                     f"errors={s['errors']}"
+                )
+                log_event(
+                    "open-a2a-subject-bridge",
+                    "info",
+                    "stats",
+                    **s,
                 )
 
         t = asyncio.create_task(stats_task())

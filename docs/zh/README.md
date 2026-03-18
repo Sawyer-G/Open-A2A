@@ -27,6 +27,7 @@
 | [17-identity-and-trust.md](./17-identity-and-trust.md) | **身份与信任（操作指南）**：DID、签名验真与可选 VC（对应 RFC-004） |
 | [18-dht-bootstrap-guide.md](./18-dht-bootstrap-guide.md) | **DHT Bootstrap 指引**：跨节点 discover 的首选路径（OPEN_A2A_DHT_BOOTSTRAP） |
 | [19-dht-community-bootstraps.md](./19-dht-community-bootstraps.md) | **DHT 社区 Bootstrap**：列表与治理流程（如何运行/登记/下线） |
+| [20-observability-alerts-prometheus.md](./20-observability-alerts-prometheus.md) | **告警模板（Prometheus）**：Relay/Bridge/Federation 最小可用告警起点 |
 | [openclaw-tool-example.md](./openclaw-tool-example.md) | OpenClaw Tool 配置示例 |
 
 ## 规范与标准
