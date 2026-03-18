@@ -187,6 +187,7 @@ The Bridge is implemented in `bridge/main.py`.
 | Forward to OpenClaw | `httpx.post(gateway_url + "/hooks/agent", ...)` |
 | Publish API | `POST /api/publish_intent`, optionally collects offers and returns them |
 | Health check | `GET /health` |
+| Capability discovery (NATS) | `POST /api/register_capabilities`, `GET /api/discover` (request-reply, no central registry) |
 
 **Run**:
 
@@ -205,6 +206,42 @@ curl -X POST http://localhost:8080/api/publish_intent \
 ```
 
 For a concrete OpenClaw Tool configuration example, see `docs/zh/openclaw-tool-example.md`.
+
+### 5.2 “Always discoverable” via capability registration
+
+If you want other nodes to continuously discover your Agent (directory-style discovery), the simplest approach is:
+
+- Keep Bridge running as a long-lived process;
+- Register the Agent’s capabilities in NATS Discovery.
+
+Bridge supports both:
+
+1) **Auto-register on startup** (recommended):
+
+- Configure:
+  - `BRIDGE_ENABLE_DISCOVERY=1`
+  - `BRIDGE_AGENT_ID=openclaw-agent`
+  - `BRIDGE_CAPABILITIES=intent.food.order,intent.logistics.request` (comma-separated)
+  - Optional: `BRIDGE_META_JSON='{"region":"shanghai","endpoint":"https://bridge.open-a2a.org"}'`
+
+2) **Register/update via HTTP** (useful for OpenClaw Tool/Skill):
+
+```bash
+curl -X POST http://localhost:8080/api/register_capabilities \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"}}'
+```
+
+Other nodes can query:
+
+```bash
+curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_seconds=3" | jq .
+```
+
+Notes:
+
+- NATS Discovery has **no global registry**; “register” is implemented by subscribing to `open_a2a.discovery.query.{capability}` and replying with `meta`.
+- Therefore the Agent (or Bridge acting for it) must stay online to remain discoverable.
 
 ---
 

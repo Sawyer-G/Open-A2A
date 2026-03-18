@@ -20,6 +20,7 @@
 | [11-relay-e2e-verify.md](./11-relay-e2e-verify.md) | Relay end-to-end encryption verification |
 | [12-cross-ip-testing.md](./12-cross-ip-testing.md) | **Cross-IP testing guide**: real-world network validation |
 | [13-security-considerations.md](./13-security-considerations.md) | **Security considerations**: threat model, risks, and best practices |
+| [14-user-story-pizza-delivery.md](./14-user-story-pizza-delivery.md) | **User story (pizza delivery)**: an end-to-end A/B/C flow via a public node X |
 | [openclaw-tool-example.md](./openclaw-tool-example.md) | OpenClaw Tool configuration example |
 
 ## Standards

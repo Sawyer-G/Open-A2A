@@ -84,6 +84,7 @@
 
 - **bridge/main.py**: FastAPI service; `POST /api/publish_intent` to publish intent and optionally collect offers; `GET /health` for health check
 - **NATS subscription forwarding**: Subscribes to `intent.food.order`, forwards to OpenClaw `/hooks/agent` (requires `OPENCLAW_GATEWAY_URL`, `OPENCLAW_HOOKS_TOKEN`)
+- **Capability discovery (NATS)**: `POST /api/register_capabilities` to register capabilities (always discoverable while Bridge is running); `GET /api/discover` to query who supports a capability
 - **Dockerfile.bridge**: Bridge image build
 - **docker-compose.deploy.yml**: One-click deploy (NATS + Solid + Bridge)
 

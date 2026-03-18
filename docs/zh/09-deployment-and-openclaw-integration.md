@@ -175,6 +175,7 @@ Bridge 已实现，位于 `bridge/main.py`。
 | 转发给 OpenClaw | `httpx.post(gateway_url + "/hooks/agent", ...)` |
 | 暴露发布 API | `POST /api/publish_intent`，可选收集报价并返回 |
 | 健康检查 | `GET /health` |
+| 能力发现（NATS） | `POST /api/register_capabilities`、`GET /api/discover`（请求-响应，无中心化注册表） |
 
 **运行方式**：
 ```bash
@@ -193,6 +194,40 @@ curl -X POST http://localhost:8080/api/publish_intent \
 **OpenClaw Tool 配置**：见 [openclaw-tool-example.md](./openclaw-tool-example.md)
 
 ---
+
+### 4.1 持续被发现：能力注册（register）与查询（discover）
+
+如果你希望其他节点能够“像查目录一样”持续发现你的 Agent（而不是仅在广播意图时被动触达），推荐让 Bridge 作为常驻进程，替 OpenClaw Agent 在 NATS 上注册能力。
+
+Bridge 支持两种方式：
+
+1) **启动时自动注册（推荐）**
+
+通过环境变量配置：
+
+- `BRIDGE_ENABLE_DISCOVERY=1`
+- `BRIDGE_AGENT_ID=openclaw-agent`
+- `BRIDGE_CAPABILITIES=intent.food.order,intent.logistics.request`（逗号分隔）
+- 可选：`BRIDGE_META_JSON='{"region":"shanghai","endpoint":"https://bridge.open-a2a.org"}'`
+
+2) **通过 HTTP 接口注册/更新（适合 OpenClaw Tool/Skill 调用）**
+
+```bash
+curl -X POST http://localhost:8080/api/register_capabilities \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"}}'
+```
+
+其他节点可查询某能力的提供者列表：
+
+```bash
+curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_seconds=3" | jq .
+```
+
+说明：
+
+- NATS Discovery **没有中心化注册表**；`register` 的实现是订阅 `open_a2a.discovery.query.{capability}` 并在被查询时返回 `meta`。
+- 因此要“持续被发现”，注册方（或代注册的 Bridge）需要保持在线。
 
 ## 5.1 非 Docker 部署（高级用户）
 

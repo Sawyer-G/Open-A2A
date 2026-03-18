@@ -68,6 +68,18 @@ graph TD
   - **Capability Subscribe**: Agents with capability subscribe and respond
   - **Geo-fencing**: DHT or local cache so intent reaches relevant parties only
 
+#### 2.2.1 Distributed, but not a blockchain
+
+Open-A2A’s "distributed" nature is about **message routing and multiple operators**, not about a single global ledger:
+
+- Each NATS/Relay/Bridge node is run by an operator (you, a community, or a company).
+- Nodes can:
+  - Share a single NATS cluster (common subject space);
+  - Or stay on separate NATS instances and selectively federate subjects (see [10-nats-cluster-federation.md](../en/10-nats-cluster-federation.md)).
+- There is **no global, immutable state** or consensus layer in Open-A2A — intents/offers/logistics messages are transient events flowing across nodes.
+
+This is closer to email or XMPP federation than to a blockchain. Settlement (if needed) can plug into external systems (on-chain or off-chain) but is intentionally outside the core protocol.
+
 ### 2.3 Semantic Negotiation (AI Dialogue) — "Dietary restrictions, price, time"
 
 - **Tools**: `MCP (Model Context Protocol)` + `JSON-LD`

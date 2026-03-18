@@ -229,6 +229,47 @@ Authorization: Bearer <OPENCLAW_HOOKS_TOKEN>
 
 ---
 
+## 7.1 持续被发现（目录式 discover）
+
+除了“意图广播 → 收到后响应”这种事件式协作外，Open-A2A 也支持 **能力发现**（Discovery）：其他节点可以像查目录一样查询“谁支持某个能力（capability）”。
+
+在 NATS 发现实现中，所谓的 `register` 并不是写入一个中心化注册表，而是：
+
+- 订阅 `open_a2a.discovery.query.{capability}`；
+- 当其他人查询该 capability 时，回复一份 `meta`。
+
+因此要“持续被发现”，注册方需要保持在线（常见做法是让 Bridge 常驻运行并代 OpenClaw 注册）。
+
+Bridge 支持两种方式：
+
+1) **启动时自动注册（推荐）**
+
+在 `.env` 中配置：
+
+```bash
+BRIDGE_ENABLE_DISCOVERY=1
+BRIDGE_AGENT_ID=openclaw-agent
+BRIDGE_CAPABILITIES=intent.food.order,intent.logistics.request
+# 可选：补充 meta（JSON 字符串）
+BRIDGE_META_JSON={"region":"shanghai","endpoint":"https://bridge.open-a2a.org"}
+```
+
+2) **通过 HTTP 接口注册/更新（适合 OpenClaw Tool/Skill 调用）**
+
+```bash
+curl -X POST http://localhost:8080/api/register_capabilities \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"}}'
+```
+
+其他节点查询：
+
+```bash
+curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_seconds=3" | jq .
+```
+
+---
+
 ## 8. 常见问题与排查清单
 
 ### 8.1 Bridge 日志里看不到访问 OpenClaw 的记录

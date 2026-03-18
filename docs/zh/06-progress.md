@@ -124,6 +124,7 @@ Carrier 模拟送达
 
 - **bridge/main.py**：FastAPI 服务，`POST /api/publish_intent` 发布意图并可选收集报价，`GET /health` 健康检查
 - **NATS 订阅转发**：订阅 `intent.food.order`，收到后转发给 OpenClaw `/hooks/agent`（需配置 `OPENCLAW_GATEWAY_URL`、`OPENCLAW_HOOKS_TOKEN`）
+- **能力发现（NATS）**：支持通过 `POST /api/register_capabilities` 注册能力（Bridge 在线时持续可被 discover），并通过 `GET /api/discover` 查询“谁支持某能力”
 - **Dockerfile.bridge**：Bridge 镜像构建
 - **docker-compose.deploy.yml**：NATS + Solid + Bridge 一键部署
 - **docs/zh/openclaw-tool-example.md**：OpenClaw Tool 配置示例
@@ -212,6 +213,9 @@ Carrier 模拟送达
    - 在 `DiscoveryProvider` + NATS/DHT 实现之上，抽象出一个更易用的「Agent 能力目录 / 注册中心」：
      - 提供简单的 HTTP API 或 Python 封装，用于注册/查询 Agent 能力；
      - 附带权限/可见性选项（公开、私有、仅联盟内可见等）。
+   - 当前进展：
+     - Bridge 已提供基础 HTTP API：`/api/register_capabilities`、`/api/discover`（基于 NATS Discovery 的请求-响应，无中心化注册表）。
+     - 后续可在此基础上补充：权限/可见性策略、DHT 后端的同构 HTTP 接口、以及对 OpenClaw Skill 的一键接入。
 
 3. **安全与运营 best practice 下沉为默认配置**
    - 将 `13-security-considerations.md` 中的建议逐步固化到默认配置与脚本中：

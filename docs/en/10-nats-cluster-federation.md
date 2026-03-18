@@ -118,6 +118,16 @@ Save the two configs above as `nats-a.conf` and `nats-b.conf`. In Docker, node B
 - **Relay**: Point Relay's `NATS_URL` to any node; Agents that connect outbound via Relay are in the same logical cluster as Agents that connect directly to NATS.
 - **Cross-cluster / heterogeneous networks**: When Agents are on **different clusters** or when some participants don't use NATS, use the **DHT discovery backend** or NATS federation (see `spec/rfc-002-discovery.md` and `docs/en/06-progress.md`).
 
+### 4.1 What happens when everyone runs their own node?
+
+In practice, many operators will run their **own** NATS / Relay / Bridge stack:
+
+- If they all connect to the **same NATS cluster**, they automatically share one logical subject space — intents and offers are visible everywhere in that cluster.
+- If they run **independent NATS servers** with no federation, they form separate networks; discovery only happens within each network.
+- If they configure **federation or application-level bridges** between nodes, only the chosen subjects (e.g. `intent.food.*`) are propagated across networks.
+
+This means Open-A2A encourages a mesh of cooperating nodes, not a single global monolith. Operators decide which topics to share and which to keep local.
+
 ---
 
 ## 5. References
