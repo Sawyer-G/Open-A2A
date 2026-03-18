@@ -61,7 +61,8 @@ OA2A_STRICT_SECURITY=1
 
 效果：
 
-- Relay/Bridge 启动时会做安全自检；发现明显不安全配置会直接拒绝启动
+- **启动前置安全闸（security-gate）** 会在 strict 模式下检查占位密码/缺鉴权等“明显不安全默认”，不满足将直接阻止整个 compose 启动
+- Relay/Bridge 启动时也会做安全自检；发现明显不安全配置会直接拒绝启动（双重兜底）
 - `scripts/diagnose-node-x.sh` 在 strict 模式下也会对占位密码/缺鉴权等问题直接报错退出
 
 3) **公网 Relay 建议开启鉴权**

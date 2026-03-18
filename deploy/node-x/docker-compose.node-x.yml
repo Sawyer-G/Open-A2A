@@ -6,9 +6,35 @@
 # - Bridge is optional; if exposed publicly, recommend putting it behind HTTPS reverse proxy.
 
 services:
+  # One-shot preflight that blocks startup in strict mode when defaults are unsafe.
+  security-gate:
+    image: python:3.11-alpine
+    command: ["python", "/security_gate.py"]
+    environment:
+      - OA2A_STRICT_SECURITY=${OA2A_STRICT_SECURITY:-0}
+      - RELAY_WS_HOST=${RELAY_WS_HOST:-0.0.0.0}
+      - RELAY_AUTH_TOKEN=${RELAY_AUTH_TOKEN:-}
+      - BRIDGE_ENABLE_DISCOVERY=${BRIDGE_ENABLE_DISCOVERY:-1}
+      - BRIDGE_DISCOVERY_REGISTER_TOKEN=${BRIDGE_DISCOVERY_REGISTER_TOKEN:-}
+      - BRIDGE_DISCOVERY_DISCOVER_TOKEN=${BRIDGE_DISCOVERY_DISCOVER_TOKEN:-}
+      - NATS_RELAY_PASS=${NATS_RELAY_PASS:-}
+      - NATS_BRIDGE_PASS=${NATS_BRIDGE_PASS:-}
+      - NATS_PUBLIC_USER=${NATS_PUBLIC_USER:-}
+      - NATS_PUBLIC_PASS=${NATS_PUBLIC_PASS:-}
+      - OA2A_NATS_CONF_PATH=/nats.conf
+    volumes:
+      - ./security_gate.py:/security_gate.py:ro
+      - ./nats.conf:/nats.conf:ro
+    networks:
+      - open-a2a
+    restart: "no"
+
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "no"]
+    depends_on:
+      security-gate:
+        condition: service_completed_successfully
     networks:
       - open-a2a
     restart: unless-stopped
@@ -18,6 +44,9 @@ services:
     command: ["-c", "/etc/nats/nats.conf"]
     volumes:
       - ./nats.conf:/etc/nats/nats.conf:ro
+    depends_on:
+      security-gate:
+        condition: service_completed_successfully
     networks:
       - open-a2a
     restart: unless-stopped
@@ -48,7 +77,10 @@ services:
     ports:
       - "${RELAY_WS_PORT:-8765}:${RELAY_WS_PORT:-8765}"
     depends_on:
-      - nats
+      security-gate:
+        condition: service_completed_successfully
+      nats:
+        condition: service_started
     networks:
       - open-a2a
     restart: unless-stopped
@@ -81,8 +113,12 @@ services:
       - OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL:-}
       - OPENCLAW_HOOKS_TOKEN=${OPENCLAW_HOOKS_TOKEN:-}
     depends_on:
-      - redis
-      - nats
+      security-gate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      nats:
+        condition: service_started
     networks:
       - open-a2a
     restart: unless-stopped
@@ -113,7 +149,10 @@ services:
     ports:
       - "127.0.0.1:${OA2A_FED_HTTP_PORT:-9464}:9464"
     depends_on:
-      - nats
+      security-gate:
+        condition: service_completed_successfully
+      nats:
+        condition: service_started
     networks:
       - open-a2a
     restart: unless-stopped
