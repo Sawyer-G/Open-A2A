@@ -15,7 +15,7 @@ Self-hosted Solid preserves data sovereignty while offering standard protocol an
 ## 2. Quick Deploy (Docker)
 
 ```bash
-docker compose -f docker-compose.solid.yml up -d
+docker compose -f deploy/solid/docker-compose.solid.yml up -d
 
 # Visit https://localhost:8443 to register
 # Self-signed cert will show "insecure"—proceed for local dev

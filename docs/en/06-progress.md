@@ -57,7 +57,7 @@
 - **broadcaster.py**: Optional `identity` param for signing; parse JWS or JSON on receive
 - **intent.py**: `sender_did` field on Intent, Offer
 - **Makefile**: `make install-full`, `make install-solid`, `make install-bridge`, `make run-bridge`
-- **Examples**: `USE_IDENTITY=1` enables DID signing; `profile.json` or self-hosted Solid for preferences; `upload_profile_to_solid.py`; `docker-compose.solid.yml` for self-hosted Pod
+- **Examples**: `USE_IDENTITY=1` enables DID signing; `profile.json` or self-hosted Solid for preferences; `upload_profile_to_solid.py`; `deploy/solid/docker-compose.solid.yml` for self-hosted Pod
 
 ---
 
@@ -86,7 +86,7 @@
 - **NATS subscription forwarding**: Subscribes to `intent.food.order`, forwards to OpenClaw `/hooks/agent` (requires `OPENCLAW_GATEWAY_URL`, `OPENCLAW_HOOKS_TOKEN`)
 - **Capability discovery (NATS)**: `POST /api/register_capabilities` to register capabilities (always discoverable while Bridge is running); `GET /api/discover` to query who supports a capability
 - **Dockerfile.bridge**: Bridge image build
-- **docker-compose.deploy.yml**: One-click deploy (NATS + Solid + Bridge)
+- **deploy/quickstart/docker-compose.full.yml**: Full quickstart (NATS + Relay + Solid + Bridge)
 
 ## Transport Layer Abstraction (Design Principle 2.3)
 

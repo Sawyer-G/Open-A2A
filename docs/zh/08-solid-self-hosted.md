@@ -16,7 +16,7 @@
 
 ```bash
 # 启动自托管 Solid 服务
-docker compose -f docker-compose.solid.yml up -d
+docker compose -f deploy/solid/docker-compose.solid.yml up -d
 
 # 访问 https://localhost:8443 注册账号
 # 自签名证书会提示「不安全」，本地开发可继续访问

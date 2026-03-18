@@ -100,7 +100,7 @@ Carrier 模拟送达
 
 - **preferences.py**：`PreferencesProvider` 抽象基类，`FilePreferencesProvider` 基于 JSON 文件实现
 - **SolidPodPreferencesProvider**：从自托管 Solid Pod 读写偏好（**推荐**，`pip install open-a2a[solid]`），符合数据主权
-- **docker-compose.solid.yml**：自托管 Solid 一键部署
+- **deploy/solid/docker-compose.solid.yml**：自托管 Solid 一键部署
 - **example/profile.json**：示例偏好文件（constraints、location）
 - **example/upload_profile_to_solid.py**：将本地 profile.json 上传到 Pod 的脚本
 
@@ -126,7 +126,7 @@ Carrier 模拟送达
 - **NATS 订阅转发**：订阅 `intent.food.order`，收到后转发给 OpenClaw `/hooks/agent`（需配置 `OPENCLAW_GATEWAY_URL`、`OPENCLAW_HOOKS_TOKEN`）
 - **能力发现（NATS）**：支持通过 `POST /api/register_capabilities` 注册能力（Bridge 在线时持续可被 discover），并通过 `GET /api/discover` 查询“谁支持某能力”
 - **Dockerfile.bridge**：Bridge 镜像构建
-- **docker-compose.deploy.yml**：NATS + Solid + Bridge 一键部署
+- **deploy/quickstart/docker-compose.full.yml**：全栈 quickstart（NATS + Relay + Solid + Bridge）
 - **docs/zh/openclaw-tool-example.md**：OpenClaw Tool 配置示例
 
 ---

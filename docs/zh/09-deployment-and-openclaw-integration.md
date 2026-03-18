@@ -32,7 +32,7 @@
 
 ## 1.1 一键部署完整节点（Docker：NATS + Relay + Solid + Bridge）
 
-> 若你希望在一台服务器上快速起一套 **完整的 Open-A2A 节点栈**（作为公共入口或测试网节点），可以使用根目录的 `docker-compose.deploy.yml`。
+> 若你希望在一台服务器上快速起一套 **完整的 Open-A2A 节点栈**（作为公共入口或测试网节点），可以使用 quickstart compose：`deploy/quickstart/docker-compose.full.yml`。
 
 ### 步骤（示例）
 
@@ -46,7 +46,7 @@ cp .env.example .env
 # 根据你的环境修改 .env 中的占位符
 
 # 3. 一键启动
-docker-compose -f docker-compose.deploy.yml up -d --build
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build
 
 # 4. 查看服务状态
 docker ps
@@ -73,7 +73,7 @@ docker ps
 
 ### 2.2 一键部署（Docker Compose）
 
-在项目根目录创建 `docker-compose.deploy.yml`：
+使用仓库内置的 quickstart compose（如需生产化运营节点，请改用 `deploy/node-x/`）：
 
 ```yaml
 # Open-A2A 完整部署（NATS + Solid + Bridge）
@@ -94,7 +94,7 @@ services:
 
   open-a2a-bridge:
     build:
-      context: .
+      context: ../..
       dockerfile: Dockerfile.bridge
     environment:
       - NATS_URL=nats://nats:4222
@@ -181,7 +181,7 @@ Bridge 已实现，位于 `bridge/main.py`。
 ```bash
 make install-bridge && make run-bridge
 # 或
-docker compose -f docker-compose.deploy.yml up -d
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d
 ```
 
 **API 示例**：
@@ -301,7 +301,8 @@ curl http://localhost:8080/health | jq .
 
 - 若 OpenClaw 由独立 compose 部署，先查其网络名（如 `openclaw_default`）。启动 Bridge 时加入该网络：
   ```yaml
-  # 在 docker-compose.deploy.yml 的 open-a2a-bridge 下增加
+  # 在你的 compose（例如 deploy/quickstart/docker-compose.full.yml 或 deploy/node-x/docker-compose.node-x.yml）
+  # 的 open-a2a-bridge 下增加
   networks:
     - default
     - openclaw_default  # 与 OpenClaw 同一网络

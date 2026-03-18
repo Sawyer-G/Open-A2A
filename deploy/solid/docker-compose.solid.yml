@@ -1,0 +1,15 @@
+# Self-hosted Solid Pod (Node Solid Server)
+#
+# Usage (from repo root):
+#   docker compose -f deploy/solid/docker-compose.solid.yml up -d
+#
+# Visit: https://localhost:8443 (self-signed cert for local dev)
+# Production examples: https://github.com/angelo-v/docker-solid-server/tree/main/examples
+
+services:
+  solid:
+    image: aveltens/solid-server:latest
+    ports:
+      - "8443:8443"
+    # Using image's built-in self-signed cert; dev-only.
+

@@ -9,7 +9,7 @@
 在这个场景中，典型的拓扑是：
 
 - OpenClaw 通过自己的 `docker-compose` 在服务器上运行（容器名示例：`openclaw-openclaw-gateway-1`，端口 `18789`）；
-- Open-A2A 通过本项目提供的 `docker-compose.deploy.yml` 拉起：
+- Open-A2A 通过本项目提供的 quickstart compose 拉起（`deploy/quickstart/docker-compose.full.yml`）：
   - `nats`：消息总线（默认端口 `4222`）；
   - `relay`：WebSocket Relay（默认端口 `8765`）；
   - `solid`：自托管 Solid Pod（可选）；
@@ -59,7 +59,7 @@ bash scripts/setup-openclaw-bridge.sh
 3. 执行：
 
 ```bash
-docker-compose -f docker-compose.deploy.yml up -d --build
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build
 ```
 
 此外，脚本还提供：
@@ -139,7 +139,7 @@ OPENCLAW_GATEWAY_URL=http://<宿主机IP>:18789
 - 通常做法是让 Bridge 加入 OpenClaw 的应用网络，例如：
 
 ```yaml
-# 片段示例：docker-compose.deploy.yml
+# 片段示例：deploy/quickstart/docker-compose.full.yml（你也可以改成 deploy/node-x 方案）
 services:
   open-a2a-bridge:
     # ...
@@ -164,7 +164,7 @@ networks:
 
 这时要么：
 
-- 调整 `docker-compose.deploy.yml`，让 Bridge 加入 OpenClaw 网络；
+        - 调整 `deploy/quickstart/docker-compose.full.yml`（或你的 compose），让 Bridge 加入 OpenClaw 网络；
 - 要么改用宿主机 IP 的 `OPENCLAW_GATEWAY_URL`（见上一节）。
 
 ---
@@ -354,7 +354,7 @@ curl -X POST http://localhost:8080/api/publish_intent \
 - 在 `scripts/setup-openclaw-bridge.sh` 中自动探测 OpenClaw Gateway 容器名与网络；
 - 为 Bridge 提供 `/health` 接口，统一检查 NATS / OpenClaw / 自身状态；
 - 发布官方 OpenClaw Skill，减少用户在 Tool / Webhook 级别的手工配置；
-- 在 `docker-compose.deploy.yml` 中预置对 OpenClaw 网络的友好支持。
+- 在 `deploy/quickstart/docker-compose.full.yml`（或你的 compose）中预置对 OpenClaw 网络的友好支持。
 
 这些改进的设计草案可参考本仓库 `temp/needfix.md` 中的「后续框架调整建议草案」一节。
 

@@ -40,7 +40,7 @@
 
 ## 3. One-Click Deploy (Docker Compose)
 
-At the project root, you can use the provided `docker-compose.deploy.yml` and helper script to spin up a full node stack.
+You can use the provided quickstart compose file and helper script to spin up a full node stack.
 
 ### 3.1 Using the helper script (recommended)
 
@@ -60,7 +60,7 @@ The script will:
 3. Run:
 
 ```bash
-docker-compose -f docker-compose.deploy.yml up -d --build
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build
 ```
 
 In addition, the script:
@@ -89,7 +89,7 @@ cd Open-A2A
 
 cp .env.example .env  # then edit .env as needed (NATS_URL / OPENCLAW_GATEWAY_URL / OPENCLAW_HOOKS_TOKEN)
 
-docker-compose -f docker-compose.deploy.yml up -d --build
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build
 docker ps  # nats / relay / solid / open-a2a-bridge should be running
 ```
 
@@ -194,7 +194,7 @@ The Bridge is implemented in `bridge/main.py`.
 ```bash
 make install-bridge && make run-bridge
 # or
-docker compose -f docker-compose.deploy.yml up -d
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d
 ```
 
 **API example**:

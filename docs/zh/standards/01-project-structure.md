@@ -60,8 +60,8 @@ Open-A2A/
 ├── pyproject.toml
 ├── requirements.txt            # 可选，与 pyproject.toml 并存
 ├── Dockerfile.bridge
-├── docker-compose.solid.yml
-├── docker-compose.deploy.yml
+├── deploy/solid/docker-compose.solid.yml
+├── deploy/quickstart/docker-compose.full.yml
 ├── LICENSE
 ├── NOTICE
 └── README.md

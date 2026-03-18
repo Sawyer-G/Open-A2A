@@ -20,7 +20,7 @@
 | `FilePreferencesProvider` | 基于 JSON 的偏好存储，见 `open_a2a/preferences.py` | ✅ 已实现 |
 | `SolidPodPreferencesProvider` | 从自托管 Solid Pod 读写偏好（**推荐**），`pip install open-a2a[solid]` | ✅ 已实现 |
 | [solid-file](https://github.com/twonote/solid-file-python) | Python Solid Pod 客户端，支持 Node Solid Server | ✅ 已集成 |
-| [docker-compose.solid.yml](../docker-compose.solid.yml) | 自托管 Solid 一键部署 | ✅ 已提供 |
+| [deploy/solid/docker-compose.solid.yml](../deploy/solid/docker-compose.solid.yml) | 自托管 Solid 一键部署 | ✅ 已提供 |
 | [08-solid-self-hosted.md](./08-solid-self-hosted.md) | 自托管 Solid 配置指南 | 必读 |
 
 ### Step 3: 能力执行层 (Agent 运行时)

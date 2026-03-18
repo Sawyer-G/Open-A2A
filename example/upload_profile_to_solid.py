@@ -3,7 +3,7 @@
 将 profile.json 上传到自托管 Solid Pod
 
 用法:
-  1. 启动自托管 Solid: docker compose -f docker-compose.solid.yml up -d
+  1. 启动自托管 Solid: docker compose -f deploy/solid/docker-compose.solid.yml up -d
   2. 访问 https://localhost:8443 注册账号
   3. 配置环境变量后执行（二选一）:
      OAuth2 客户端凭证（推荐）:

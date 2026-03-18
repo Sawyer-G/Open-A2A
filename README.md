@@ -138,7 +138,7 @@ This runs the full A→B→C flow: Consumer → Merchant(s) → Carrier.
 
 ### 2. Run a full node (NATS + Relay + Solid + Bridge)
 
-To spin up a full Open-A2A node stack on a server (or locally with Docker), use the provided compose file:
+To spin up a full Open-A2A node stack on a server (or locally with Docker), use the quickstart compose file:
 
 ```bash
 git clone https://github.com/Sawyer-G/Open-A2A.git
@@ -146,7 +146,7 @@ cd Open-A2A
 
 cp .env.example .env  # then edit .env as needed (NATS_URL, etc.)
 
-docker-compose -f docker-compose.deploy.yml up -d --build
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build
 
 docker ps  # you should see nats / relay / solid / open-a2a-bridge containers
 ```
@@ -178,7 +178,7 @@ The script will:
 - Create or update `.env` based on `.env.example`;
 - Prompt for `NATS_URL` / `OPENCLAW_GATEWAY_URL` / `OPENCLAW_HOOKS_TOKEN`;
 - Try to auto-detect an OpenClaw Gateway container name and propose a sensible default `OPENCLAW_GATEWAY_URL` (e.g. `http://openclaw-openclaw-gateway-1:18789`);
-- Run `docker-compose -f docker-compose.deploy.yml up -d --build`.
+- Run `docker compose -f deploy/quickstart/docker-compose.full.yml up -d --build`.
 
 You can also diagnose common connectivity issues with:
 

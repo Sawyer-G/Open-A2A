@@ -19,6 +19,20 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 ENV_FILE="$ROOT_DIR/.env"
+COMPOSE_FILE="$ROOT_DIR/deploy/quickstart/docker-compose.full.yml"
+
+detect_compose() {
+  if docker compose version >/dev/null 2>&1; then
+    echo "docker compose"
+    return 0
+  fi
+  if command -v docker-compose >/dev/null 2>&1; then
+    echo "docker-compose"
+    return 0
+  fi
+  echo ""
+  return 1
+}
 
 detect_gateway_default() {
   # 优先：尝试通过容器名中带 gateway 的容器自动推断
@@ -127,8 +141,15 @@ main() {
   echo
 
   # 3. Use docker-compose to bring up the full stack
-  echo "[info] Starting NATS + Relay + Solid + Bridge via docker-compose ..."
-  docker-compose -f docker-compose.deploy.yml up -d --build
+  local compose_bin
+  compose_bin="$(detect_compose || true)"
+  if [[ -z "${compose_bin:-}" ]]; then
+    echo "[error] docker compose not found (need Docker Compose v2 or docker-compose)"
+    exit 1
+  fi
+  echo "[info] Starting NATS + Relay + Solid + Bridge via compose ..."
+  echo "  Compose file: $COMPOSE_FILE"
+  $compose_bin -f "$COMPOSE_FILE" up -d --build
 
   echo
   echo "[done] Compose started, current container status:"
