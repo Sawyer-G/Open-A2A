@@ -43,6 +43,34 @@ bash ../../scripts/diagnose-node-x.sh
 
 ---
 
+## 安全建议（公网节点务必做）
+
+Node X 往往会对公网开放 Relay（以及可选的 Bridge）。如果你希望“默认安全”而不是依赖人工检查，推荐：
+
+1) **改掉所有 `change-me-*` 占位密码/Token**
+- `.env` 里的 `NATS_RELAY_PASS`、`NATS_BRIDGE_PASS`（以及可选的 `NATS_PUBLIC_PASS`）
+- `deploy/node-x/nats.conf` 里的对应密码（必须与 `.env` 一致）
+
+2) **开启严格安全模式（fail-fast）**
+
+在 `.env` 中设置：
+
+```bash
+OA2A_STRICT_SECURITY=1
+```
+
+效果：
+
+- Relay/Bridge 启动时会做安全自检；发现明显不安全配置会直接拒绝启动
+- `scripts/diagnose-node-x.sh` 在 strict 模式下也会对占位密码/缺鉴权等问题直接报错退出
+
+3) **公网 Relay 建议开启鉴权**
+- 设置 `RELAY_AUTH_TOKEN`，避免匿名滥用
+
+4) **对外提供目录 discover 时建议启用鉴权**
+- 设置 `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
+
+
 ## 端口与云防火墙（建议）
 
 ### 建议默认对公网开放

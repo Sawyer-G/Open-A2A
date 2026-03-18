@@ -28,6 +28,23 @@ if [[ -f "$ENV_FILE" ]]; then
   set +a
 fi
 
+STRICT="${OA2A_STRICT_SECURITY:-0}"
+if [[ "$STRICT" == "1" || "$STRICT" == "true" || "$STRICT" == "yes" ]]; then
+  STRICT=1
+else
+  STRICT=0
+fi
+
+fail_or_warn() {
+  local msg="$1"
+  if [[ "$STRICT" -eq 1 ]]; then
+    echo "  [error] $msg"
+    exit 1
+  else
+    echo "  [warn] $msg"
+  fi
+}
+
 print_kv() {
   local key="$1"
   local val="${2:-}"
@@ -112,6 +129,35 @@ if [[ "${RELAY_SUBJECT_ALLOWLIST:-}" == *"_INBOX.>"* ]]; then
   echo "  [warn] RELAY_SUBJECT_ALLOWLIST contains _INBOX.> (too broad). Prefer _INBOX.open_a2a.>."
   warned=1
 fi
+
+# Strict-mode: fail fast on clearly unsafe defaults for public/operator nodes.
+if [[ "$STRICT" -eq 1 ]]; then
+  if [[ "${NATS_RELAY_PASS:-}" == change-me-* || -z "${NATS_RELAY_PASS:-}" ]]; then
+    fail_or_warn "STRICT: NATS_RELAY_PASS 仍为占位/空值（必须修改）"
+  fi
+  if [[ "${NATS_BRIDGE_PASS:-}" == change-me-* || -z "${NATS_BRIDGE_PASS:-}" ]]; then
+    fail_or_warn "STRICT: NATS_BRIDGE_PASS 仍为占位/空值（必须修改）"
+  fi
+  if [[ "${NATS_PUBLIC_PASS:-}" == change-me-* && -n "${NATS_PUBLIC_USER:-}" ]]; then
+    fail_or_warn "STRICT: NATS_PUBLIC_PASS 仍为占位（若开放 NATS 直连必须修改）"
+  fi
+
+  # Relay public entry should have auth token.
+  RELAY_HOST="${RELAY_WS_HOST:-0.0.0.0}"
+  if [[ "$RELAY_HOST" == "0.0.0.0" || "$RELAY_HOST" == "::" || -z "$RELAY_HOST" ]]; then
+    if [[ -z "${RELAY_AUTH_TOKEN:-}" ]]; then
+      fail_or_warn "STRICT: Relay 绑定公网地址但未设置 RELAY_AUTH_TOKEN"
+    fi
+  fi
+
+  # If Bridge exposes directory discovery, require auth tokens.
+  if [[ "${BRIDGE_ENABLE_DISCOVERY:-1}" == "1" || "${BRIDGE_ENABLE_DISCOVERY:-1}" == "true" ]]; then
+    if [[ -z "${BRIDGE_DISCOVERY_REGISTER_TOKEN:-}" || -z "${BRIDGE_DISCOVERY_DISCOVER_TOKEN:-}" ]]; then
+      fail_or_warn "STRICT: Bridge discovery 启用但未配置 BRIDGE_DISCOVERY_REGISTER_TOKEN/BRIDGE_DISCOVERY_DISCOVER_TOKEN"
+    fi
+  fi
+fi
+
 if [[ $warned -eq 0 ]]; then
   echo "  ok"
 fi

@@ -87,6 +87,7 @@ For a **public entry node**, recommended:
 - `BRIDGE_ENABLE_FORWARD=0` (do not forward all network intents into one OpenClaw)
 - `BRIDGE_ENABLE_DISCOVERY=1` (provide register/discover directory APIs)
 - Use Relay as the primary entry (lowest friction for end users)
+- (Recommended) enable strict security mode: `OA2A_STRICT_SECURITY=1` (fails fast on obviously unsafe configs)
 
 For a **personal node that runs your own OpenClaw**, recommended:
 
