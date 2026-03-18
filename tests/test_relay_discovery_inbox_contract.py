@@ -63,7 +63,8 @@ def test_nats_discovery_reply_to_uses_open_a2a_inbox_and_relay_allows(monkeypatc
         d = NatsDiscoveryProvider(transport=t)
         await d.connect()
 
-        # Trigger discover: it should create a reply_to subject that is compatible with Relay defaults.
+        # Trigger discover: it should create a reply_to subject
+        # that is compatible with Relay defaults.
         _ = await d.discover("intent.food.order", timeout_seconds=0.01)
 
         assert t.subscribed, "discover() should subscribe to reply_to inbox"

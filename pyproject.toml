@@ -50,6 +50,7 @@ e2e = [
 dev = [
     "pytest>=7.0",
     "ruff>=0.1.0",
+    "starlette>=0.27.0",
 ]
 
 [project.urls]
