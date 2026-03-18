@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Bridge Discovery Renewal (Path B client best practice)
+Bridge Discovery Renewal (Directory Registry client best practice; formerly "Path B")
 
 Purpose:
 - Demonstrate how a client should periodically renew capability registrations

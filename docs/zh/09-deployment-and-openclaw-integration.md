@@ -271,7 +271,7 @@ SubjectBridge（Federation）：
 - `oa2a_fed_skipped_dedupe_total{bridge_id="..."}`（counter）：去重丢弃计数
 - `oa2a_fed_errors_total{bridge_id="..."}`（counter）：发布/转发错误计数
 
-### 4.1 持续被发现：能力注册（register）与查询（discover）
+### 4.1 持续被发现：目录注册表（Directory Registry，原 Path B）
 
 如果你希望其他节点能够“像查目录一样”持续发现你的 Agent（而不是仅在广播意图时被动触达），推荐让 Bridge 作为常驻进程，替 OpenClaw Agent 在 NATS 上注册能力。
 
@@ -348,8 +348,8 @@ curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_se
 
 对应可复制产物：
 
-- `deploy/bridge-pathb/`（单机/HA compose）
-- `scripts/e2e-bridge-pathb.sh`（跨容器 E2E 自检）
+- `deploy/bridge-directory-registry/`（单机/HA compose）
+- `scripts/e2e-bridge-directory-registry.sh`（跨容器 E2E 自检）
 
 #### 4.1.3 更系统的 E2E（跨进程 / 跨容器）
 
@@ -358,8 +358,8 @@ curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_se
 在仓库根目录执行：
 
 ```bash
-bash scripts/e2e-bridge-pathb.sh single-persist
-bash scripts/e2e-bridge-pathb.sh redis-ha
+bash scripts/e2e-bridge-directory-registry.sh single-persist
+bash scripts/e2e-bridge-directory-registry.sh redis-ha
 ```
 
 若你的环境无法访问 Docker Hub（无法拉取 `nats` / `redis` 镜像），也可以复用你**已有在跑的 NATS/Redis**：
@@ -368,8 +368,8 @@ bash scripts/e2e-bridge-pathb.sh redis-ha
 export E2E_EXTERNAL_NATS_URL="nats://host.docker.internal:4222"
 export E2E_EXTERNAL_REDIS_URL="redis://host.docker.internal:6379/0"  # 仅 redis-ha-external 需要
 
-bash scripts/e2e-bridge-pathb.sh single-persist-external
-bash scripts/e2e-bridge-pathb.sh redis-ha-external
+bash scripts/e2e-bridge-directory-registry.sh single-persist-external
+bash scripts/e2e-bridge-directory-registry.sh redis-ha-external
 ```
 
 自检覆盖：

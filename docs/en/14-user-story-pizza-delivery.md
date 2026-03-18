@@ -49,7 +49,7 @@ If A/B/C are behind NAT or restricted networks:
 
 You can think of this as “discover me when relevant intents appear”.
 
-### 3.2 Directory-style discovery (always discoverable, Path B)
+### 3.2 Directory registry (always discoverable, formerly Path B)
 
 If you want others to query “who supports capability X” (like a directory), use Discovery:
 

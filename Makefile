@@ -24,7 +24,7 @@ help:
 	@echo "  make run-discovery-demo  - 运行 Discovery 注册/发现示例（NATS）"
 	@echo "  make run-discovery-dht-demo - 运行 DHT 发现示例（跨网络）"
 	@echo "  make run-dht-discovery-renew - DHT 注册续租示例（跨节点 discover 客户端最佳实践）"
-	@echo "  make run-bridge-discovery-renew - Bridge 注册续租示例（Path B 客户端最佳实践）"
+	@echo "  make run-bridge-discovery-renew - Bridge 注册续租示例（目录注册表/Directory Registry 客户端最佳实践，原 Path B）"
 	@echo "  make run-federation-xy   - 运行 X↔Y subject-bridge 示例（Docker）"
 	@echo "  make down-federation-xy  - 停止 X↔Y subject-bridge 示例（Docker）"
 	@echo "  make install-relay       - 安装 Relay 依赖（websockets）"

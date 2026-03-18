@@ -29,7 +29,7 @@
 - **Bridge（可选）**：`8080/tcp`（`BRIDGE_PORT`）  
   如果你希望对外提供：
   - `/health` 运维自检
-  - `/api/register_capabilities`、`/api/discover` 目录式持续发现（Path B）
+  - `/api/register_capabilities`、`/api/discover` 目录注册表（Directory Registry，原 Path B）
   
   则可以开放该端口，但**强烈建议放在 HTTPS 反代后**（并加限流/鉴权）。
 

@@ -60,7 +60,7 @@ JSON
 }
 
 single_persist() {
-  local file="$ROOT/deploy/bridge-pathb/docker-compose.pathb.single.yml"
+  local file="$ROOT/deploy/bridge-directory-registry/docker-compose.directory-registry.single.yml"
   echo "[e2e] up single-persist"
   compose -f "$file" up -d --build
   trap 'compose -f "$file" down -v' EXIT
@@ -87,8 +87,6 @@ single_persist() {
 }
 
 single_persist_external() {
-  # Use an already-running NATS (no pulling nats image).
-  # Provide E2E_EXTERNAL_NATS_URL like: nats://host.docker.internal:4222
   local nats_url="${E2E_EXTERNAL_NATS_URL:-}"
   if [[ -z "$nats_url" ]]; then
     echo "[e2e] E2E_EXTERNAL_NATS_URL is required for external mode" >&2
@@ -137,7 +135,7 @@ single_persist_external() {
 }
 
 redis_ha() {
-  local file="$ROOT/deploy/bridge-pathb/docker-compose.pathb.ha.yml"
+  local file="$ROOT/deploy/bridge-directory-registry/docker-compose.directory-registry.ha.yml"
   echo "[e2e] up redis-ha"
   compose -f "$file" up -d --build
   trap 'compose -f "$file" down -v' EXIT
@@ -158,10 +156,6 @@ redis_ha() {
 }
 
 redis_ha_external() {
-  # Use already-running NATS+Redis (no pulling images).
-  # Provide:
-  # - E2E_EXTERNAL_NATS_URL like nats://host.docker.internal:4222
-  # - E2E_EXTERNAL_REDIS_URL like redis://host.docker.internal:6379/0
   local nats_url="${E2E_EXTERNAL_NATS_URL:-}"
   local redis_url="${E2E_EXTERNAL_REDIS_URL:-}"
   if [[ -z "$nats_url" || -z "$redis_url" ]]; then

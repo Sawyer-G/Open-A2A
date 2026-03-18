@@ -29,7 +29,7 @@ By default, **Node X should not bind to any specific business runtime** (e.g., f
 - **Bridge (optional)**: `8080/tcp` (`BRIDGE_PORT`)  
   Expose this only if you want to provide:
   - `/health` operational checks
-  - `/api/register_capabilities`, `/api/discover` for “always discoverable” (Path B)
+  - `/api/register_capabilities`, `/api/discover` for the directory registry (“always discoverable”, formerly Path B)
   
   Strongly recommended to put behind an HTTPS reverse proxy (and add rate limiting / auth).
 

@@ -285,7 +285,7 @@ SubjectBridge (Federation):
 - `oa2a_fed_skipped_dedupe_total{bridge_id="..."}` (counter)
 - `oa2a_fed_errors_total{bridge_id="..."}` (counter)
 
-### 5.2 “Always discoverable” via capability registration
+### 5.2 Directory registry (“always discoverable”, formerly Path B)
 
 If you want other nodes to continuously discover your Agent (directory-style discovery), the simplest approach is:
 
@@ -364,16 +364,16 @@ Relevant environment variables are documented in `.env.example`:
 
 Copyable artifacts:
 
-- `deploy/bridge-pathb/` (single/HA docker-compose)
-- `scripts/e2e-bridge-pathb.sh` (cross-container E2E checks)
+- `deploy/bridge-directory-registry/` (single/HA docker-compose)
+- `scripts/e2e-bridge-directory-registry.sh` (cross-container E2E checks)
 
 #### 5.2.3 More systematic E2E (cross-process / cross-container)
 
 From the repo root:
 
 ```bash
-bash scripts/e2e-bridge-pathb.sh single-persist
-bash scripts/e2e-bridge-pathb.sh redis-ha
+bash scripts/e2e-bridge-directory-registry.sh single-persist
+bash scripts/e2e-bridge-directory-registry.sh redis-ha
 ```
 
 If your environment cannot access Docker Hub (cannot pull `nats` / `redis` images), you can reuse an **already-running NATS/Redis**:
@@ -382,8 +382,8 @@ If your environment cannot access Docker Hub (cannot pull `nats` / `redis` image
 export E2E_EXTERNAL_NATS_URL="nats://host.docker.internal:4222"
 export E2E_EXTERNAL_REDIS_URL="redis://host.docker.internal:6379/0"  # only needed for redis-ha-external
 
-bash scripts/e2e-bridge-pathb.sh single-persist-external
-bash scripts/e2e-bridge-pathb.sh redis-ha-external
+bash scripts/e2e-bridge-directory-registry.sh single-persist-external
+bash scripts/e2e-bridge-directory-registry.sh redis-ha-external
 ```
 
 What it verifies:
