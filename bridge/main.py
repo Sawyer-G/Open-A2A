@@ -714,14 +714,12 @@ async def _run_nats_subscriber() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期：连接 NATS，启动订阅任务"""
-    global (
-        broadcaster,
-        discovery,
-        _nats_status,
-        _nats_error,
-        _discovery_status,
-        _discovery_error,
-    )
+    global broadcaster
+    global discovery
+    global _nats_status
+    global _nats_error
+    global _discovery_status
+    global _discovery_error
     _security_boot_check()
     broadcaster = IntentBroadcaster(NATS_URL)
     try:
