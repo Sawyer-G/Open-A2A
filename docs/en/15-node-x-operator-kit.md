@@ -95,6 +95,26 @@ For a **personal node that runs your own OpenClaw**, recommended:
 
 ---
 
+## 5.1 (Recommended) Provide verifiable directory meta (RFC-004)
+
+If you expose directory-style discovery (`/api/register_capabilities`, `/api/discover`), it is recommended to enable **meta proof** in Bridge:
+
+- Other nodes can verify the signature and confirm the meta is authored by the `did:key` holder.
+- This is **not** a credit system; it only enables verifiability. Trust policy remains a local decision.
+
+Optional `.env` settings:
+
+```bash
+BRIDGE_ENABLE_META_PROOF=1
+BRIDGE_PUBLIC_URL=https://bridge.open-a2a.org
+# For production, keep the DID stable across restarts and store the seed securely:
+BRIDGE_DID_SEED_B64=BASE64_SEED
+```
+
+Protocol details: `spec/rfc-004-identity-and-trust.md`.
+
+---
+
 ## 6. Optional hardening (not required by this kit)
 
 This kit stays intentionally minimal. Common next steps:

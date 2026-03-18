@@ -32,6 +32,7 @@
   - `identity.py` 中的 `AgentIdentity` 基于 `did:key` 与 JWS：
     - 发布 Intent / Offer 时可对 Payload 签名；
     - 订阅端可验证签名，确认消息未被篡改，并填充 `sender_did`。
+  - `spec/rfc-004-identity-and-trust.md` 定义了 meta 最小字段与 `proof`（对 canonical JSON hash 的 JWS），用于 discovery/目录场景的验真与可控路由。
 
 - **数据主权（谁控制偏好与约束）**
   - `PreferencesProvider` 抽象 + `FilePreferencesProvider` + `SolidPodPreferencesProvider`：

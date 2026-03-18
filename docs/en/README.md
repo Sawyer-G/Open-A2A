@@ -23,6 +23,7 @@
 | [14-user-story-pizza-delivery.md](./14-user-story-pizza-delivery.md) | **User story (pizza delivery)**: an end-to-end A/B/C flow via a public node X |
 | [15-node-x-operator-kit.md](./15-node-x-operator-kit.md) | **Node X operator kit**: copyable config checklist, ports, and a diagnose script |
 | [16-multi-operator-federation-subject-bridge.md](./16-multi-operator-federation-subject-bridge.md) | **Multi-operator federation (Option 2)**: independent NATS + selective subject bridging (MVP) |
+| [17-identity-and-trust.md](./17-identity-and-trust.md) | **Identity & trust (operator guide)**: DID, signatures, and optional VC (RFC-004) |
 | [openclaw-tool-example.md](./openclaw-tool-example.md) | OpenClaw Tool configuration example |
 
 ## Standards

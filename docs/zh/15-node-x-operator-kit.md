@@ -95,6 +95,26 @@ bash scripts/diagnose-node-x.sh
 
 ---
 
+## 5.1（推荐）对外提供“可验真的目录 meta”（RFC-004）
+
+如果你对外提供目录式 discover（`/api/register_capabilities`、`/api/discover`），建议在 Bridge 侧开启 **meta proof**：
+
+- 其他节点拿到你的 `meta` 后，可以验证签名，确认这份 meta 确实由该 `did:key` 的私钥持有者生成；
+- 这不等于“信用体系”，只是“可验真”能力，信任策略仍由对方节点自行决定。
+
+在 `.env` 中（可选）开启：
+
+```bash
+BRIDGE_ENABLE_META_PROOF=1
+BRIDGE_PUBLIC_URL=https://bridge.open-a2a.org
+# 生产建议固定 DID（避免重启身份变化），并妥善保管 seed：
+BRIDGE_DID_SEED_B64=BASE64_SEED
+```
+
+协议细节见：`spec/rfc-004-identity-and-trust.md`。
+
+---
+
 ## 6. 运营者后续增强（不在本套件强制）
 
 这套 Node X kit 刻意保持“最小可用”，后续常见增强包括：
