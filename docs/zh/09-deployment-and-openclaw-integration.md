@@ -73,6 +73,10 @@ docker ps
   - `RELAY_AUTH_TOKEN` 必须设置
   - 若启用目录 discover（`BRIDGE_ENABLE_DISCOVERY=1`），必须设置 `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
 
+补充（公网更成熟形态）：
+
+- Relay 可以水平扩展为多实例（连接同一 NATS），前置支持 WebSocket 的反向代理/LB，对外暴露一个 `wss://relay.<domain>`。
+
 #### 1.1.2 防火墙/安全组端口矩阵（建议）
 
 > 目标：把“能跑起来”变成“默认安全地跑起来”。下表是 quickstart + DHT bootstrap 的最小建议。

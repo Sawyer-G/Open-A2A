@@ -144,5 +144,31 @@ BRIDGE_DID_SEED_B64=BASE64_SEED
 - 观测：指标、日志集中、告警
   - Bridge：`GET /ops/metrics`（JSON，目录后端/在线 provider/capability 分布等）
   - Relay：`http://{RELAY_HTTP_HOST}:{RELAY_HTTP_PORT}/healthz`（JSON，连接数/订阅数等，建议仅内网）
+
+---
+
+## 5.3（增强）Relay 的多实例/HA 形态（公网更成熟的默认方案）
+
+> Relay 是 WebSocket 公网入口。它本身**不需要共享状态**（订阅关系在每条 WS 连接内），因此天然适合水平扩展。
+
+**推荐形态**
+
+- 运行 **多个 Relay 实例**（连接同一 NATS，使用同一套 `RELAY_AUTH_TOKEN` 与 allowlist）
+- 前置一个 **支持 WebSocket 的反向代理/LB**（nginx/Caddy/Traefik/云 LB 均可），对外暴露单一域名（例如 `wss://relay.open-a2a.org`）
+
+**关键注意点**
+
+- **LB 必须支持 WebSocket** 升级（HTTP Upgrade），并允许长连接
+- 不需要“会话粘滞”才能正确工作（每条连接固定落到某个实例即可）；但开启粘滞通常也无妨
+- 建议开启：
+  - `RELAY_AUTH_TOKEN`（公网强烈建议）
+  - `RELAY_SUBJECT_ALLOWLIST=intent.>,open_a2a.>,_INBOX.open_a2a.>`（收敛 `_INBOX.*`）
+
+**客户端侧最佳实践（弱网/移动网络）**
+
+Python SDK 的 `RelayClientTransport` 已支持：
+
+- `RELAY_CLIENT_AUTH_TOKEN`：用于连接时自动携带 `Authorization: Bearer <token>`
+- `RELAY_AUTO_RECONNECT=1`：断线自动重连（指数退避），并在重连后自动恢复订阅（resubscribe）
 - 多运营者互联（X↔Y）：选择性桥接主题（如 `intent.food.*`）
 

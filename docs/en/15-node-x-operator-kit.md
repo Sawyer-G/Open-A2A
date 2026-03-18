@@ -144,5 +144,31 @@ This kit stays intentionally minimal. Common next steps:
 - Observability: metrics, log aggregation, alerting
   - Bridge: `GET /ops/metrics` (JSON snapshot: backend, online providers, capability distribution)
   - Relay: `http://{RELAY_HTTP_HOST}:{RELAY_HTTP_PORT}/healthz` (JSON snapshot; keep private)
+
+---
+
+## 5.3 (Enhancement) Relay multi-instance / HA shape (more mature public entry)
+
+> Relay is the public WebSocket entry. It is effectively **stateless** across instances: subscriptions live inside each WS connection, so horizontal scaling is natural.
+
+**Recommended shape**
+
+- Run **multiple Relay instances** (connect to the same NATS; share the same `RELAY_AUTH_TOKEN` and subject allowlist)
+- Put a **WebSocket-capable reverse proxy / load balancer** (nginx/Caddy/Traefik/cloud LB) in front and expose a single hostname (e.g. `wss://relay.open-a2a.org`)
+
+**Key notes**
+
+- The LB must support WebSocket upgrade and long-lived connections.
+- No strict session stickiness is required (each connection naturally lands on one instance), though stickiness is fine.
+- For public nodes, strongly recommend:
+  - `RELAY_AUTH_TOKEN`
+  - `RELAY_SUBJECT_ALLOWLIST=intent.>,open_a2a.>,_INBOX.open_a2a.>` (avoid `_INBOX.>` broadness)
+
+**Client best practice (unstable networks)**
+
+Python SDK `RelayClientTransport` supports:
+
+- `RELAY_CLIENT_AUTH_TOKEN`: automatically sends `Authorization: Bearer <token>`
+- `RELAY_AUTO_RECONNECT=1`: auto reconnect (exponential backoff) and resubscribe after reconnect
 - Multi-operator connectivity (X↔Y): selective subject bridging (e.g. `intent.food.*`)
 

@@ -114,6 +114,10 @@ This quickstart is meant to get an end-to-end demo running fast. If you plan to 
   - `RELAY_AUTH_TOKEN` must be set
   - If discovery is enabled (`BRIDGE_ENABLE_DISCOVERY=1`), set `BRIDGE_DISCOVERY_REGISTER_TOKEN` and `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
 
+Additional note (more mature public shape):
+
+- Relay can be scaled horizontally (multiple instances connected to the same NATS). Put a WebSocket-capable reverse proxy / load balancer in front and expose a single `wss://relay.<domain>`.
+
 #### 3.4.1 Firewall / security group port matrix (recommended)
 
 > Goal: make the “quickstart” not only runnable, but safely runnable by default. The table below reflects quickstart + DHT bootstrap.
