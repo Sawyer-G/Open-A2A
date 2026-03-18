@@ -1,0 +1,106 @@
+# 节点 X（运营节点）一键部署套件：可复制配置清单
+
+> 适用对象：希望运营“公共入口节点”的个人/团队/社区。  
+> 目标：在不偏离 Open-A2A「协议层」定位的前提下，提供一套**可直接复制**、可运维的部署产物。
+
+本指南对应仓库内的运营套件：`deploy/node-x/`。
+
+---
+
+## 1. 你要运营的“节点 X”是什么？
+
+节点 X 是一个公共基础设施入口，主要职责是：
+
+- 提供一个共享的主题空间（NATS）
+- 提供一个更易接入的出站入口（Relay：WS/WSS）
+-（可选）提供 HTTP 适配与目录能力（Bridge：/health、register/discover 等）
+
+**节点 X 不应该默认绑定任何具体业务运行时**（例如把全网 intent 转发到运营者自己的 OpenClaw）。这会偏离协议层定位。
+
+---
+
+## 2. 端口与云防火墙清单（必须明确）
+
+### 2.1 建议默认对公网开放
+
+- **Relay**：`8765/tcp`（`RELAY_WS_PORT`）  
+  终端用户只要能出站连接 WS/WSS，就可以加入网络。
+
+- **Bridge（可选）**：`8080/tcp`（`BRIDGE_PORT`）  
+  如果你希望对外提供：
+  - `/health` 运维自检
+  - `/api/register_capabilities`、`/api/discover` 目录式持续发现（Path B）
+  
+  则可以开放该端口，但**强烈建议放在 HTTPS 反代后**（并加限流/鉴权）。
+
+### 2.2 建议默认不对公网开放
+
+- **NATS**：`4222/tcp`  
+  默认只给 Relay/Bridge 在同机容器网络内使用。  
+  若你要提供“高级用户直连 NATS”，再考虑开放 4222，并启用更严格的鉴权/ACL/TLS。
+
+---
+
+## 3. 可直接复制的部署产物（仓库内）
+
+目录：`deploy/node-x/`
+
+- `docker-compose.node-x.yml`
+  - 默认 **不映射** NATS 4222 到宿主机（避免意外公网暴露）
+  - 映射 Relay 8765、Bridge 8080（可按需关闭/改端口）
+  - 统一使用固定网络名 `open-a2a`，便于诊断
+
+- `nats.conf`
+  - 最小 NATS 鉴权与权限模板（users + permissions）
+  - 你必须改密码（至少改 `agent_public`）
+
+- `.env.node-x.example`
+  - 一份可复制的运营侧 `.env` 模板
+
+- `scripts/diagnose-node-x.sh`
+  - 端口检查 + Bridge /health + 通过 `nats-box` 容器做 NATS ping + discover 查询
+
+---
+
+## 4. 一键部署步骤（复制即可）
+
+在仓库根目录执行：
+
+```bash
+cp deploy/node-x/.env.node-x.example .env
+# 编辑 deploy/node-x/nats.conf 并修改密码（至少改 agent_public）
+docker compose -f deploy/node-x/docker-compose.node-x.yml --env-file .env up -d --build
+bash scripts/diagnose-node-x.sh
+```
+
+你需要做的唯一“必须修改”是：
+
+- 在 `deploy/node-x/nats.conf` 和 `.env` 中把密码改掉，并保持一致
+- 把 `.env` 里的 `BRIDGE_META_JSON.endpoint` 改成你的公网域名/IP（如果你对外开放 Bridge）
+
+---
+
+## 5. 推荐的运营默认值（避免偏离项目初衷）
+
+如果你是“公共入口节点”，推荐：
+
+- `BRIDGE_ENABLE_FORWARD=0`（不把全网 intent 转发到某个 OpenClaw）
+- `BRIDGE_ENABLE_DISCOVERY=1`（对外提供 register/discover 的目录能力）
+- 对外主入口是 Relay（终端用户接入门槛最低）
+
+如果你是“自用节点（你自己跑 OpenClaw）”，才推荐：
+
+- `BRIDGE_ENABLE_FORWARD=1`
+- 配置 `OPENCLAW_GATEWAY_URL`、`OPENCLAW_HOOKS_TOKEN`
+
+---
+
+## 6. 运营者后续增强（不在本套件强制）
+
+这套 Node X kit 刻意保持“最小可用”，后续常见增强包括：
+
+- Relay / Bridge 前置反代（HTTPS、WAF、限流、鉴权）
+- NATS TLS、账户隔离、更细粒度的 subject ACL
+- 观测：指标、日志集中、告警
+- 多运营者互联（X↔Y）：选择性桥接主题（如 `intent.food.*`）
+

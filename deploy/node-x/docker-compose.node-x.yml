@@ -1,0 +1,62 @@
+# Node X (operator node) - recommended deployment
+#
+# Design defaults:
+# - NATS stays private (no host port mapping) by default.
+# - Relay (WS/WSS) is the main public entry for Agents.
+# - Bridge is optional; if exposed publicly, recommend putting it behind HTTPS reverse proxy.
+
+services:
+  nats:
+    image: nats:latest
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - ./nats.conf:/etc/nats/nats.conf:ro
+    networks:
+      - open-a2a
+    restart: unless-stopped
+
+  relay:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.relay
+    environment:
+      - NATS_URL=nats://${NATS_RELAY_USER}:${NATS_RELAY_PASS}@${NATS_HOST:-nats}:${NATS_PORT:-4222}
+      - RELAY_WS_HOST=${RELAY_WS_HOST:-0.0.0.0}
+      - RELAY_WS_PORT=${RELAY_WS_PORT:-8765}
+      - RELAY_WS_TLS=${RELAY_WS_TLS:-0}
+      - RELAY_WS_SSL_CERT=${RELAY_WS_SSL_CERT:-}
+      - RELAY_WS_SSL_KEY=${RELAY_WS_SSL_KEY:-}
+      - RELAY_WS_SSL_VERIFY=${RELAY_WS_SSL_VERIFY:-1}
+    ports:
+      - "${RELAY_WS_PORT:-8765}:${RELAY_WS_PORT:-8765}"
+    depends_on:
+      - nats
+    networks:
+      - open-a2a
+    restart: unless-stopped
+
+  open-a2a-bridge:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.bridge
+    ports:
+      - "${BRIDGE_PORT:-8080}:8080"
+    environment:
+      - NATS_URL=nats://${NATS_BRIDGE_USER}:${NATS_BRIDGE_PASS}@${NATS_HOST:-nats}:${NATS_PORT:-4222}
+      - BRIDGE_ENABLE_FORWARD=${BRIDGE_ENABLE_FORWARD:-0}
+      - BRIDGE_ENABLE_DISCOVERY=${BRIDGE_ENABLE_DISCOVERY:-1}
+      - BRIDGE_AGENT_ID=${BRIDGE_AGENT_ID:-node-x-bridge}
+      - BRIDGE_CAPABILITIES=${BRIDGE_CAPABILITIES:-intent.food.order}
+      - BRIDGE_META_JSON=${BRIDGE_META_JSON:-}
+      # Operator node does not bind to any specific OpenClaw by default.
+      - OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL:-}
+      - OPENCLAW_HOOKS_TOKEN=${OPENCLAW_HOOKS_TOKEN:-}
+    depends_on:
+      - nats
+    networks:
+      - open-a2a
+    restart: unless-stopped
+
+networks:
+  open-a2a:
+    name: open-a2a
