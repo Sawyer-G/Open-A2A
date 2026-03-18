@@ -129,6 +129,9 @@ OA2A_FED_SUBJECTS=intent.food.>,intent.logistics.>
 | `OA2A_FED_BRIDGE_ID` | bridge 身份标识 | `x-y-bridge` |
 | `OA2A_FED_MAX_HOPS` | 最大 hop | `1` |
 | `OA2A_FED_DEDUPE_TTL_SECONDS` | 去重 TTL | `3` |
+| `OA2A_FED_DEDUPE_PERSIST_PATH` | 去重落盘路径（空=关闭；重启不丢状态） | 空 |
+| `OA2A_FED_DEDUPE_PERSIST_INTERVAL_SECONDS` | 去重落盘间隔（秒） | `2` |
+| `OA2A_FED_DEDUPE_MAX_ITEMS` | 去重最大条目数（防止文件无限增长） | `50000` |
 | `OA2A_FED_STATS_INTERVAL_SECONDS` | 统计间隔 | `10` |
 | `OA2A_FED_LOG_FORWARD_SAMPLES` | 是否打印每条转发样例 | `0` |
 

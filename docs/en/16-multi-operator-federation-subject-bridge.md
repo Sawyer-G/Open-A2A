@@ -127,6 +127,9 @@ OA2A_FED_SUBJECTS=intent.food.>,intent.logistics.>
 | `OA2A_FED_BRIDGE_ID` | Bridge identifier | `x-y-bridge` |
 | `OA2A_FED_MAX_HOPS` | Max hop count | `1` |
 | `OA2A_FED_DEDUPE_TTL_SECONDS` | Dedupe TTL | `3` |
+| `OA2A_FED_DEDUPE_PERSIST_PATH` | Persist dedupe file path (empty = disabled; survives restarts) | empty |
+| `OA2A_FED_DEDUPE_PERSIST_INTERVAL_SECONDS` | Persist interval (seconds) | `2` |
+| `OA2A_FED_DEDUPE_MAX_ITEMS` | Max dedupe items (prevents unbounded growth) | `50000` |
 | `OA2A_FED_STATS_INTERVAL_SECONDS` | Stats interval | `10` |
 | `OA2A_FED_LOG_FORWARD_SAMPLES` | Print per-message forward samples | `0` |
 

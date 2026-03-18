@@ -64,6 +64,9 @@ docker ps
 | `OA2A_FED_BRIDGE_ID` | bridge 身份标识（用于环路防护） | `x-y-bridge` |
 | `OA2A_FED_MAX_HOPS` | 最大转发跳数 | `1` |
 | `OA2A_FED_DEDUPE_TTL_SECONDS` | 去重 TTL（秒） | `3` |
+| `OA2A_FED_DEDUPE_PERSIST_PATH` | 去重落盘路径（空=关闭；重启不丢状态） | 空 |
+| `OA2A_FED_DEDUPE_PERSIST_INTERVAL_SECONDS` | 去重落盘间隔（秒） | `2` |
+| `OA2A_FED_DEDUPE_MAX_ITEMS` | 去重最大条目数（防止文件无限增长） | `50000` |
 | `OA2A_FED_STATS_INTERVAL_SECONDS` | 统计输出间隔（秒） | `10` |
 | `OA2A_FED_LOG_FORWARD_SAMPLES` | 输出每条转发样例日志 | `0` |
 

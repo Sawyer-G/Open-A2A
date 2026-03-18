@@ -16,9 +16,11 @@ This intentionally stays at the protocol/infrastructure layer: it forwards subje
 import asyncio
 import hashlib
 import os
+import json
 import time
 from dataclasses import dataclass
 from typing import Any, Optional
+from pathlib import Path
 
 from open_a2a.opslog import log_event
 
@@ -49,14 +51,33 @@ class BridgeConfig:
     subjects: list[str]
     max_hops: int
     dedupe_ttl_seconds: float
-    stats_interval_seconds: float
-    log_forward_samples: bool
+    # Optional: persist dedupe cache to survive restarts.
+    # Empty path disables persistence (default).
+    dedupe_persist_path: str = ""
+    dedupe_persist_interval_seconds: float = 2.0
+    dedupe_max_items: int = 50000
+    stats_interval_seconds: float = 10.0
+    log_forward_samples: bool = False
 
 
 class _DedupeCache:
-    def __init__(self, ttl_seconds: float) -> None:
+    def __init__(
+        self,
+        ttl_seconds: float,
+        *,
+        persist_path: str = "",
+        persist_interval_seconds: float = 2.0,
+        max_items: int = 50000,
+    ) -> None:
         self._ttl = float(ttl_seconds)
         self._items: dict[str, float] = {}
+        self._persist_path = (persist_path or "").strip()
+        self._persist_interval_seconds = float(persist_interval_seconds)
+        self._max_items = int(max_items)
+        self._dirty = False
+        self._last_persist_ts = 0.0
+        if self._persist_path:
+            self._load_best_effort()
 
     def seen_recently(self, key: str) -> bool:
         now = time.time()
@@ -68,7 +89,68 @@ class _DedupeCache:
         if key in self._items:
             return True
         self._items[key] = now
+        self._dirty = True
+        self._maybe_compact(now)
         return False
+
+    def _maybe_compact(self, now_ts: float) -> None:
+        if self._max_items <= 0:
+            return
+        if len(self._items) <= self._max_items:
+            return
+        # keep newest max_items entries
+        keep = sorted(self._items.items(), key=lambda it: it[1], reverse=True)[: self._max_items]
+        self._items = {k: ts for k, ts in keep}
+        self._dirty = True
+
+    def _load_best_effort(self) -> None:
+        try:
+            p = Path(self._persist_path)
+            if not p.exists():
+                return
+            raw = p.read_text(encoding="utf-8", errors="ignore")
+            doc = json.loads(raw) if raw else {}
+            items = doc.get("items") if isinstance(doc, dict) else None
+            if not isinstance(items, dict):
+                return
+            now = time.time()
+            expired_before = now - self._ttl
+            loaded: dict[str, float] = {}
+            for k, v in items.items():
+                try:
+                    ts = float(v)
+                except Exception:
+                    continue
+                if ts >= expired_before:
+                    loaded[str(k)] = ts
+            self._items = loaded
+            self._dirty = False
+        except Exception:
+            return
+
+    def persist_best_effort(self) -> None:
+        if not self._persist_path:
+            return
+        now = time.time()
+        if not self._dirty and (now - self._last_persist_ts) < self._persist_interval_seconds:
+            return
+        # prune before persist
+        expired_before = now - self._ttl
+        for k, ts in list(self._items.items()):
+            if ts < expired_before:
+                self._items.pop(k, None)
+        self._maybe_compact(now)
+        doc = {"items": self._items, "ts": now}
+        try:
+            p = Path(self._persist_path)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            tmp = p.with_suffix(p.suffix + ".tmp")
+            tmp.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(p)
+            self._dirty = False
+            self._last_persist_ts = now
+        except Exception:
+            return
 
 
 class SubjectBridge:
@@ -80,7 +162,12 @@ class SubjectBridge:
         self.cfg = cfg
         self._nc_a: Optional[Any] = None
         self._nc_b: Optional[Any] = None
-        self._dedupe = _DedupeCache(cfg.dedupe_ttl_seconds)
+        self._dedupe = _DedupeCache(
+            cfg.dedupe_ttl_seconds,
+            persist_path=cfg.dedupe_persist_path,
+            persist_interval_seconds=cfg.dedupe_persist_interval_seconds,
+            max_items=cfg.dedupe_max_items,
+        )
         self._lock = asyncio.Lock()
         self._stats = {
             "a_to_b_forwarded": 0,
@@ -106,6 +193,11 @@ class SubjectBridge:
         )
 
     async def disconnect(self) -> None:
+        # best-effort persist dedupe state for restart continuity
+        try:
+            self._dedupe.persist_best_effort()
+        except Exception:
+            pass
         if self._nc_a:
             await self._nc_a.drain()
             self._nc_a = None
@@ -223,6 +315,10 @@ class SubjectBridge:
         async def stats_task() -> None:
             while True:
                 await asyncio.sleep(self.cfg.stats_interval_seconds)
+                try:
+                    self._dedupe.persist_best_effort()
+                except Exception:
+                    pass
                 async with self._lock:
                     s = dict(self._stats)
                 print(
@@ -356,6 +452,11 @@ def _load_config() -> BridgeConfig:
     subjects = _split_subjects(os.getenv("OA2A_FED_SUBJECTS", "intent.>"))
     max_hops = int(os.getenv("OA2A_FED_MAX_HOPS", "1"))
     dedupe_ttl_seconds = float(os.getenv("OA2A_FED_DEDUPE_TTL_SECONDS", "3"))
+    dedupe_persist_path = os.getenv("OA2A_FED_DEDUPE_PERSIST_PATH", "").strip()
+    dedupe_persist_interval_seconds = float(
+        os.getenv("OA2A_FED_DEDUPE_PERSIST_INTERVAL_SECONDS", "2")
+    )
+    dedupe_max_items = int(os.getenv("OA2A_FED_DEDUPE_MAX_ITEMS", "50000"))
     stats_interval_seconds = float(os.getenv("OA2A_FED_STATS_INTERVAL_SECONDS", "10"))
     log_forward_samples = _env_bool("OA2A_FED_LOG_FORWARD_SAMPLES", "0")
     return BridgeConfig(
@@ -365,6 +466,9 @@ def _load_config() -> BridgeConfig:
         subjects=subjects,
         max_hops=max_hops,
         dedupe_ttl_seconds=dedupe_ttl_seconds,
+        dedupe_persist_path=dedupe_persist_path,
+        dedupe_persist_interval_seconds=dedupe_persist_interval_seconds,
+        dedupe_max_items=dedupe_max_items,
         stats_interval_seconds=stats_interval_seconds,
         log_forward_samples=log_forward_samples,
     )
