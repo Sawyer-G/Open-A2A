@@ -40,7 +40,7 @@
 
 ## 3. One-Click Deploy (Docker Compose)
 
-At the project root, you can use the provided `docker-compose.deploy.yml` and helper script to spin up a full node stack.
+You can use the provided quickstart compose file and helper script to spin up a full node stack.
 
 ### 3.1 Using the helper script (recommended)
 
@@ -56,11 +56,11 @@ bash scripts/setup-openclaw-bridge.sh
 The script will:
 
 1. Create or update `.env` based on `.env.example`;
-2. Prompt for `NATS_URL`, `OPENCLAW_GATEWAY_URL`, and `OPENCLAW_HOOKS_TOKEN`, then append them to `.env`;
+2. Prompt you to paste required values (then press Enter to continue), and write/update them into `.env` (without blindly appending duplicate keys). This includes `OA2A_STRICT_SECURITY`, `NATS_URL`, Relay auth token, and OpenClaw integration values when forwarding is enabled.
 3. Run:
 
 ```bash
-docker-compose -f docker-compose.deploy.yml up -d --build
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build
 ```
 
 In addition, the script:
@@ -89,7 +89,7 @@ cd Open-A2A
 
 cp .env.example .env  # then edit .env as needed (NATS_URL / OPENCLAW_GATEWAY_URL / OPENCLAW_HOOKS_TOKEN)
 
-docker-compose -f docker-compose.deploy.yml up -d --build
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build
 docker ps  # nats / relay / solid / open-a2a-bridge should be running
 ```
 
@@ -99,6 +99,41 @@ This compose file starts:
 - `relay`: Open-A2A Relay (`8765`, WebSocket outbound entrypoint);
 - `solid`: self-hosted Solid Pod (`8443`);
 - `open-a2a-bridge`: Bridge service (`8080`) for integration with OpenClaw or other runtimes.
+
+### 3.4 Security defaults (public vs private)
+
+This quickstart is meant to get an end-to-end demo running fast. If you plan to expose it publicly, keep the blast radius minimal:
+
+- **Recommended public ports**:
+  - Relay: `RELAY_WS_PORT` (default `8765`)
+  - Bridge: `BRIDGE_PORT` (default `8080`, recommended behind an HTTPS reverse proxy)
+- **Do NOT expose by default**:
+  - NATS `4222` (quickstart keeps it private; if you need public NATS, use `deploy/node-x/` with stronger auth/ACL/TLS)
+- **Strict mode requirements (recommended for public nodes)**:
+  - `OA2A_STRICT_SECURITY=1`
+  - `RELAY_AUTH_TOKEN` must be set
+  - If discovery is enabled (`BRIDGE_ENABLE_DISCOVERY=1`), set `BRIDGE_DISCOVERY_REGISTER_TOKEN` and `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
+
+Additional note (more mature public shape):
+
+- Relay can be scaled horizontally (multiple instances connected to the same NATS). Put a WebSocket-capable reverse proxy / load balancer in front and expose a single `wss://relay.<domain>`.
+
+#### 3.4.1 Firewall / security group port matrix (recommended)
+
+> Goal: make the “quickstart” not only runnable, but safely runnable by default. The table below reflects quickstart + DHT bootstrap.
+
+| Component | Port | Proto | Public? | Notes |
+|---|---:|---|---|---|
+| Relay | 8765 | TCP | ✅ recommended | Outbound entrypoint for Agents; strict mode requires `RELAY_AUTH_TOKEN` |
+| Bridge | 8080 | TCP | ⚠️ optional | HTTP API (recommended behind HTTPS reverse proxy); if not integrating OpenClaw, set `BRIDGE_ENABLE_FORWARD=0` |
+| Solid | 8443 | TCP | ⚠️ optional | Self-hosted preferences; keep private if not needed |
+| DHT bootstrap | 8469 | UDP | ✅ recommended | Cross-node discovery entry (recommended to at least open UDP) |
+| DHT bootstrap | 8469 | TCP | ⚠️ optional | The kit currently exposes both TCP/UDP; you may later narrow to UDP-only after verification |
+| NATS | 4222 | TCP | ❌ no | **Keep private** (Relay/Bridge use it via the Docker network). For public NATS access, use `deploy/node-x/` with stronger auth/ACL/TLS |
+
+DNS notes:
+
+- In Cloudflare, create A records for subdomains like `relay` / `dht` pointing to your server IP and set **DNS only** (especially for `dht:8469`, which cannot be proxied as HTTP).
 
 ### 3.3 Environment Variables
 
@@ -187,13 +222,16 @@ The Bridge is implemented in `bridge/main.py`.
 | Forward to OpenClaw | `httpx.post(gateway_url + "/hooks/agent", ...)` |
 | Publish API | `POST /api/publish_intent`, optionally collects offers and returns them |
 | Health check | `GET /health` |
+| Ops metrics (JSON) | `GET /ops/metrics` (backend, online providers, capability distribution, etc.) |
+| Ops metrics (Prometheus) | `GET /ops/metrics/prometheus` (normalized names for scraping) |
+| Capability discovery (NATS) | `POST /api/register_capabilities`, `GET /api/discover` (request-reply, no central registry) |
 
 **Run**:
 
 ```bash
 make install-bridge && make run-bridge
 # or
-docker compose -f docker-compose.deploy.yml up -d
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d
 ```
 
 **API example**:
@@ -205,6 +243,157 @@ curl -X POST http://localhost:8080/api/publish_intent \
 ```
 
 For a concrete OpenClaw Tool configuration example, see `docs/zh/openclaw-tool-example.md`.
+
+---
+
+### 5.1 Normalized observability (Prometheus + reference table)
+
+> Goal: Bridge / Relay / Federation (SubjectBridge) can all be scraped with one consistent metric naming scheme.
+
+#### 5.1.1 Endpoint reference (keep private by default)
+
+| Component | JSON snapshot | Prometheus metrics |
+|---|---|---|
+| Bridge (FastAPI) | `GET /health`, `GET /ops/metrics` | `GET /ops/metrics/prometheus` |
+| Relay (ops HTTP) | `GET /healthz` | `GET /metrics` |
+| SubjectBridge (ops HTTP) | `GET /healthz` | `GET /metrics` |
+
+#### 5.1.2 Metric name spec (minimal set)
+
+Bridge:
+
+- `oa2a_bridge_up` (gauge)
+- `oa2a_bridge_nats_connected` (gauge, 1/0)
+- `oa2a_bridge_discovery_backend{backend="memory|file|redis"}` (gauge)
+- `oa2a_bridge_discovery_providers_total` (gauge)
+- `oa2a_bridge_discovery_providers_verified` (gauge)
+- `oa2a_bridge_discovery_providers_unverified` (gauge)
+- `oa2a_bridge_discovery_capabilities_total` (gauge)
+- `oa2a_bridge_discovery_capability_providers{capability="..."}` (gauge)
+
+Relay:
+
+- `oa2a_relay_up` (gauge)
+- `oa2a_relay_clients` (gauge)
+- `oa2a_relay_nats_subject_subscriptions` (gauge)
+- `oa2a_relay_auth_enabled` (gauge, 1/0)
+- `oa2a_relay_ws_tls` (gauge, 1/0)
+
+SubjectBridge (Federation):
+
+- `oa2a_fed_up{bridge_id="..."}` (gauge)
+- `oa2a_fed_a_to_b_forwarded_total{bridge_id="..."}` (counter)
+- `oa2a_fed_b_to_a_forwarded_total{bridge_id="..."}` (counter)
+- `oa2a_fed_skipped_self_total{bridge_id="..."}` (counter)
+- `oa2a_fed_skipped_hop_total{bridge_id="..."}` (counter)
+- `oa2a_fed_skipped_dedupe_total{bridge_id="..."}` (counter)
+- `oa2a_fed_errors_total{bridge_id="..."}` (counter)
+
+### 5.2 Directory registry (“always discoverable”, formerly Path B)
+
+If you want other nodes to continuously discover your Agent (directory-style discovery), the simplest approach is:
+
+- Keep Bridge running as a long-lived process;
+- Register the Agent’s capabilities in NATS Discovery.
+
+Bridge supports both:
+
+1) **Auto-register on startup** (recommended):
+
+- Configure:
+  - `BRIDGE_ENABLE_DISCOVERY=1`
+  - `BRIDGE_AGENT_ID=openclaw-agent`
+  - `BRIDGE_CAPABILITIES=intent.food.order,intent.logistics.request` (comma-separated)
+  - Optional: `BRIDGE_META_JSON='{"region":"shanghai","endpoint":"https://bridge.open-a2a.org"}'`
+
+2) **Register/update via HTTP** (useful for OpenClaw Tool/Skill):
+
+```bash
+curl -X POST http://localhost:8080/api/register_capabilities \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"},"ttl_seconds":60}'
+```
+
+Other nodes can query:
+
+```bash
+curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_seconds=3" | jq .
+```
+
+Notes:
+
+- NATS Discovery has **no global registry**; “register” is implemented by subscribing to `open_a2a.discovery.query.{capability}` and replying with `meta`.
+- Therefore the Agent (or Bridge acting for it) must stay online to remain discoverable.
+
+#### 5.2.1 Operator-grade features (TTL / auth / rate limit / observability)
+
+To avoid “zombie registrations” and improve operability for public nodes, Bridge also provides:
+
+- **TTL & expiration**: registrations expire if not renewed; renew by calling `POST /api/register_capabilities` again
+- **Access control (optional)**: Bearer tokens for register/discover
+- **Rate limiting (optional)**: simple per-IP limit (requests per minute)
+- **Observability**: `GET /api/discovery_stats` for provider counts, capability distribution, and recent errors
+
+Relevant environment variables are documented in `.env.example`:
+
+- `BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS`
+- `BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS`
+- `BRIDGE_DISCOVERY_REDIS_URL` (recommended: Redis registry backend for multi-instance/HA; when set, Bridge does not rely on in-memory/file registry)
+- `BRIDGE_DISCOVERY_PERSIST_PATH` (optional: persist the directory registry for single-instance restart recovery; disabled by default)
+- `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
+- `BRIDGE_DISCOVERY_RL_PER_MINUTE`
+
+#### 5.2.2 Recommended operator shapes (single instance / HA)
+
+> Bridge already supports three registry backends: **in-memory / file persistence / Redis**. Below is the recommended operator guidance to make deployments copyable.
+
+**Single instance (recommended to start: file persistence)**
+
+- **When**: one node, low ops cost, you can accept a single point of failure but want the registry to survive restarts
+- **Key config**:
+  - Set `BRIDGE_DISCOVERY_PERSIST_PATH=/data/bridge_registry.json` (and mount a volume)
+  - Leave `BRIDGE_DISCOVERY_REDIS_URL` empty
+- **Pros**: minimal dependencies, fastest path to production
+- **Cons**: still single instance (no native rolling upgrades)
+
+**HA (recommended for public nodes: Redis backend + multiple instances)**
+
+- **When**: public service, rolling upgrades, failover, multiple Bridge instances
+- **Key config**:
+  - Set `BRIDGE_DISCOVERY_REDIS_URL=redis://...`
+  - Run multiple Bridge instances pointing to the same Redis
+  - Put an HTTPS reverse proxy / load balancer (nginx/Caddy/Traefik) in front, exposing a single `bridge.open-a2a.org`
+- **Pros**: shared registry, horizontal scaling
+- **Cons**: adds Redis ops cost; plan backups/monitoring
+
+Copyable artifacts:
+
+- `deploy/bridge-directory-registry/` (single/HA docker-compose)
+- `scripts/e2e/bridge-directory-registry.sh` (cross-container E2E checks)
+
+#### 5.2.3 More systematic E2E (cross-process / cross-container)
+
+From the repo root:
+
+```bash
+bash scripts/e2e/bridge-directory-registry.sh single-persist
+bash scripts/e2e/bridge-directory-registry.sh redis-ha
+```
+
+If your environment cannot access Docker Hub (cannot pull `nats` / `redis` images), you can reuse an **already-running NATS/Redis**:
+
+```bash
+export E2E_EXTERNAL_NATS_URL="nats://host.docker.internal:4222"
+export E2E_EXTERNAL_REDIS_URL="redis://host.docker.internal:6379/0"  # only needed for redis-ha-external
+
+bash scripts/e2e/bridge-directory-registry.sh single-persist-external
+bash scripts/e2e/bridge-directory-registry.sh redis-ha-external
+```
+
+What it verifies:
+
+- `single-persist`: register → discover → restart Bridge → discover still hits (validates `BRIDGE_DISCOVERY_PERSIST_PATH`)
+- `redis-ha`: register on Bridge-1 → discover on Bridge-2 (validates multi-instance consistency via `BRIDGE_DISCOVERY_REDIS_URL`)
 
 ---
 

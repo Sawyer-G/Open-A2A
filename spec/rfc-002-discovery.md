@@ -40,7 +40,15 @@
 }
 ```
 
-由实现方与调用方约定字段；协议层不强制 schema。
+为了跨实现互操作，推荐 discovery 的响应 meta 至少包含 RFC-004 定义的最小字段集合：
+
+- `agent_id`
+- `did`
+- `endpoints`
+- `capabilities`
+- `proof`
+
+实现方与调用方仍可扩展 meta 字段，但应避免破坏签名验证（见 RFC-004 的 canonical JSON 与 meta proof 规则）。
 
 ## 4. 跨服务器扩展
 
@@ -55,3 +63,4 @@
 - `open_a2a/discovery_dht.py`：`DhtDiscoveryProvider`（Kademlia DHT，跨网络）
 - `example/discovery_demo.py`：NATS 发现示例
 - `example/discovery_dht_demo.py`：DHT 发现示例（`make run-discovery-dht-demo`）
+- 身份与信任（meta 最小字段与 proof）：`spec/rfc-004-identity-and-trust.md`

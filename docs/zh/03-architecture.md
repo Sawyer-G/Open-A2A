@@ -35,7 +35,7 @@ graph TD
     end
 
     subgraph L2 [通信调度层 - P2P & Discovery]
-        D[NATS JetStream 广播] --> E[Hypercore 分布式哈希表]
+        D[NATS Pub/Sub 广播] --> E[Kademlia DHT（跨网络发现）]
         E --> F[Gossip 传播协议]
     end
 
@@ -74,6 +74,18 @@ graph TD
   - **意图广播 (Publish)**：Agent 向 `intent.{domain}.{action}` 主题发布消息（示例：`intent.food.order`）
   - **能力监听 (Subscribe)**：具备能力的 Agent 订阅对应主题并响应
   - **地理/语义过滤**：利用 DHT 或本地缓存，确保意图被相关方接收，避免无关干扰
+
+#### 2.2.1 「分布式」但不是区块链
+
+Open-A2A 所说的「分布式」，指的是**消息路由与多运营者节点**，而不是「全网共识账本」：
+
+- 每个 NATS / Relay / Bridge 节点由不同的运营者运行（你、社区、公司等）；
+- 节点之间可以：
+  - 共享一个 NATS 集群（共同的主题空间）；或
+  - 保持各自独立的 NATS，通过联邦/桥接有选择地同步部分主题（见 [10-nats-cluster-federation.md](./10-nats-cluster-federation.md)）。
+- Open-A2A **不维护全球不可篡改状态**，也没有共识层；Intent / Offer / Logistics 等消息是跨节点流动的事件，而非链上交易。
+
+更接近的类比是「邮件服务器 / XMPP 联邦」，而非区块链。若某些场景需要强一致结算，可在 L3 上接入外部结算系统（链上或链下），而不强绑定在 Open-A2A 协议中。
 
 ### 2.3 语义协商（AI 对话）— 解决「约束、条件与共识」
 

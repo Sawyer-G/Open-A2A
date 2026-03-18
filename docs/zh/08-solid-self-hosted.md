@@ -16,7 +16,7 @@
 
 ```bash
 # 启动自托管 Solid 服务
-docker compose -f docker-compose.solid.yml up -d
+docker compose -f deploy/solid/docker-compose.solid.yml up -d
 
 # 访问 https://localhost:8443 注册账号
 # 自签名证书会提示「不安全」，本地开发可继续访问
@@ -72,6 +72,18 @@ python example/upload_profile_to_solid.py
 ```bash
 make run-consumer
 ```
+
+### 5.1 推荐的“自动选择”用法（Solid 可选）
+
+如果你希望把 Solid 作为可选增强（不强制所有用户部署/安装），推荐在代码里使用：
+
+- `open_a2a.preferences.preferences_from_env()`
+
+它会按最佳实践自动选择偏好后端：
+
+- 若配置了 `SOLID_POD_ENDPOINT`：使用 `SolidPodPreferencesProvider`
+- 否则若本地存在 `profile.json`：使用 `FilePreferencesProvider`
+- 否则回退到 `InMemoryPreferencesProvider`（无依赖、默认可用）
 
 ## 6. 生产环境
 

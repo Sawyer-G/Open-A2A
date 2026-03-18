@@ -21,6 +21,13 @@
 | [11-relay-e2e-verify.md](./11-relay-e2e-verify.md) | Relay 端到端加密验证 |
 | [12-cross-ip-testing.md](./12-cross-ip-testing.md) | **跨 IP 测试指南**：各自网络部署下的必要验证 |
 | [13-security-considerations.md](./13-security-considerations.md) | **安全考量**：威胁模型、风险清单与最佳实践 |
+| [14-user-story-pizza-delivery.md](./14-user-story-pizza-delivery.md) | **用户故事（披萨下单与配送）**：A/B/C 多方 Agent 在主节点 X 上协作的端到端流程 |
+| [15-node-x-operator-kit.md](./15-node-x-operator-kit.md) | **节点 X（运营节点）一键部署套件**：可复制配置清单、端口与自检脚本 |
+| [16-multi-operator-federation-subject-bridge.md](./16-multi-operator-federation-subject-bridge.md) | **多运营者互联（方式 2）**：独立 NATS + 选择性主题桥接（可复制示例） |
+| [17-identity-and-trust.md](./17-identity-and-trust.md) | **身份与信任（操作指南）**：DID、签名验真与可选 VC（对应 RFC-004） |
+| [18-dht-bootstrap-guide.md](./18-dht-bootstrap-guide.md) | **DHT Bootstrap 指引**：跨节点 discover 的首选路径（OPEN_A2A_DHT_BOOTSTRAP） |
+| [19-dht-community-bootstraps.md](./19-dht-community-bootstraps.md) | **DHT 社区 Bootstrap**：列表与治理流程（如何运行/登记/下线） |
+| [20-observability-alerts-prometheus.md](./20-observability-alerts-prometheus.md) | **告警模板（Prometheus）**：Relay/Bridge/Federation 最小可用告警起点 |
 | [openclaw-tool-example.md](./openclaw-tool-example.md) | OpenClaw Tool 配置示例 |
 
 ## 规范与标准

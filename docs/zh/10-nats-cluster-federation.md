@@ -109,6 +109,29 @@ networks:
 - **Relay**：Relay 的 `NATS_URL` 指向集群内任一台，经 Relay 出站连接的 Agent 与直连 NATS 的 Agent 同在集群内互通。
 - **跨集群 / 异构网络**：若需「不同 NATS 集群」或「无 NATS 一方」互通，需依赖 **DHT 发现后端** 或 NATS 联邦（见 [RFC-002](../spec/rfc-002-discovery.md)、[06-progress](./06-progress.md)）。
 
+### 4.1 当每个人都运行自己的节点时会发生什么？
+
+在实际网络中，很多参与者会各自运行一套 **NATS / Relay / Bridge**：
+
+- 如果大家都连接到**同一个 NATS 集群**，则共享一个逻辑主题空间 —— 在这个集群中，Intent / Offer 等主题对所有节点可见；
+- 如果各自运行**彼此独立的 NATS** 且不做联邦，那么就是多个互不相连的网络，发现与意图广播只在各自网络内部生效；
+- 如果配置了 **联邦或应用层 Bridge（例如 Bridge↔Bridge 的 HTTP 转发）**，则只有被选中的主题（如 `intent.food.*`）会在网络之间传播。
+
+这意味着 Open-A2A 鼓励的是「多运营者节点组成的网状结构」，而非单一中心。每个运营者可以自行决定哪些主题对外共享、哪些只在本地网络内使用。
+
+### 4.2 方式 2：独立 NATS + 只桥接部分主题（最小可用）
+
+如果你希望节点 X 与节点 Y **各自独立运行 NATS**，但只共享部分主题（例如 `intent.food.>`），可以使用「subject bridge」的方式：
+
+- 两边各自运行 NATS（自治与数据边界）
+- 仅桥接 allowlist 的 subject（避免“全量同步”）
+- Bridge 侧需要做环路/风暴防护（header/hop/去重）
+
+本仓库已提供一个最小可用实现与可复制示例：
+
+- 文档：[`16-multi-operator-federation-subject-bridge.md`](./16-multi-operator-federation-subject-bridge.md)
+- 示例：`deploy/federation-x-y/`（两套独立 NATS + subject-bridge）
+
 ---
 
 ## 5. 参考

@@ -168,12 +168,16 @@
           <div class="oa2a-card">
             <h3>2. Run a full node</h3>
             <p>
-              Use <code>docker-compose.deploy.yml</code> to start NATS + Relay + Solid + Bridge on a server.
+              Use <code>deploy/quickstart/docker-compose.full.yml</code> to start NATS + Relay + Solid + Bridge on a server.
               Turn it into a public or private entry node.
             </p>
             <a class="oa2a-link" href="https://github.com/Sawyer-G/Open-A2A/blob/main/docs/en/09-deployment-and-openclaw-integration.md" target="_blank" rel="noreferrer">
               Deployment &amp; OpenClaw integration guide
             </a>
+            <p style="margin-top:8px;font-size:12px;color:#6b7280;">
+              For long‑running public nodes (operators), see the
+              <a class="oa2a-link" href="https://github.com/Sawyer-G/Open-A2A/blob/main/docs/en/15-node-x-operator-kit.md" target="_blank" rel="noreferrer">Node&nbsp;X operator kit</a>.
+            </p>
           </div>
           <div class="oa2a-card">
             <h3>3. Integrate your runtime</h3>
@@ -184,6 +188,14 @@
             <a class="oa2a-link" href="#openclaw">See OpenClaw integration</a>
           </div>
         </div>
+        <p class="oa2a-section-lead" style="margin-top:28px;font-size:13px;">
+          <strong>Who is this for?</strong>
+          <br />
+          • <strong>Node operators</strong>: run a stable public entry node using the Node&nbsp;X kit
+          (<code>deploy/node-x/</code>, guided by <code>scripts/setup-node-x.sh init</code>).<br />
+          • <strong>OpenClaw users</strong>: if you already run OpenClaw locally or in Docker, attach it via the
+          one‑click Bridge helper (<code>scripts/setup-openclaw-bridge.sh</code>) or the bare‑metal bridge script.
+        </p>
       </div>
     </section>
 

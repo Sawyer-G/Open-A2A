@@ -1,0 +1,15 @@
+services:
+  dht-bootstrap:
+    build:
+      context: ../..
+      dockerfile: deploy/dht-bootstrap/Dockerfile.dht-bootstrap
+    environment:
+      - DHT_HOST=${DHT_HOST:-0.0.0.0}
+      - DHT_PORT=${DHT_PORT:-8469}
+      # Optional: chain bootstrap nodes (comma-separated host:port)
+      - DHT_BOOTSTRAP=${DHT_BOOTSTRAP:-}
+    ports:
+      - "${DHT_PORT:-8469}:${DHT_PORT:-8469}/udp"
+      - "${DHT_PORT:-8469}:${DHT_PORT:-8469}/tcp"
+    restart: unless-stopped
+

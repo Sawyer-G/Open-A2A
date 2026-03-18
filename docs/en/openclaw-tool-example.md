@@ -20,7 +20,7 @@ There are two complementary integration modes:
 
 - OpenClaw is running locally or on a server, and its Gateway is reachable (e.g. `http://localhost:3000`).
 - You have a NATS node available (local NATS or a public node such as `nats://...`).
-- On the same machine as OpenClaw, run the Open-A2A Bridge (ideally via `docker-compose.deploy.yml`):
+- On the same machine as OpenClaw, run the Open-A2A Bridge (ideally via `deploy/quickstart/docker-compose.full.yml`):
 
 ### 2.1 One-click Bridge setup (script, optional)
 
@@ -37,7 +37,7 @@ The script will:
 
 - Create or update `.env` based on `.env.example`;
 - Prompt for `NATS_URL` / `OPENCLAW_GATEWAY_URL` / `OPENCLAW_HOOKS_TOKEN` and append them to `.env`;
-- Run `docker-compose -f docker-compose.deploy.yml up -d --build` to start `nats + relay + solid + open-a2a-bridge`.
+- Run `docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build` to start `nats + relay + solid + open-a2a-bridge`.
 
 After it finishes, you can check container status with `docker ps`, then continue in this document to configure OpenClaw Tools and Hooks.
 
@@ -49,7 +49,7 @@ cd Open-A2A
 
 cp .env.example .env  # then edit .env to set NATS_URL / OPENCLAW_GATEWAY_URL / OPENCLAW_HOOKS_TOKEN
 
-docker-compose -f docker-compose.deploy.yml up -d --build
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build
 
 docker ps  # you should see nats / relay / solid / open-a2a-bridge containers
 ```

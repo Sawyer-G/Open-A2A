@@ -5,6 +5,10 @@ Agent 无需公网 IP 或 webhook：通过 WebSocket 主动连接 Open-A2A Relay
 即可参与主题的发布与订阅。由框架提供可达性，用户无需申请域名或配置回调。
 
 支持 wss://：可选传入 ssl.SSLContext，或设置 RELAY_WS_SSL_VERIFY=0 以信任自签名证书（仅开发/测试）。
+
+增强（面向公网/弱网）：
+- 可选鉴权：通过 WebSocket `Authorization: Bearer <token>` 或 URL query `?token=` 传递
+- 可选自动重连：指数退避 + 重连后自动恢复订阅（resubscribe）
 """
 
 import asyncio
@@ -58,6 +62,12 @@ class RelayClientTransport(TransportAdapter):
         self,
         relay_ws_url: str = "ws://localhost:8765",
         ssl: Optional[ssl.SSLContext] = None,
+        *,
+        auth_token: Optional[str] = None,
+        auto_reconnect: Optional[bool] = None,
+        reconnect_initial_backoff_seconds: float = 0.5,
+        reconnect_max_backoff_seconds: float = 10.0,
+        connect_timeout_seconds: float = 10.0,
     ) -> None:
         if websockets is None:
             raise ImportError("websockets is required. Install with: pip install open-a2a[relay]")
@@ -65,9 +75,28 @@ class RelayClientTransport(TransportAdapter):
         self._ssl: Optional[ssl.SSLContext] = ssl
         self._ws = None
         self._recv_task: Optional[asyncio.Task] = None
+        self._run_task: Optional[asyncio.Task] = None
+        self._connected_evt = asyncio.Event()
+        self._stop = False
+        self._remote_subjects: set[str] = set()
         self._subs: dict[str, dict[str, Callable[[bytes], Awaitable[None]]]] = {}
         # subject -> {sub_id -> cb}
         self._lock = asyncio.Lock()
+        self._auth_token = (
+            (auth_token or "").strip()
+            or os.getenv("RELAY_CLIENT_AUTH_TOKEN", "").strip()
+            or os.getenv("RELAY_AUTH_TOKEN", "").strip()
+        )
+        if auto_reconnect is None:
+            auto_reconnect = os.getenv("RELAY_AUTO_RECONNECT", "1").strip().lower() in (
+                "1",
+                "true",
+                "yes",
+            )
+        self._auto_reconnect = bool(auto_reconnect)
+        self._reconnect_initial = float(reconnect_initial_backoff_seconds)
+        self._reconnect_max = float(reconnect_max_backoff_seconds)
+        self._connect_timeout = float(connect_timeout_seconds)
 
     def _resolve_ssl(self) -> Any:
         """解析连接时使用的 ssl 参数（仅 wss 需要）。"""
@@ -81,18 +110,63 @@ class RelayClientTransport(TransportAdapter):
         return ssl.create_default_context()
 
     async def connect(self) -> None:
-        ssl_ctx = self._resolve_ssl()
-        self._ws = await websockets.connect(
-            self._relay_ws_url,
-            ping_interval=20,
-            ping_timeout=20,
-            ssl=ssl_ctx,
-        )
-        self._recv_task = asyncio.create_task(self._receive_loop())
+        if self._run_task and not self._run_task.done():
+            return None
+        self._stop = False
+        self._connected_evt.clear()
+        self._run_task = asyncio.create_task(self._run_forever())
+        try:
+            await asyncio.wait_for(self._connected_evt.wait(), timeout=self._connect_timeout)
+        except asyncio.TimeoutError as e:
+            raise TimeoutError("Relay connection timed out") from e
         return None
+
+    def _ws_connect_kwargs(self) -> dict[str, Any]:
+        ssl_ctx = self._resolve_ssl()
+        headers = []
+        if self._auth_token:
+            headers.append(("Authorization", f"Bearer {self._auth_token}"))
+        kwargs: dict[str, Any] = {
+            "ping_interval": 20,
+            "ping_timeout": 20,
+            "ssl": ssl_ctx,
+        }
+        if headers:
+            kwargs["extra_headers"] = headers
+        return kwargs
+
+    async def _run_forever(self) -> None:
+        backoff = self._reconnect_initial
+        while not self._stop:
+            try:
+                self._remote_subjects.clear()
+                self._ws = await websockets.connect(self._relay_ws_url, **self._ws_connect_kwargs())
+                self._connected_evt.set()
+                backoff = self._reconnect_initial
+                await self._resubscribe_all()
+                await self._receive_loop()
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                # swallow and retry if enabled
+                pass
+            finally:
+                try:
+                    if self._ws:
+                        await self._ws.close()
+                except Exception:
+                    pass
+                self._ws = None
+                self._remote_subjects.clear()
+            if self._stop or not self._auto_reconnect:
+                break
+            await asyncio.sleep(backoff)
+            backoff = min(self._reconnect_max, backoff * 2.0)
 
     async def _receive_loop(self) -> None:
         try:
+            if not self._ws:
+                return
             async for raw in self._ws:
                 try:
                     msg = json.loads(raw)
@@ -118,17 +192,23 @@ class RelayClientTransport(TransportAdapter):
             pass
 
     async def disconnect(self) -> None:
-        if self._recv_task:
-            self._recv_task.cancel()
+        self._stop = True
+        if self._run_task:
+            self._run_task.cancel()
             try:
-                await self._recv_task
+                await self._run_task
             except asyncio.CancelledError:
                 pass
-            self._recv_task = None
+            self._run_task = None
         if self._ws:
-            await self._ws.close()
+            try:
+                await self._ws.close()
+            except Exception:
+                pass
             self._ws = None
         self._subs.clear()
+        self._remote_subjects.clear()
+        self._connected_evt.clear()
 
     async def publish(self, subject: str, data: bytes) -> None:
         if not self._ws:
@@ -145,18 +225,39 @@ class RelayClientTransport(TransportAdapter):
         if not self._ws:
             raise RuntimeError("Not connected. Call connect() first.")
         sub_id = uuid.uuid4().hex
+        need_remote_sub = False
         async with self._lock:
             if subject not in self._subs:
                 self._subs[subject] = {}
+                need_remote_sub = True
             self._subs[subject][sub_id] = cb
-        await self._ws.send(json.dumps({"type": "subscribe", "subject": subject}))
+        if need_remote_sub and self._ws and subject not in self._remote_subjects:
+            await self._ws.send(json.dumps({"type": "subscribe", "subject": subject}))
+            self._remote_subjects.add(subject)
         return _RelaySubscription(self, subject, sub_id)
 
     async def _unsubscribe(self, subject: str, sub_id: str) -> None:
+        should_remote_unsub = False
         async with self._lock:
             if subject in self._subs:
                 self._subs[subject].pop(sub_id, None)
                 if not self._subs[subject]:
                     del self._subs[subject]
+                    should_remote_unsub = True
         if self._ws:
-            await self._ws.send(json.dumps({"type": "unsubscribe", "subject": subject}))
+            if should_remote_unsub and subject in self._remote_subjects:
+                await self._ws.send(json.dumps({"type": "unsubscribe", "subject": subject}))
+                self._remote_subjects.discard(subject)
+
+    async def _resubscribe_all(self) -> None:
+        if not self._ws:
+            return
+        async with self._lock:
+            subjects = list(self._subs.keys())
+        for subject in subjects:
+            try:
+                await self._ws.send(json.dumps({"type": "subscribe", "subject": subject}))
+                self._remote_subjects.add(subject)
+            except Exception:
+                # Connection may be closing; let outer loop retry.
+                return

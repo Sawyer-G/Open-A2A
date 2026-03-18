@@ -15,7 +15,7 @@ Self-hosted Solid preserves data sovereignty while offering standard protocol an
 ## 2. Quick Deploy (Docker)
 
 ```bash
-docker compose -f docker-compose.solid.yml up -d
+docker compose -f deploy/solid/docker-compose.solid.yml up -d
 
 # Visit https://localhost:8443 to register
 # Self-signed cert will show "insecure"—proceed for local dev
@@ -66,6 +66,18 @@ With `SOLID_POD_ENDPOINT` set, Consumer reads preferences from your self-hosted 
 ```bash
 make run-consumer
 ```
+
+### 5.1 Recommended “auto-select” usage (Solid is optional)
+
+If you want Solid to be an optional upgrade (not a mandatory dependency), use:
+
+- `open_a2a.preferences.preferences_from_env()`
+
+It selects the best backend automatically:
+
+- If `SOLID_POD_ENDPOINT` is set: `SolidPodPreferencesProvider`
+- Else if local `profile.json` exists: `FilePreferencesProvider`
+- Else fallback: `InMemoryPreferencesProvider` (dependency-free, usable by default)
 
 ## 6. Production
 

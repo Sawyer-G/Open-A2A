@@ -1,0 +1,50 @@
+services:
+  nats-x:
+    image: nats:latest
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - ./nats-x.conf:/etc/nats/nats.conf:ro
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    networks:
+      - fed
+    restart: unless-stopped
+
+  nats-y:
+    image: nats:latest
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - ./nats-y.conf:/etc/nats/nats.conf:ro
+    ports:
+      - "5222:4222"
+      - "9222:8222"
+    networks:
+      - fed
+    restart: unless-stopped
+
+  subject-bridge:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.federation-bridge
+    environment:
+      - OA2A_FED_BRIDGE_ID=x-y-bridge
+      - OA2A_FED_NATS_A=nats://nats-x:4222
+      - OA2A_FED_NATS_B=nats://nats-y:4222
+      # Default: only bridge intent subjects across operators.
+      - OA2A_FED_SUBJECTS=intent.>
+      - OA2A_FED_MAX_HOPS=1
+      - OA2A_FED_DEDUPE_TTL_SECONDS=3
+      - OA2A_FED_STATS_INTERVAL_SECONDS=10
+      - OA2A_FED_LOG_FORWARD_SAMPLES=0
+    depends_on:
+      - nats-x
+      - nats-y
+    networks:
+      - fed
+    restart: unless-stopped
+
+networks:
+  fed:
+    driver: bridge
+

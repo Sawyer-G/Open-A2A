@@ -9,7 +9,7 @@
 在这个场景中，典型的拓扑是：
 
 - OpenClaw 通过自己的 `docker-compose` 在服务器上运行（容器名示例：`openclaw-openclaw-gateway-1`，端口 `18789`）；
-- Open-A2A 通过本项目提供的 `docker-compose.deploy.yml` 拉起：
+- Open-A2A 通过本项目提供的 quickstart compose 拉起（`deploy/quickstart/docker-compose.full.yml`）：
   - `nats`：消息总线（默认端口 `4222`）；
   - `relay`：WebSocket Relay（默认端口 `8765`）；
   - `solid`：自托管 Solid Pod（可选）；
@@ -59,7 +59,7 @@ bash scripts/setup-openclaw-bridge.sh
 3. 执行：
 
 ```bash
-docker-compose -f docker-compose.deploy.yml up -d --build
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build
 ```
 
 此外，脚本还提供：
@@ -139,7 +139,7 @@ OPENCLAW_GATEWAY_URL=http://<宿主机IP>:18789
 - 通常做法是让 Bridge 加入 OpenClaw 的应用网络，例如：
 
 ```yaml
-# 片段示例：docker-compose.deploy.yml
+# 片段示例：deploy/quickstart/docker-compose.full.yml（你也可以改成 deploy/node-x 方案）
 services:
   open-a2a-bridge:
     # ...
@@ -164,7 +164,7 @@ networks:
 
 这时要么：
 
-- 调整 `docker-compose.deploy.yml`，让 Bridge 加入 OpenClaw 网络；
+        - 调整 `deploy/quickstart/docker-compose.full.yml`（或你的 compose），让 Bridge 加入 OpenClaw 网络；
 - 要么改用宿主机 IP 的 `OPENCLAW_GATEWAY_URL`（见上一节）。
 
 ---
@@ -223,9 +223,58 @@ Authorization: Bearer <OPENCLAW_HOOKS_TOKEN>
 2. **OpenClaw Skill（进阶方案 / 官方插件候选）**
    - 在 `~/.openclaw/skills/open-a2a/` 下编写自定义 Skill；
    - 在 Skill 内读取 `BRIDGE_URL` 环境变量，并将 Agent 请求转发到 Bridge；
-   - 在本仓库的 `temp/needfix.md` 中有一个初步的 Skill 目录与配置示例，可作为未来官方 Skill 的原型。
+   - 当前仓库优先维护“协议层与适配层”的稳定接口；Skill 方案可先按本指南的 Tool/Webhook 接入方式落地。
 
 对于多数用户，推荐先使用 **HTTP Tool + Webhook** 路线（配合本指南与 `docs/zh/openclaw-tool-example.md`）。当官方 Skill 成熟后，可以在文档中将 Skill 作为优先推荐路径。
+
+---
+
+## 7.1 持续被发现（目录式 discover）
+
+除了“意图广播 → 收到后响应”这种事件式协作外，Open-A2A 也支持 **能力发现**（Discovery）：其他节点可以像查目录一样查询“谁支持某个能力（capability）”。
+
+在 NATS 发现实现中，所谓的 `register` 并不是写入一个中心化注册表，而是：
+
+- 订阅 `open_a2a.discovery.query.{capability}`；
+- 当其他人查询该 capability 时，回复一份 `meta`。
+
+因此要“持续被发现”，注册方需要保持在线（常见做法是让 Bridge 常驻运行并代 OpenClaw 注册）。
+
+Bridge 支持两种方式：
+
+1) **启动时自动注册（推荐）**
+
+在 `.env` 中配置：
+
+```bash
+BRIDGE_ENABLE_DISCOVERY=1
+BRIDGE_AGENT_ID=openclaw-agent
+BRIDGE_CAPABILITIES=intent.food.order,intent.logistics.request
+# 可选：补充 meta（JSON 字符串）
+BRIDGE_META_JSON={"region":"shanghai","endpoint":"https://bridge.open-a2a.org"}
+```
+
+2) **通过 HTTP 接口注册/更新（适合 OpenClaw Tool/Skill 调用）**
+
+```bash
+curl -X POST http://localhost:8080/api/register_capabilities \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"},"ttl_seconds":60}'
+```
+
+其他节点查询：
+
+```bash
+curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_seconds=3" | jq .
+```
+
+### 7.1.1 运营级建议：TTL / 鉴权 / 观测
+
+如果你把 Bridge 作为公共节点的一部分，建议开启：
+
+- TTL（避免僵尸注册）：通过 `ttl_seconds` 控制注册有效期；到期需再次调用 register 续租
+- 可选鉴权：`BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
+- 观测：`GET /api/discovery_stats` 查看当前在线 provider 数与 capability 分布
 
 ---
 
@@ -313,7 +362,7 @@ curl -X POST http://localhost:8080/api/publish_intent \
 - 在 `scripts/setup-openclaw-bridge.sh` 中自动探测 OpenClaw Gateway 容器名与网络；
 - 为 Bridge 提供 `/health` 接口，统一检查 NATS / OpenClaw / 自身状态；
 - 发布官方 OpenClaw Skill，减少用户在 Tool / Webhook 级别的手工配置；
-- 在 `docker-compose.deploy.yml` 中预置对 OpenClaw 网络的友好支持。
+- 在 `deploy/quickstart/docker-compose.full.yml`（或你的 compose）中预置对 OpenClaw 网络的友好支持。
 
-这些改进的设计草案可参考本仓库 `temp/needfix.md` 中的「后续框架调整建议草案」一节。
+这些优化建议会随版本迭代持续沉淀到 `docs/zh/06-progress.md` 与相应专题文档中（中英文保持同步）。
 

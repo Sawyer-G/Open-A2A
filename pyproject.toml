@@ -36,6 +36,7 @@ bridge = [
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.22.0",
     "httpx>=0.24.0",
+    "redis>=5.0.0",
 ]
 relay = [
     "websockets>=12.0",

@@ -32,7 +32,25 @@
 
 ## 1.1 一键部署完整节点（Docker：NATS + Relay + Solid + Bridge）
 
-> 若你希望在一台服务器上快速起一套 **完整的 Open-A2A 节点栈**（作为公共入口或测试网节点），可以使用根目录的 `docker-compose.deploy.yml`。
+> 若你希望在一台服务器上快速起一套 **完整的 Open-A2A 节点栈**（作为公共入口或测试网节点），可以使用 quickstart compose：`deploy/quickstart/docker-compose.full.yml`。
+
+### 标准操作方式（推荐：脚本向导）
+
+如果你的服务器上**已经有 OpenClaw（或计划与 OpenClaw 同机部署）**，推荐直接使用仓库自带向导脚本。它会在缺少必要参数时提示你**粘贴/回车**，并把值写入 `.env`（不会无脑追加重复键），然后启动完整节点栈。
+
+```bash
+git clone https://github.com/Sawyer-G/Open-A2A.git
+cd Open-A2A
+
+# 交互式向导：会提示输入/粘贴必要的 token、URL 等
+bash scripts/setup-openclaw-bridge.sh
+```
+
+常见排障（同脚本内置）：
+
+```bash
+bash scripts/setup-openclaw-bridge.sh diagnose
+```
 
 ### 步骤（示例）
 
@@ -46,7 +64,7 @@ cp .env.example .env
 # 根据你的环境修改 .env 中的占位符
 
 # 3. 一键启动
-docker-compose -f docker-compose.deploy.yml up -d --build
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build
 
 # 4. 查看服务状态
 docker ps
@@ -59,7 +77,42 @@ docker ps
 - `solid`：自托管 Solid Pod（默认 `8443`）；
 - `open-a2a-bridge`：Bridge 服务（默认 `8080`），用于与 OpenClaw 等运行时集成。
 
-你可以根据需要在云厂商防火墙中开放对应端口，并通过 DNS 将子域（如 `nats.open-a2a.org`、`relay.open-a2a.org`）解析到这台服务器（建议使用 **仅 DNS** 模式，不通过 HTTP 代理）。
+### 1.1.1 安全默认值（公网/内网）
+
+本 quickstart 用于快速跑通链路。若你打算对公网开放，请遵循最小暴露面：
+
+- **建议对公网开放**：
+  - Relay：`RELAY_WS_PORT`（默认 `8765`）
+  - Bridge：`BRIDGE_PORT`（默认 `8080`，建议放在 HTTPS 反代后）
+- **不建议对公网开放**：
+  - NATS `4222`（quickstart 已默认保持私有；如需公网 NATS，请使用 `deploy/node-x/` 并启用更严格的鉴权/ACL/TLS）
+- **strict 模式强制要求（推荐公网节点）**：
+  - `OA2A_STRICT_SECURITY=1`
+  - `RELAY_AUTH_TOKEN` 必须设置
+  - 若启用目录 discover（`BRIDGE_ENABLE_DISCOVERY=1`），必须设置 `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
+
+补充（公网更成熟形态）：
+
+- Relay 可以水平扩展为多实例（连接同一 NATS），前置支持 WebSocket 的反向代理/LB，对外暴露一个 `wss://relay.<domain>`。
+
+#### 1.1.2 防火墙/安全组端口矩阵（建议）
+
+> 目标：把“能跑起来”变成“默认安全地跑起来”。下表是 quickstart + DHT bootstrap 的最小建议。
+
+| 组件 | 端口 | 协议 | 是否对公网开放 | 说明 |
+|---|---:|---|---|---|
+| Relay | 8765 | TCP | ✅ 建议开放 | 公网出站入口（Agent 连接 Relay）；strict 模式下必须 `RELAY_AUTH_TOKEN` |
+| Bridge | 8080 | TCP | ⚠️ 可选 | 对外 HTTP API（建议走 HTTPS 反代）；不接 OpenClaw 可设 `BRIDGE_ENABLE_FORWARD=0` |
+| Solid | 8443 | TCP | ⚠️ 可选 | 自托管偏好存储；不需要可不对公网开放 |
+| DHT bootstrap | 8469 | UDP | ✅ 建议开放 | 跨节点 discover 的入口（推荐至少开放 UDP） |
+| DHT bootstrap | 8469 | TCP | ⚠️ 可选 | 当前套件同时暴露 TCP/UDP；可按实际验证收敛为仅 UDP |
+| NATS | 4222 | TCP | ❌ 不开放 | **强烈建议保持私有**（仅容器网络内 Relay/Bridge 使用）。若要公网 NATS 直连，请改用 `deploy/node-x/` 并启用更严格鉴权/ACL/TLS |
+
+DNS 建议：
+
+- Cloudflare 上为 `relay` / `dht` 等子域名添加 **A 记录**指向服务器公网 IP，并设置为 **DNS only（灰色云）**（尤其是 `dht:8469` 不可走 HTTP 代理）。
+
+你可以根据需要在云厂商防火墙中开放对应端口，并通过 DNS 将子域（如 `relay.open-a2a.org`、`dht.open-a2a.org`）解析到这台服务器。
 
 ---
 
@@ -73,7 +126,7 @@ docker ps
 
 ### 2.2 一键部署（Docker Compose）
 
-在项目根目录创建 `docker-compose.deploy.yml`：
+使用仓库内置的 quickstart compose（如需生产化运营节点，请改用 `deploy/node-x/`）：
 
 ```yaml
 # Open-A2A 完整部署（NATS + Solid + Bridge）
@@ -94,7 +147,7 @@ services:
 
   open-a2a-bridge:
     build:
-      context: .
+      context: ../..
       dockerfile: Dockerfile.bridge
     environment:
       - NATS_URL=nats://nats:4222
@@ -175,12 +228,15 @@ Bridge 已实现，位于 `bridge/main.py`。
 | 转发给 OpenClaw | `httpx.post(gateway_url + "/hooks/agent", ...)` |
 | 暴露发布 API | `POST /api/publish_intent`，可选收集报价并返回 |
 | 健康检查 | `GET /health` |
+| 运维指标（JSON） | `GET /ops/metrics`（目录后端/在线 provider/capability 分布等） |
+| 运维指标（Prometheus） | `GET /ops/metrics/prometheus`（统一指标命名，便于采集） |
+| 能力发现（NATS） | `POST /api/register_capabilities`、`GET /api/discover`（请求-响应，无中心化注册表） |
 
 **运行方式**：
 ```bash
 make install-bridge && make run-bridge
 # 或
-docker compose -f docker-compose.deploy.yml up -d
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d
 ```
 
 **API 示例**：
@@ -193,6 +249,155 @@ curl -X POST http://localhost:8080/api/publish_intent \
 **OpenClaw Tool 配置**：见 [openclaw-tool-example.md](./openclaw-tool-example.md)
 
 ---
+
+### 4.2 统一观测口径（Prometheus 指标 + 对照表）
+
+> 目标：Bridge / Relay / Federation（SubjectBridge）在不同运行形态下都能用同一套“指标命名”被采集。
+
+#### 4.2.1 端点对照表（建议仅内网/本机暴露）
+
+| 组件 | JSON 健康/快照 | Prometheus 指标 |
+|---|---|---|
+| Bridge（FastAPI） | `GET /health`、`GET /ops/metrics` | `GET /ops/metrics/prometheus` |
+| Relay（ops HTTP） | `GET /healthz` | `GET /metrics` |
+| SubjectBridge（ops HTTP） | `GET /healthz` | `GET /metrics` |
+
+#### 4.2.2 指标字段规范（最小集合）
+
+Bridge：
+
+- `oa2a_bridge_up`（gauge）：进程存活
+- `oa2a_bridge_nats_connected`（gauge）：NATS 连接是否正常（1/0）
+- `oa2a_bridge_discovery_backend{backend="memory|file|redis"}`（gauge）：目录后端（标签表达）
+- `oa2a_bridge_discovery_providers_total`（gauge）：在线 provider 总数
+- `oa2a_bridge_discovery_providers_verified`（gauge）：在线 verified provider 数
+- `oa2a_bridge_discovery_providers_unverified`（gauge）：在线 unverified provider 数
+- `oa2a_bridge_discovery_capabilities_total`（gauge）：当前能力种类数
+- `oa2a_bridge_discovery_capability_providers{capability="..."}`（gauge）：每个 capability 的 provider 数
+
+Relay：
+
+- `oa2a_relay_up`（gauge）：进程存活
+- `oa2a_relay_clients`（gauge）：在线 WebSocket client 数
+- `oa2a_relay_nats_subject_subscriptions`（gauge）：当前 NATS subject 订阅数
+- `oa2a_relay_auth_enabled`（gauge）：是否启用鉴权（1/0）
+- `oa2a_relay_ws_tls`（gauge）：是否启用 TLS（1/0）
+
+SubjectBridge（Federation）：
+
+- `oa2a_fed_up{bridge_id="..."}`（gauge）：进程存活
+- `oa2a_fed_a_to_b_forwarded_total{bridge_id="..."}`（counter）：A→B 转发计数
+- `oa2a_fed_b_to_a_forwarded_total{bridge_id="..."}`（counter）：B→A 转发计数
+- `oa2a_fed_skipped_self_total{bridge_id="..."}`（counter）：跳过自发转发计数
+- `oa2a_fed_skipped_hop_total{bridge_id="..."}`（counter）：hop 限制丢弃计数
+- `oa2a_fed_skipped_dedupe_total{bridge_id="..."}`（counter）：去重丢弃计数
+- `oa2a_fed_errors_total{bridge_id="..."}`（counter）：发布/转发错误计数
+
+### 4.1 持续被发现：目录注册表（Directory Registry，原 Path B）
+
+如果你希望其他节点能够“像查目录一样”持续发现你的 Agent（而不是仅在广播意图时被动触达），推荐让 Bridge 作为常驻进程，替 OpenClaw Agent 在 NATS 上注册能力。
+
+Bridge 支持两种方式：
+
+1) **启动时自动注册（推荐）**
+
+通过环境变量配置：
+
+- `BRIDGE_ENABLE_DISCOVERY=1`
+- `BRIDGE_AGENT_ID=openclaw-agent`
+- `BRIDGE_CAPABILITIES=intent.food.order,intent.logistics.request`（逗号分隔）
+- 可选：`BRIDGE_META_JSON='{"region":"shanghai","endpoint":"https://bridge.open-a2a.org"}'`
+
+2) **通过 HTTP 接口注册/更新（适合 OpenClaw Tool/Skill 调用）**
+
+```bash
+curl -X POST http://localhost:8080/api/register_capabilities \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"},"ttl_seconds":60}'
+```
+
+其他节点可查询某能力的提供者列表：
+
+```bash
+curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_seconds=3" | jq .
+```
+
+说明：
+
+- NATS Discovery **没有中心化注册表**；`register` 的实现是订阅 `open_a2a.discovery.query.{capability}` 并在被查询时返回 `meta`。
+- 因此要“持续被发现”，注册方（或代注册的 Bridge）需要保持在线。
+
+#### 4.1.1 运营级能力（TTL / 鉴权 / 限流 / 观测）
+
+为了避免“僵尸注册”（长期不在线的 provider 仍在目录中）、并提升公共节点的可运维性，Bridge 额外提供：
+
+- **TTL/过期回收**：`ttl_seconds` 到期未续租将自动移除；续租方式是再次调用 `POST /api/register_capabilities`
+- **访问控制（可选）**：可为 register/discover 分别设置 Bearer Token
+- **速率限制（可选）**：简单的按 IP 限流（每分钟请求数）
+- **观测**：`GET /api/discovery_stats` 返回当前在线 provider 数、按 capability 的分布、以及最近错误
+
+相关环境变量见 `.env.example`：
+
+- `BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS`
+- `BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS`
+- `BRIDGE_DISCOVERY_REDIS_URL`（推荐：Redis 注册表后端，用于多实例/HA；设定后不再依赖单实例内存/文件）
+- `BRIDGE_DISCOVERY_PERSIST_PATH`（可选：目录持久化文件路径，用于单实例重启恢复；默认关闭）
+- `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
+- `BRIDGE_DISCOVERY_RL_PER_MINUTE`
+
+#### 4.1.2 Operator 推荐形态（单机 / HA）
+
+> 你目前的实现已经支持：**内存 / 落盘 / Redis** 三种目录注册表后端。下面给出运营侧“推荐形态”，让配置更可复制。
+
+**单机（推荐起步：落盘恢复）**
+
+- **适用**：单节点、预算有限、可接受单点；但希望重启后目录不丢
+- **配置要点**：
+  - 设置 `BRIDGE_DISCOVERY_PERSIST_PATH=/data/bridge_registry.json`（并挂载 volume）
+  - `BRIDGE_DISCOVERY_REDIS_URL` 留空（表示不启用 Redis 后端）
+- **优点**：依赖最少、可快速上线
+- **限制**：仍是单实例；无法天然做多实例滚动升级
+
+**HA（推荐公网节点：Redis 后端 + 多实例）**
+
+- **适用**：公网服务、需要滚动升级/容灾、多 Bridge 实例
+- **配置要点**：
+  - 设置 `BRIDGE_DISCOVERY_REDIS_URL=redis://...`
+  - 多个 Bridge 实例共享同一 Redis（目录注册表一致）
+  - 前面建议加 HTTPS 反代/LB（nginx/Caddy/Traefik），对外只暴露一个 `bridge.open-a2a.org`
+- **优点**：多实例共享目录、可水平扩展
+- **限制**：增加 Redis 运维成本；需要规划备份/监控
+
+对应可复制产物：
+
+- `deploy/bridge-directory-registry/`（单机/HA compose）
+- `scripts/e2e/bridge-directory-registry.sh`（跨容器 E2E 自检）
+
+#### 4.1.3 更系统的 E2E（跨进程 / 跨容器）
+
+> 目标：覆盖“落盘恢复”与“Redis 多实例共享”两条关键链路，减少 operator 上线风险。
+
+在仓库根目录执行：
+
+```bash
+bash scripts/e2e/bridge-directory-registry.sh single-persist
+bash scripts/e2e/bridge-directory-registry.sh redis-ha
+```
+
+若你的环境无法访问 Docker Hub（无法拉取 `nats` / `redis` 镜像），也可以复用你**已有在跑的 NATS/Redis**：
+
+```bash
+export E2E_EXTERNAL_NATS_URL="nats://host.docker.internal:4222"
+export E2E_EXTERNAL_REDIS_URL="redis://host.docker.internal:6379/0"  # 仅 redis-ha-external 需要
+
+bash scripts/e2e/bridge-directory-registry.sh single-persist-external
+bash scripts/e2e/bridge-directory-registry.sh redis-ha-external
+```
+
+自检覆盖：
+
+- `single-persist`：注册 → discover → 重启 Bridge → discover 仍命中（验证 `BRIDGE_DISCOVERY_PERSIST_PATH`）
+- `redis-ha`：Bridge-1 注册 → Bridge-2 discover 命中（验证 `BRIDGE_DISCOVERY_REDIS_URL` 多实例一致性）
 
 ## 5.1 非 Docker 部署（高级用户）
 
@@ -266,7 +471,8 @@ curl http://localhost:8080/health | jq .
 
 - 若 OpenClaw 由独立 compose 部署，先查其网络名（如 `openclaw_default`）。启动 Bridge 时加入该网络：
   ```yaml
-  # 在 docker-compose.deploy.yml 的 open-a2a-bridge 下增加
+  # 在你的 compose（例如 deploy/quickstart/docker-compose.full.yml 或 deploy/node-x/docker-compose.node-x.yml）
+  # 的 open-a2a-bridge 下增加
   networks:
     - default
     - openclaw_default  # 与 OpenClaw 同一网络

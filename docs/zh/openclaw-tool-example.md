@@ -20,7 +20,7 @@
 
 - OpenClaw 已在本地或服务器上运行，并可访问其 Gateway（例如 `http://localhost:3000`）。
 - 你有一个可用的 NATS 节点（本地 NATS 或公共节点 `nats://...`）。
-- 在同一台机器上运行 Open-A2A Bridge（推荐使用 `docker-compose.deploy.yml`）：
+- 在同一台机器上运行 Open-A2A Bridge（推荐使用 `deploy/quickstart/docker-compose.full.yml`）：
 
 ### 2.1 一键启动 Bridge（脚本方式，可选）
 
@@ -37,7 +37,7 @@ bash scripts/setup-openclaw-bridge.sh
 
 - 基于 `.env.example` 创建或更新 `.env`；
 - 询问并写入 `NATS_URL` / `OPENCLAW_GATEWAY_URL` / `OPENCLAW_HOOKS_TOKEN`；
-- 调用 `docker-compose -f docker-compose.deploy.yml up -d --build` 启动 `nats + relay + solid + open-a2a-bridge`。
+- 调用 `docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build` 启动 `nats + relay + solid + open-a2a-bridge`。
 
 运行结束后，可用 `docker ps` 检查容器状态，然后继续按本文档配置 OpenClaw 的 Tool 与 Hook。
 
@@ -49,7 +49,7 @@ cd Open-A2A
 
 cp .env.example .env  # 然后根据实际环境修改 NATS_URL / OPENCLAW_GATEWAY_URL / OPENCLAW_HOOKS_TOKEN 等
 
-docker-compose -f docker-compose.deploy.yml up -d --build
+docker compose -f deploy/quickstart/docker-compose.full.yml --env-file .env up -d --build
 
 docker ps  # 应看到 nats / relay / solid / open-a2a-bridge 等容器
 ```

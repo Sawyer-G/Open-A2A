@@ -1,0 +1,58 @@
+services:
+  nats:
+    image: nats:2.10
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "8222:8222"
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  bridge-1:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.bridge
+    environment:
+      NATS_URL: "nats://nats:4222"
+      BRIDGE_ENABLE_FORWARD: "0"
+      BRIDGE_ENABLE_DISCOVERY: "1"
+      BRIDGE_DISCOVERY_REDIS_URL: "redis://redis:6379/0"
+      BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS: "${BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS:-60}"
+      BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS: "${BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS:-5}"
+      BRIDGE_DISCOVERY_REGISTER_TOKEN: "${BRIDGE_DISCOVERY_REGISTER_TOKEN:-}"
+      BRIDGE_DISCOVERY_DISCOVER_TOKEN: "${BRIDGE_DISCOVERY_DISCOVER_TOKEN:-}"
+      BRIDGE_DISCOVERY_RL_PER_MINUTE: "${BRIDGE_DISCOVERY_RL_PER_MINUTE:-600}"
+    ports:
+      - "8081:8080"
+    depends_on:
+      - nats
+      - redis
+
+  bridge-2:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.bridge
+    environment:
+      NATS_URL: "nats://nats:4222"
+      BRIDGE_ENABLE_FORWARD: "0"
+      BRIDGE_ENABLE_DISCOVERY: "1"
+      BRIDGE_DISCOVERY_REDIS_URL: "redis://redis:6379/0"
+      BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS: "${BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS:-60}"
+      BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS: "${BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS:-5}"
+      BRIDGE_DISCOVERY_REGISTER_TOKEN: "${BRIDGE_DISCOVERY_REGISTER_TOKEN:-}"
+      BRIDGE_DISCOVERY_DISCOVER_TOKEN: "${BRIDGE_DISCOVERY_DISCOVER_TOKEN:-}"
+      BRIDGE_DISCOVERY_RL_PER_MINUTE: "${BRIDGE_DISCOVERY_RL_PER_MINUTE:-600}"
+    ports:
+      - "8082:8080"
+    depends_on:
+      - nats
+      - redis
+
+volumes:
+  redis_data:
+

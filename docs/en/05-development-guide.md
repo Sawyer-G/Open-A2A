@@ -1,5 +1,11 @@
 # Development Guide
 
+## 0. Dependency management (recommended)
+
+- **Source of truth**: `pyproject.toml` (PEP 621). Optional extras: `.[identity]`, `.[solid]`, `.[bridge]`, `.[relay]`, `.[dht]`, `.[e2e]`, `.[dev]`.
+- **Recommended install**: use `make` targets (virtualenv + editable install) so contributors share the same entrypoint.
+- **`requirements.txt`**: kept only as a minimal/compatibility list for environments that require `pip install -r`.
+
 ## 1. Resource Stack (Step-by-Step)
 
 Follow the layered architecture; integrate in this order:
@@ -20,7 +26,7 @@ Follow the layered architecture; integrate in this order:
 | `FilePreferencesProvider` | JSON-based preferences, see `open_a2a/preferences.py` | ✅ Implemented |
 | `SolidPodPreferencesProvider` | Read/write from self-hosted Solid Pod (**recommended**), `pip install open-a2a[solid]` | ✅ Implemented |
 | [solid-file](https://github.com/twonote/solid-file-python) | Python Solid Pod client; supports Node Solid Server | ✅ Integrated |
-| [docker-compose.solid.yml](../docker-compose.solid.yml) | One-click self-hosted Solid deployment | ✅ Provided |
+| [deploy/solid/docker-compose.solid.yml](../deploy/solid/docker-compose.solid.yml) | One-click self-hosted Solid deployment | ✅ Provided |
 | [08-solid-self-hosted.md](./08-solid-self-hosted.md) | Self-hosted Solid setup guide | Required reading |
 
 ### Step 3: Agent Runtime (Capability Layer)

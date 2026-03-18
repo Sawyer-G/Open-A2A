@@ -1,6 +1,6 @@
 # Project Progress
 
-> Last updated: 2026-02-28
+> Last updated: 2026-03-18
 
 ## Overall Status
 
@@ -11,6 +11,15 @@
 | **Phase 3: Complex Scenario** | ✅ Done | A-B-C full flow + simulated settlement |
 
 ---
+
+## Recent additions (operations & federation)
+
+- **Node X operator kit (copyable)**: `deploy/node-x/` (compose, nats.conf, env template, diagnose script)
+- **Directory registry (“always discoverable”, formerly Path B)**: Bridge TTL/expiration, optional auth & rate limiting, `/api/discovery_stats`
+- **Client renewal best practice**: example script `example/bridge_discovery_renew.py` (renew periodically based on TTL)
+- **DHT discovery directory quality (renewal)**: DHT records include expiry fields and are filtered on discover; example `example/dht_discovery_renew.py`
+- **Multi-operator federation (Option 2)**: independent NATS + subject-bridge (`deploy/federation-x-y/`)
+- **Identity & trust interoperability**: `spec/rfc-004-identity-and-trust.md` (meta minimum fields + proof)
 
 ## Phase 1 Completed
 
@@ -27,7 +36,7 @@
 |--------|-------------|
 | `intent.py` | Intent, Offer, Location data models |
 | `broadcaster.py` | NATS wrapper: publish intent, subscribe, publish/collect offers |
-| `agent.py` | BaseAgent base class (for future extension) |
+| `agent.py` | BaseAgent base class + `AgentStack` (batteries-included wiring: broadcaster + discovery + optional identity) |
 
 ### 3. Example Demo (`example/`)
 
@@ -53,11 +62,12 @@
 ## Phase 2 Completed
 
 - **identity.py**: `AgentIdentity` based on [didlite](https://github.com/jondepalma/didlite-pkg), `did:key` + JWS sign/verify
+- **Optional dependency behavior**: when `didlite` is missing, check `identity_available()`; if identity is required, call `require_identity()` to raise a consistent error (so you can prompt users to install `open-a2a[identity]`)
 - **preferences.py**: `PreferencesProvider` abstract, `FilePreferencesProvider` (JSON file), `SolidPodPreferencesProvider` (self-hosted Solid, **recommended**)
 - **broadcaster.py**: Optional `identity` param for signing; parse JWS or JSON on receive
 - **intent.py**: `sender_did` field on Intent, Offer
 - **Makefile**: `make install-full`, `make install-solid`, `make install-bridge`, `make run-bridge`
-- **Examples**: `USE_IDENTITY=1` enables DID signing; `profile.json` or self-hosted Solid for preferences; `upload_profile_to_solid.py`; `docker-compose.solid.yml` for self-hosted Pod
+- **Examples**: `USE_IDENTITY=1` enables DID signing; `profile.json` or self-hosted Solid for preferences; `upload_profile_to_solid.py`; `deploy/solid/docker-compose.solid.yml` for self-hosted Pod
 
 ---
 
@@ -84,8 +94,9 @@
 
 - **bridge/main.py**: FastAPI service; `POST /api/publish_intent` to publish intent and optionally collect offers; `GET /health` for health check
 - **NATS subscription forwarding**: Subscribes to `intent.food.order`, forwards to OpenClaw `/hooks/agent` (requires `OPENCLAW_GATEWAY_URL`, `OPENCLAW_HOOKS_TOKEN`)
+- **Capability discovery (NATS)**: `POST /api/register_capabilities` to register capabilities (always discoverable while Bridge is running); `GET /api/discover` to query who supports a capability
 - **Dockerfile.bridge**: Bridge image build
-- **docker-compose.deploy.yml**: One-click deploy (NATS + Solid + Bridge)
+- **deploy/quickstart/docker-compose.full.yml**: Full quickstart (NATS + Relay + Solid + Bridge)
 
 ## Transport Layer Abstraction (Design Principle 2.3)
 
@@ -108,6 +119,9 @@
 - **discovery_dht.py**: `DhtDiscoveryProvider`, Kademlia DHT; register/discover in DHT, independent of NATS
 - **Use case**: Agents on different NATS clusters or transports join same DHT (bootstrap) to discover each other
 - **Public bootstrap list**: When `bootstrap_nodes` is not passed, `get_default_dht_bootstrap()` is used; it reads env `OPEN_A2A_DHT_BOOTSTRAP` (format `host1:port1,host2:port2`) first, else `DEFAULT_DHT_BOOTSTRAP`. Everyone using the same list joins the same DHT.
+- **Directory quality (best practice)**:
+  - Records embed an expiry field (`_expires_at_ts`); discover filters expired records and best-effort writes back (reduces zombie records)
+  - Optional proactive hygiene loop: `OPEN_A2A_DHT_HYGIENE_INTERVAL_SECONDS` (default 0 = disabled). When enabled, it only maintains keys **touched by this node**, and does not assume "global cleanup" is possible.
 - **Install**: `pip install open-a2a[dht]` (kademlia); example `make run-discovery-dht-demo`, `example/discovery_dht_demo.py`
 
 ## NATS Cluster Federation

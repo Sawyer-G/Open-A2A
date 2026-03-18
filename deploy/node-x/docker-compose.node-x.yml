@@ -1,0 +1,162 @@
+# Node X (operator node) - recommended deployment
+#
+# Design defaults:
+# - NATS stays private (no host port mapping) by default.
+# - Relay (WS/WSS) is the main public entry for Agents.
+# - Bridge is optional; if exposed publicly, recommend putting it behind HTTPS reverse proxy.
+
+services:
+  # One-shot preflight that blocks startup in strict mode when defaults are unsafe.
+  security-gate:
+    image: python:3.11-alpine
+    command: ["python", "/security_gate.py"]
+    environment:
+      - OA2A_STRICT_SECURITY=${OA2A_STRICT_SECURITY:-0}
+      - RELAY_WS_HOST=${RELAY_WS_HOST:-0.0.0.0}
+      - RELAY_AUTH_TOKEN=${RELAY_AUTH_TOKEN:-}
+      - BRIDGE_ENABLE_DISCOVERY=${BRIDGE_ENABLE_DISCOVERY:-1}
+      - BRIDGE_DISCOVERY_REGISTER_TOKEN=${BRIDGE_DISCOVERY_REGISTER_TOKEN:-}
+      - BRIDGE_DISCOVERY_DISCOVER_TOKEN=${BRIDGE_DISCOVERY_DISCOVER_TOKEN:-}
+      - NATS_RELAY_PASS=${NATS_RELAY_PASS:-}
+      - NATS_BRIDGE_PASS=${NATS_BRIDGE_PASS:-}
+      - NATS_PUBLIC_USER=${NATS_PUBLIC_USER:-}
+      - NATS_PUBLIC_PASS=${NATS_PUBLIC_PASS:-}
+      - OA2A_NATS_CONF_PATH=/nats.conf
+    volumes:
+      - ./security_gate.py:/security_gate.py:ro
+      - ./nats.conf:/nats.conf:ro
+    networks:
+      - open-a2a
+    restart: "no"
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "no"]
+    depends_on:
+      security-gate:
+        condition: service_completed_successfully
+    networks:
+      - open-a2a
+    restart: unless-stopped
+
+  nats:
+    image: nats:latest
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - ./nats.conf:/etc/nats/nats.conf:ro
+    depends_on:
+      security-gate:
+        condition: service_completed_successfully
+    networks:
+      - open-a2a
+    restart: unless-stopped
+
+  relay:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.relay
+    environment:
+      - NATS_URL=nats://${NATS_RELAY_USER}:${NATS_RELAY_PASS}@${NATS_HOST:-nats}:${NATS_PORT:-4222}
+      - OA2A_STRICT_SECURITY=${OA2A_STRICT_SECURITY:-0}
+      - RELAY_WS_HOST=${RELAY_WS_HOST:-0.0.0.0}
+      - RELAY_WS_PORT=${RELAY_WS_PORT:-8765}
+      - RELAY_WS_TLS=${RELAY_WS_TLS:-0}
+      - RELAY_WS_SSL_CERT=${RELAY_WS_SSL_CERT:-}
+      - RELAY_WS_SSL_KEY=${RELAY_WS_SSL_KEY:-}
+      - RELAY_WS_SSL_VERIFY=${RELAY_WS_SSL_VERIFY:-1}
+      - RELAY_AUTH_TOKEN=${RELAY_AUTH_TOKEN:-}
+      - RELAY_SUBJECT_ALLOWLIST=${RELAY_SUBJECT_ALLOWLIST:-intent.>,open_a2a.>,_INBOX.open_a2a.>}
+      - RELAY_SUBJECT_BLOCKLIST=${RELAY_SUBJECT_BLOCKLIST:-}
+      - RELAY_MAX_SUBSCRIPTIONS_PER_CONN=${RELAY_MAX_SUBSCRIPTIONS_PER_CONN:-128}
+      - RELAY_MAX_MESSAGE_BYTES=${RELAY_MAX_MESSAGE_BYTES:-65536}
+      - RELAY_MAX_JSON_BYTES=${RELAY_MAX_JSON_BYTES:-262144}
+      - RELAY_RL_PUB_PER_SEC=${RELAY_RL_PUB_PER_SEC:-30}
+      - RELAY_HTTP_ENABLE=${RELAY_HTTP_ENABLE:-1}
+      - RELAY_HTTP_HOST=${RELAY_HTTP_HOST:-127.0.0.1}
+      - RELAY_HTTP_PORT=${RELAY_HTTP_PORT:-8766}
+    ports:
+      - "${RELAY_WS_PORT:-8765}:${RELAY_WS_PORT:-8765}"
+    depends_on:
+      security-gate:
+        condition: service_completed_successfully
+      nats:
+        condition: service_started
+    networks:
+      - open-a2a
+    restart: unless-stopped
+
+  open-a2a-bridge:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.bridge
+    ports:
+      - "${BRIDGE_PORT:-8080}:8080"
+    environment:
+      - NATS_URL=nats://${NATS_BRIDGE_USER}:${NATS_BRIDGE_PASS}@${NATS_HOST:-nats}:${NATS_PORT:-4222}
+      - OA2A_STRICT_SECURITY=${OA2A_STRICT_SECURITY:-0}
+      - BRIDGE_ENABLE_FORWARD=${BRIDGE_ENABLE_FORWARD:-0}
+      - BRIDGE_ENABLE_DISCOVERY=${BRIDGE_ENABLE_DISCOVERY:-1}
+      - BRIDGE_AGENT_ID=${BRIDGE_AGENT_ID:-node-x-bridge}
+      - BRIDGE_CAPABILITIES=${BRIDGE_CAPABILITIES:-intent.food.order}
+      - BRIDGE_META_JSON=${BRIDGE_META_JSON:-}
+      - BRIDGE_ENABLE_META_PROOF=${BRIDGE_ENABLE_META_PROOF:-0}
+      - BRIDGE_PUBLIC_URL=${BRIDGE_PUBLIC_URL:-}
+      - BRIDGE_DID_SEED_B64=${BRIDGE_DID_SEED_B64:-}
+      - BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS=${BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS:-60}
+      - BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS=${BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS:-5}
+      - BRIDGE_DISCOVERY_PERSIST_PATH=${BRIDGE_DISCOVERY_PERSIST_PATH:-}
+      - BRIDGE_DISCOVERY_REDIS_URL=${BRIDGE_DISCOVERY_REDIS_URL:-redis://redis:6379/0}
+      - BRIDGE_DISCOVERY_REGISTER_TOKEN=${BRIDGE_DISCOVERY_REGISTER_TOKEN:-}
+      - BRIDGE_DISCOVERY_DISCOVER_TOKEN=${BRIDGE_DISCOVERY_DISCOVER_TOKEN:-}
+      - BRIDGE_DISCOVERY_RL_PER_MINUTE=${BRIDGE_DISCOVERY_RL_PER_MINUTE:-60}
+      # Operator node does not bind to any specific OpenClaw by default.
+      - OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL:-}
+      - OPENCLAW_HOOKS_TOKEN=${OPENCLAW_HOOKS_TOKEN:-}
+    depends_on:
+      security-gate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      nats:
+        condition: service_started
+    networks:
+      - open-a2a
+    restart: unless-stopped
+
+  # Optional: X↔Y federation (independent NATS + selective subject bridging).
+  # Disabled by default via compose profile.
+  subject-bridge:
+    profiles: ["federation"]
+    build:
+      context: ../..
+      dockerfile: Dockerfile.federation-bridge
+    environment:
+      # Side A defaults to local NATS (inside this compose network).
+      # NOTE: for real deployments, use a dedicated NATS user with least privilege.
+      - OA2A_FED_NATS_A=${OA2A_FED_NATS_A:-nats://${NATS_PUBLIC_USER}:${NATS_PUBLIC_PASS}@${NATS_HOST:-nats}:${NATS_PORT:-4222}}
+      # Side B should point to the other operator's NATS (with auth).
+      - OA2A_FED_NATS_B=${OA2A_FED_NATS_B:-}
+      - OA2A_FED_SUBJECTS=${OA2A_FED_SUBJECTS:-intent.>}
+      - OA2A_FED_BRIDGE_ID=${OA2A_FED_BRIDGE_ID:-x-y-bridge}
+      - OA2A_FED_MAX_HOPS=${OA2A_FED_MAX_HOPS:-1}
+      - OA2A_FED_DEDUPE_TTL_SECONDS=${OA2A_FED_DEDUPE_TTL_SECONDS:-3}
+      - OA2A_FED_STATS_INTERVAL_SECONDS=${OA2A_FED_STATS_INTERVAL_SECONDS:-10}
+      - OA2A_FED_LOG_FORWARD_SAMPLES=${OA2A_FED_LOG_FORWARD_SAMPLES:-0}
+      # Ops endpoint (HTTP JSON). We bind to 0.0.0.0 in-container, but map to 127.0.0.1 on host.
+      - OA2A_FED_HTTP_ENABLE=${OA2A_FED_HTTP_ENABLE:-1}
+      - OA2A_FED_HTTP_HOST=${OA2A_FED_HTTP_HOST:-0.0.0.0}
+      - OA2A_FED_HTTP_PORT=${OA2A_FED_HTTP_PORT:-9464}
+    ports:
+      - "127.0.0.1:${OA2A_FED_HTTP_PORT:-9464}:9464"
+    depends_on:
+      security-gate:
+        condition: service_completed_successfully
+      nats:
+        condition: service_started
+    networks:
+      - open-a2a
+    restart: unless-stopped
+
+networks:
+  open-a2a:
+    name: open-a2a

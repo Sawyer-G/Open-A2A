@@ -1,0 +1,26 @@
+:443 {
+  # Replace with your real domain
+  # tls you@example.com
+
+  encode gzip
+
+  # Recommended: limit request body size
+  request_body {
+    max_size 2MB
+  }
+
+  reverse_proxy 127.0.0.1:8080 {
+    # Keep long-lived connections stable
+    transport http {
+      read_timeout 60s
+      write_timeout 60s
+      dial_timeout 10s
+    }
+  }
+}
+
+# Minimal HTTP redirect (optional)
+:80 {
+  redir https://{host}{uri} permanent
+}
+
