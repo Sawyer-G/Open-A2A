@@ -115,6 +115,17 @@ BRIDGE_DID_SEED_B64=BASE64_SEED
 
 ---
 
+## 5.2（推荐）目录质量与运营控制：TTL / 鉴权 / 限流 / 观测
+
+如果节点 X 对外提供目录式 discover，建议同时启用以下“运营级能力”：
+
+- **TTL/过期回收**：防止僵尸注册长期占用目录。注册方需周期性续租（再次调用 `POST /api/register_capabilities`）。
+- **访问控制（可选）**：为 register/discover 设置 Bearer Token，避免被任意人滥用。
+- **速率限制（可选）**：按 IP 限流，降低 DoS 风险。
+- **观测**：使用 `GET /api/discovery_stats` 查看 provider 数量、capability 分布与错误信息。
+
+对应环境变量见 `.env.example` 或 `deploy/node-x/.env.node-x.example`。
+
 ## 6. 运营者后续增强（不在本套件强制）
 
 这套 Node X kit 刻意保持“最小可用”，后续常见增强包括：

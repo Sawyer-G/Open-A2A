@@ -115,6 +115,17 @@ Protocol details: `spec/rfc-004-identity-and-trust.md`.
 
 ---
 
+## 5.2 (Recommended) Directory quality & operator controls: TTL / auth / rate limit / observability
+
+If Node X exposes directory-style discovery, it is recommended to also enable operator-grade controls:
+
+- **TTL & expiration**: avoid zombie registrations by requiring periodic renewals (call `POST /api/register_capabilities` again).
+- **Access control (optional)**: Bearer tokens for register/discover.
+- **Rate limiting (optional)**: simple per-IP throttling to reduce abuse/DoS.
+- **Observability**: `GET /api/discovery_stats` for provider counts, capability distribution, and recent errors.
+
+See `.env.example` or `deploy/node-x/.env.node-x.example` for the environment variables.
+
 ## 6. Optional hardening (not required by this kit)
 
 This kit stays intentionally minimal. Common next steps:

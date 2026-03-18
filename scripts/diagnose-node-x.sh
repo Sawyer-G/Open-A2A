@@ -117,11 +117,29 @@ echo "[step] Discovery query (optional)"
 CAP="${BRIDGE_CAPABILITIES:-intent.food.order}"
 CAP_FIRST="${CAP%%,*}"
 if command -v curl >/dev/null 2>&1; then
-  curl -sS "http://127.0.0.1:${BRIDGE_PORT}/api/discover?capability=${CAP_FIRST}&timeout_seconds=2" \
+  AUTH_HEADER=()
+  if [[ -n "${BRIDGE_DISCOVERY_DISCOVER_TOKEN:-}" ]]; then
+    AUTH_HEADER=(-H "Authorization: Bearer ${BRIDGE_DISCOVERY_DISCOVER_TOKEN}")
+  fi
+  curl -sS "${AUTH_HEADER[@]}" "http://127.0.0.1:${BRIDGE_PORT}/api/discover?capability=${CAP_FIRST}&timeout_seconds=2" \
     | sed 's/^/  /' \
     || echo "  [warn] discover API not reachable (Bridge may be private or disabled)"
 else
   echo "  [warn] curl not found, skip /api/discover"
+fi
+echo
+
+echo "[step] Discovery stats (optional)"
+if command -v curl >/dev/null 2>&1; then
+  AUTH_HEADER=()
+  if [[ -n "${BRIDGE_DISCOVERY_DISCOVER_TOKEN:-}" ]]; then
+    AUTH_HEADER=(-H "Authorization: Bearer ${BRIDGE_DISCOVERY_DISCOVER_TOKEN}")
+  fi
+  curl -sS "${AUTH_HEADER[@]}" "http://127.0.0.1:${BRIDGE_PORT}/api/discovery_stats" \
+    | sed 's/^/  /' \
+    || echo "  [warn] /api/discovery_stats not reachable (or auth required)"
+else
+  echo "  [warn] curl not found, skip /api/discovery_stats"
 fi
 echo
 
