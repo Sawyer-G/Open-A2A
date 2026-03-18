@@ -100,6 +100,20 @@ This compose file starts:
 - `solid`: self-hosted Solid Pod (`8443`);
 - `open-a2a-bridge`: Bridge service (`8080`) for integration with OpenClaw or other runtimes.
 
+### 3.4 Security defaults (public vs private)
+
+This quickstart is meant to get an end-to-end demo running fast. If you plan to expose it publicly, keep the blast radius minimal:
+
+- **Recommended public ports**:
+  - Relay: `RELAY_WS_PORT` (default `8765`)
+  - Bridge: `BRIDGE_PORT` (default `8080`, recommended behind an HTTPS reverse proxy)
+- **Do NOT expose by default**:
+  - NATS `4222` (quickstart keeps it private; if you need public NATS, use `deploy/node-x/` with stronger auth/ACL/TLS)
+- **Strict mode requirements (recommended for public nodes)**:
+  - `OA2A_STRICT_SECURITY=1`
+  - `RELAY_AUTH_TOKEN` must be set
+  - If discovery is enabled (`BRIDGE_ENABLE_DISCOVERY=1`), set `BRIDGE_DISCOVERY_REGISTER_TOKEN` and `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
+
 ### 3.3 Environment Variables
 
 | Variable | Description | Example |

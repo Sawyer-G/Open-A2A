@@ -59,6 +59,20 @@ docker ps
 - `solid`：自托管 Solid Pod（默认 `8443`）；
 - `open-a2a-bridge`：Bridge 服务（默认 `8080`），用于与 OpenClaw 等运行时集成。
 
+### 1.1.1 安全默认值（公网/内网）
+
+本 quickstart 用于快速跑通链路。若你打算对公网开放，请遵循最小暴露面：
+
+- **建议对公网开放**：
+  - Relay：`RELAY_WS_PORT`（默认 `8765`）
+  - Bridge：`BRIDGE_PORT`（默认 `8080`，建议放在 HTTPS 反代后）
+- **不建议对公网开放**：
+  - NATS `4222`（quickstart 已默认保持私有；如需公网 NATS，请使用 `deploy/node-x/` 并启用更严格的鉴权/ACL/TLS）
+- **strict 模式强制要求（推荐公网节点）**：
+  - `OA2A_STRICT_SECURITY=1`
+  - `RELAY_AUTH_TOKEN` 必须设置
+  - 若启用目录 discover（`BRIDGE_ENABLE_DISCOVERY=1`），必须设置 `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
+
 你可以根据需要在云厂商防火墙中开放对应端口，并通过 DNS 将子域（如 `nats.open-a2a.org`、`relay.open-a2a.org`）解析到这台服务器（建议使用 **仅 DNS** 模式，不通过 HTTP 代理）。
 
 ---
