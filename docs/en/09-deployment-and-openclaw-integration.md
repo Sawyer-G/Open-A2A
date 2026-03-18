@@ -187,6 +187,7 @@ The Bridge is implemented in `bridge/main.py`.
 | Forward to OpenClaw | `httpx.post(gateway_url + "/hooks/agent", ...)` |
 | Publish API | `POST /api/publish_intent`, optionally collects offers and returns them |
 | Health check | `GET /health` |
+| Ops metrics (JSON) | `GET /ops/metrics` (backend, online providers, capability distribution, etc.) |
 | Capability discovery (NATS) | `POST /api/register_capabilities`, `GET /api/discover` (request-reply, no central registry) |
 
 **Run**:

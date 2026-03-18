@@ -175,6 +175,7 @@ Bridge 已实现，位于 `bridge/main.py`。
 | 转发给 OpenClaw | `httpx.post(gateway_url + "/hooks/agent", ...)` |
 | 暴露发布 API | `POST /api/publish_intent`，可选收集报价并返回 |
 | 健康检查 | `GET /health` |
+| 运维指标（JSON） | `GET /ops/metrics`（目录后端/在线 provider/capability 分布等） |
 | 能力发现（NATS） | `POST /api/register_capabilities`、`GET /api/discover`（请求-响应，无中心化注册表） |
 
 **运行方式**：

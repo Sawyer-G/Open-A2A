@@ -216,6 +216,64 @@ class SubjectBridge:
             t.cancel()
 
 
+async def _run_ops_http(b: SubjectBridge, host: str, port: int) -> Any:
+    async def handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        try:
+            line = await reader.readline()
+            path = "/"
+            try:
+                parts = line.decode("utf-8", errors="ignore").split(" ")
+                if len(parts) >= 2:
+                    path = parts[1]
+            except Exception:
+                path = "/"
+            if not (path.startswith("/healthz") or path.startswith("/metrics") or path.startswith("/")):
+                body = b"not found"
+                writer.write(
+                    b"HTTP/1.1 404 Not Found\r\nContent-Length: "
+                    + str(len(body)).encode("ascii")
+                    + b"\r\n\r\n"
+                    + body
+                )
+                await writer.drain()
+                return
+
+            async with b._lock:
+                s = dict(b._stats)
+            payload = {
+                "service": "open-a2a-subject-bridge",
+                "status": "ok",
+                "bridge_id": b.cfg.bridge_id,
+                "nats_a": b.cfg.nats_a,
+                "nats_b": b.cfg.nats_b,
+                "subjects": b.cfg.subjects,
+                "max_hops": b.cfg.max_hops,
+                "dedupe_ttl_seconds": b.cfg.dedupe_ttl_seconds,
+                "stats": s,
+            }
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            writer.write(
+                b"HTTP/1.1 200 OK\r\n"
+                b"Content-Type: application/json; charset=utf-8\r\n"
+                b"Cache-Control: no-store\r\n"
+                + f"Content-Length: {len(body)}\r\n\r\n".encode("ascii")
+                + body
+            )
+            await writer.drain()
+        except Exception:
+            pass
+        finally:
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except Exception:
+                pass
+
+    import json
+
+    return await asyncio.start_server(handler, host, port)
+
+
 def _load_config() -> BridgeConfig:
     bridge_id = os.getenv("OA2A_FED_BRIDGE_ID", "x-y-bridge")
     nats_a = os.getenv("OA2A_FED_NATS_A", "nats://localhost:4222")
@@ -242,9 +300,21 @@ async def main() -> None:
     cfg = _load_config()
     b = SubjectBridge(cfg)
     await b.connect()
+    ops = None
+    if _env_bool("OA2A_FED_HTTP_ENABLE", "1"):
+        host = os.getenv("OA2A_FED_HTTP_HOST", "127.0.0.1").strip() or "127.0.0.1"
+        port = int(os.getenv("OA2A_FED_HTTP_PORT", "9464"))
+        try:
+            ops = await _run_ops_http(b, host, port)
+            print(f"[FedBridge] ops endpoint: http://{host}:{port}/healthz")
+        except Exception as e:
+            print(f"[FedBridge] ops endpoint 启动失败（将继续运行桥接）：{e}")
     try:
         await b.run()
     finally:
+        if ops:
+            ops.close()
+            await ops.wait_closed()
         await b.disconnect()
 
 

@@ -142,5 +142,7 @@ BRIDGE_DID_SEED_B64=BASE64_SEED
 - Relay / Bridge 前置反代（HTTPS、WAF、限流、鉴权）
 - NATS TLS、账户隔离、更细粒度的 subject ACL
 - 观测：指标、日志集中、告警
+  - Bridge：`GET /ops/metrics`（JSON，目录后端/在线 provider/capability 分布等）
+  - Relay：`http://{RELAY_HTTP_HOST}:{RELAY_HTTP_PORT}/healthz`（JSON，连接数/订阅数等，建议仅内网）
 - 多运营者互联（X↔Y）：选择性桥接主题（如 `intent.food.*`）
 

@@ -872,6 +872,49 @@ app = FastAPI(
 )
 
 
+@app.get("/ops/metrics")
+async def ops_metrics() -> dict[str, Any]:
+    """
+    Minimal operator-friendly metrics snapshot (JSON).
+    This is intentionally simple (no extra deps).
+    """
+    backend = "redis" if _redis_enabled() else ("file" if _persist_enabled() else "memory")
+    providers_total = 0
+    verified = 0
+    by_cap: dict[str, int] = {}
+    if _redis_enabled():
+        try:
+            providers_total, verified, by_cap = await _redis_stats()
+        except Exception:
+            pass
+    else:
+        now_ts = datetime.now(timezone.utc).timestamp()
+        active = [r for r in _registrations.values() if r.expires_at_ts > now_ts]
+        providers_total = len(active)
+        for r in active:
+            if _is_verified(r.meta):
+                verified += 1
+            for c in r.capabilities:
+                by_cap[c] = by_cap.get(c, 0) + 1
+    return {
+        "service": "open-a2a-bridge",
+        "status": "ok",
+        "nats": {"status": _nats_status, "url": NATS_URL, "error": _nats_error},
+        "discovery": {
+            "status": _discovery_status,
+            "backend": backend,
+            "redis_enabled": _redis_enabled(),
+            "providers_total": providers_total,
+            "providers_verified": verified,
+            "providers_unverified": max(0, providers_total - verified),
+            "capabilities_total": len(by_cap),
+            "by_capability": by_cap,
+            "last_cleanup_at": _last_cleanup_at,
+            "last_ops_error": _last_discovery_ops_error or _discovery_error,
+        },
+    }
+
+
 @app.get("/health")
 async def health() -> dict[str, Any]:
     """

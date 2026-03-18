@@ -40,6 +40,11 @@ RELAY_WS_SSL_CERT = os.getenv("RELAY_WS_SSL_CERT", "").strip()
 RELAY_WS_SSL_KEY = os.getenv("RELAY_WS_SSL_KEY", "").strip()
 OA2A_STRICT_SECURITY = os.getenv("OA2A_STRICT_SECURITY", "").strip().lower() in ("1", "true", "yes")
 
+# Minimal ops endpoint (HTTP JSON). Keep private by default.
+RELAY_HTTP_ENABLE = os.getenv("RELAY_HTTP_ENABLE", "1").strip().lower() in ("1", "true", "yes")
+RELAY_HTTP_HOST = os.getenv("RELAY_HTTP_HOST", "127.0.0.1").strip() or "127.0.0.1"
+RELAY_HTTP_PORT = int(os.getenv("RELAY_HTTP_PORT", "8766"))
+
 # --- Ops/Security knobs (public entrypoint hardening) ---
 RELAY_AUTH_TOKEN = os.getenv("RELAY_AUTH_TOKEN", "").strip()
 
@@ -141,6 +146,61 @@ _nats: Optional[Any] = None
 _client_subjects: dict[Any, set[str]] = {}  # ws -> set(subject)
 _nats_subs: dict[str, Any] = {}  # subject -> nats subscription
 _lock = asyncio.Lock()
+
+
+def _ops_snapshot() -> dict[str, Any]:
+    return {
+        "service": "open-a2a-relay",
+        "status": "ok",
+        "nats_url": NATS_URL,
+        "ws": {"host": RELAY_WS_HOST, "port": RELAY_WS_PORT, "tls": bool(RELAY_WS_TLS)},
+        "limits": {
+            "max_subscriptions_per_conn": RELAY_MAX_SUBSCRIPTIONS_PER_CONN,
+            "max_message_bytes": RELAY_MAX_MESSAGE_BYTES,
+            "max_json_bytes": RELAY_MAX_JSON_BYTES,
+            "rl_pub_per_sec": RELAY_RL_PUB_PER_SEC,
+        },
+        "auth_enabled": bool(RELAY_AUTH_TOKEN),
+        "subjects": {
+            "allowlist": RELAY_SUBJECT_ALLOWLIST,
+            "blocklist": RELAY_SUBJECT_BLOCKLIST,
+        },
+        "runtime": {
+            "clients": len(_client_subjects),
+            "nats_subject_subscriptions": len(_nats_subs),
+        },
+    }
+
+
+async def _handle_ops(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+    try:
+        line = await reader.readline()
+        path = "/"
+        try:
+            parts = line.decode("utf-8", errors="ignore").split(" ")
+            if len(parts) >= 2:
+                path = parts[1]
+        except Exception:
+            path = "/"
+
+        if path.startswith("/healthz") or path.startswith("/metrics") or path.startswith("/"):
+            body = json.dumps(_ops_snapshot(), ensure_ascii=False).encode("utf-8")
+            headers = (
+                b"HTTP/1.1 200 OK\r\n"
+                b"Content-Type: application/json; charset=utf-8\r\n"
+                b"Cache-Control: no-store\r\n"
+                + f"Content-Length: {len(body)}\r\n\r\n".encode("ascii")
+            )
+            writer.write(headers + body)
+            await writer.drain()
+    except Exception:
+        pass
+    finally:
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            pass
 
 
 async def _ensure_nats_sub(subject: str) -> None:
@@ -274,6 +334,13 @@ async def main() -> None:
         raise RuntimeError("websockets is required for relay. pip install open-a2a[relay]")
     _security_boot_check()
     await _run_nats()
+    ops_server = None
+    if RELAY_HTTP_ENABLE:
+        try:
+            ops_server = await asyncio.start_server(_handle_ops, RELAY_HTTP_HOST, RELAY_HTTP_PORT)
+            print(f"[Relay] ops endpoint: http://{RELAY_HTTP_HOST}:{RELAY_HTTP_PORT}/healthz")
+        except Exception as e:
+            print(f"[Relay] ops endpoint 启动失败（将继续运行 WS）：{e}")
     ssl_ctx = _make_ssl_context()
     if ssl_ctx:
         print(f"[Relay] 已启用 TLS (wss://)，证书: {RELAY_WS_SSL_CERT}")
@@ -290,7 +357,12 @@ async def main() -> None:
             f"[Relay] WebSocket 监听 {scheme}://{RELAY_WS_HOST}:{RELAY_WS_PORT}，"
             "Agent 可出站连接此处参与网络"
         )
-        await asyncio.Future()
+        try:
+            await asyncio.Future()
+        finally:
+            if ops_server:
+                ops_server.close()
+                await ops_server.wait_closed()
 
 
 if __name__ == "__main__":

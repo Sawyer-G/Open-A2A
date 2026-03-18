@@ -142,5 +142,7 @@ This kit stays intentionally minimal. Common next steps:
 - Put Relay/Bridge behind an HTTPS reverse proxy (TLS, WAF, rate limiting)
 - Enable NATS TLS, stronger account isolation, finer subject ACLs
 - Observability: metrics, log aggregation, alerting
+  - Bridge: `GET /ops/metrics` (JSON snapshot: backend, online providers, capability distribution)
+  - Relay: `http://{RELAY_HTTP_HOST}:{RELAY_HTTP_PORT}/healthz` (JSON snapshot; keep private)
 - Multi-operator connectivity (X↔Y): selective subject bridging (e.g. `intent.food.*`)
 
