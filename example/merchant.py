@@ -53,7 +53,7 @@ async def main() -> None:
     async def handle_intent(intent: Intent) -> None:
         who = intent.sender_did or intent.sender_id
         print(f"[Merchant] 收到意图: {intent.type} from {who}")
-        if intent.type.lower() == "noodle":
+        if intent.type.lower() == "pizza":
             offer = Offer(
                 intent_id=intent.id,
                 price=18.0,

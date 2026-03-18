@@ -1,13 +1,11 @@
-"""
-Base Agent - Agent 基类，供 Consumer/Merchant 继承
-"""
+"""Base Agent - Agent 基类，供 Consumer/Merchant 继承."""
 
 from abc import ABC
 from typing import Optional
 
 from open_a2a.broadcaster import IntentBroadcaster
-from open_a2a.discovery_nats import NatsDiscoveryProvider
 from open_a2a.discovery_dht import DhtDiscoveryProvider
+from open_a2a.discovery_nats import NatsDiscoveryProvider
 from open_a2a.identity import AgentIdentity, IdentityNotAvailable
 
 

@@ -94,11 +94,11 @@ Where:
 
 ```text
 Publish an intent into the Open-A2A network. When the user asks to find a service
-(e.g. "order noodles", "find a courier", "find a provider for X"), call this tool
+(e.g. "order pizza", "find a courier", "find a provider for X"), call this tool
 to broadcast the intent and collect responses from other Agents.
 
 Parameters:
-- type: category of the request (e.g. "Noodle", "Food_Delivery", "Generic_Service")
+- type: category of the request (e.g. "Pizza", "Food_Delivery", "Generic_Service")
 - constraints: list of constraints (e.g. "No_Coriander", "<30min", "budget<20")
 - lat/lon: approximate location of the user
 ```

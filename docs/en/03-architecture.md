@@ -21,7 +21,7 @@
 
 ## 1. Core Architecture: Three-Tier Mesh
 
-To achieve seamless auto-collaboration like "ordering noodles", the architecture is split into three layers:
+To achieve seamless auto-collaboration like "ordering pizza", the architecture is split into three layers:
 
 ```mermaid
 graph TD
@@ -58,7 +58,7 @@ graph TD
 - **Preference Storage**: `FilePreferencesProvider` from `profile.json`; `SolidPodPreferencesProvider` from **self-hosted** Solid Pod (**recommended**, data sovereignty, `pip install open-a2a[solid]`)
 - **Next**: SpruceID, VC for minimal permissions; client credentials auth
 
-### 2.2 Discovery & Broadcast (Intent Mesh) — "Where are noodles, who can deliver?"
+### 2.2 Discovery & Broadcast (Intent Mesh) — "Where is pizza, who can deliver?"
 
 - **Transport**: `TransportAdapter` (`open_a2a/transport.py`); implemented: `NatsTransportAdapter`, `RelayClientTransport` (outbound-first, [RFC-003](../../spec/rfc-003-relay-transport.md))
 - **Discovery**: `DiscoveryProvider` (`open_a2a/discovery.py`); implemented: `NatsDiscoveryProvider` (same NATS/cluster), `DhtDiscoveryProvider` (cross-network, env `OPEN_A2A_DHT_BOOTSTRAP`); multi-cluster: [10-nats-cluster-federation](../zh/10-nats-cluster-federation.md). See [06-progress](./06-progress.md).
@@ -94,7 +94,7 @@ Open-A2A as a **protocol layer** integrates with Agent runtimes via:
 
 | Integration | Description | Use Case |
 |-------------|-------------|----------|
-| **Tool / Skill** | Expose Open-A2A as an Agent-callable tool | User says "want noodles" → Agent calls tool to publish intent |
+| **Tool / Skill** | Expose Open-A2A as an Agent-callable tool | User says "want pizza" → Agent calls tool to publish intent |
 | **Channel** | Similar to OpenClaw's WhatsApp/Telegram channels | Agent subscribes to intent topics, decides whether to respond |
 | **Bridge** | Adapter connecting Open-A2A SDK to Agent runtime | Runtime need not know NATS details |
 

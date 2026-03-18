@@ -43,7 +43,7 @@ make run-consumer
 # 或激活 venv 后: python example/consumer.py
 ```
 
-Consumer 会发布「想吃面条」意图，Merchant 收到后自动回复报价。
+Consumer 会发布「想吃披萨」意图，Merchant 收到后自动回复报价。
 
 ## 环境变量
 

@@ -69,15 +69,16 @@ def _mk_request(headers: Optional[Dict[str, str]] = None) -> Request:
     return Request(scope)
 
 
-def test_bridge_redis_backend_register_then_discover_via_responder(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_bridge_redis_backend_register_then_discover_via_responder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     async def run() -> None:
         # Enable redis backend mode in bridge.main.
         monkeypatch.setenv("BRIDGE_DISCOVERY_REDIS_URL", "redis://fake:6379/0")
         monkeypatch.setenv("OA2A_STRICT_SECURITY", "0")
 
-        from tests.test_bridge_redis_registry import FakeRedis
-
         from bridge import main as bridge_main
+        from tests.test_bridge_redis_registry import FakeRedis
 
         importlib.reload(bridge_main)
 

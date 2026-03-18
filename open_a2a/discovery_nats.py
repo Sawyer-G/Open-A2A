@@ -81,8 +81,9 @@ class NatsDiscoveryProvider(DiscoveryProvider):
         """
         Register a dynamic responder for a capability.
 
-        Unlike `register()`, this supports replying with **multiple** meta documents for the same capability
-        (e.g., an operator bridge acting as a directory for multiple agents).
+        Unlike `register()`, this supports replying with **multiple** meta
+        documents for the same capability (e.g., an operator bridge acting
+        as a directory for multiple agents).
         """
         subject = _query_subject(capability)
 

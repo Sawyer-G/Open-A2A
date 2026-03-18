@@ -149,7 +149,7 @@ DNS notes:
 
 ### 4.1 Mode A: Tool Integration (User-Initiated Intents)
 
-**Scenario**: A user says to OpenClaw on WhatsApp/Telegram, “Help me order noodles.” The Agent calls an Open-A2A Tool to publish the intent into the network.
+**Scenario**: A user says to OpenClaw on WhatsApp/Telegram, “Help me order a pizza.” The Agent calls an Open-A2A Tool to publish the intent into the network.
 
 **Implementation**:
 
@@ -195,18 +195,18 @@ DNS notes:
      Content-Type: application/json
 
    Body:
-   {
-     "sessionKey": "open-a2a-intent-{intent_id}",
-     "message": "Received intent: user wants noodles, constraints: No_Coriander. Please respond with an offer.",
-     "channel": "open_a2a"
-   }
+    {
+      "sessionKey": "open-a2a-intent-{intent_id}",
+      "message": "Received intent: user wants pizza, constraints: No_Coriander. Please respond with an offer.",
+      "channel": "open_a2a"
+    }
    ```
 
 3. OpenClaw Agent processes this message, generates an offer, and Bridge can publish that Offer back to NATS (e.g., on `intent.food.offer.{id}`).
 
 ### 4.3 Mode C: Combined (Full A-B-C Flow)
 
-- **Consumer side**: User talks to OpenClaw (“order noodles”) → Agent calls the Open-A2A Tool → Bridge publishes Intent.
+- **Consumer side**: User talks to OpenClaw (“order pizza”) → Agent calls the Open-A2A Tool → Bridge publishes Intent.
 - **Merchant side**: OpenClaw (as a merchant Agent) receives forwarded intents via `/hooks/agent` → generates Offers → Bridge sends them back to NATS.
 - **Carrier side**: A separate Carrier Agent can run with the Open-A2A SDK (Python) or also be integrated via Bridge.
 

@@ -218,9 +218,15 @@ def _render_prometheus_metrics() -> bytes:
     lines.append("# TYPE oa2a_relay_clients gauge")
     lines.append(f"oa2a_relay_clients {int(runtime.get('clients') or 0)}")
 
-    lines.append("# HELP oa2a_relay_nats_subject_subscriptions Active NATS subscriptions by subject.")
+    lines.append(
+        "# HELP oa2a_relay_nats_subject_subscriptions "
+        "Active NATS subscriptions by subject."
+    )
     lines.append("# TYPE oa2a_relay_nats_subject_subscriptions gauge")
-    lines.append(f"oa2a_relay_nats_subject_subscriptions {int(runtime.get('nats_subject_subscriptions') or 0)}")
+    lines.append(
+        "oa2a_relay_nats_subject_subscriptions "
+        f"{int(runtime.get('nats_subject_subscriptions') or 0)}"
+    )
 
     lines.append("# HELP oa2a_relay_auth_enabled Whether relay auth token is enabled (1/0).")
     lines.append("# TYPE oa2a_relay_auth_enabled gauge")
@@ -230,11 +236,20 @@ def _render_prometheus_metrics() -> bytes:
     lines.append("# TYPE oa2a_relay_ws_tls gauge")
     lines.append(f"oa2a_relay_ws_tls {1 if ws.get('tls') else 0}")
 
-    lines.append("# HELP oa2a_relay_limits_max_subscriptions_per_conn Max subscriptions allowed per connection.")
+    lines.append(
+        "# HELP oa2a_relay_limits_max_subscriptions_per_conn "
+        "Max subscriptions allowed per connection."
+    )
     lines.append("# TYPE oa2a_relay_limits_max_subscriptions_per_conn gauge")
-    lines.append(f"oa2a_relay_limits_max_subscriptions_per_conn {int(limits.get('max_subscriptions_per_conn') or 0)}")
+    lines.append(
+        "oa2a_relay_limits_max_subscriptions_per_conn "
+        f"{int(limits.get('max_subscriptions_per_conn') or 0)}"
+    )
 
-    lines.append("# HELP oa2a_relay_limits_max_message_bytes Max NATS message bytes allowed.")
+    lines.append(
+        "# HELP oa2a_relay_limits_max_message_bytes "
+        "Max NATS message bytes allowed."
+    )
     lines.append("# TYPE oa2a_relay_limits_max_message_bytes gauge")
     lines.append(f"oa2a_relay_limits_max_message_bytes {int(limits.get('max_message_bytes') or 0)}")
 
@@ -242,7 +257,10 @@ def _render_prometheus_metrics() -> bytes:
     lines.append("# TYPE oa2a_relay_limits_max_json_bytes gauge")
     lines.append(f"oa2a_relay_limits_max_json_bytes {int(limits.get('max_json_bytes') or 0)}")
 
-    lines.append("# HELP oa2a_relay_limits_rl_pub_per_sec Publish rate limit per second (best-effort).")
+    lines.append(
+        "# HELP oa2a_relay_limits_rl_pub_per_sec "
+        "Publish rate limit per second (best-effort)."
+    )
     lines.append("# TYPE oa2a_relay_limits_rl_pub_per_sec gauge")
     lines.append(f"oa2a_relay_limits_rl_pub_per_sec {int(limits.get('rl_pub_per_sec') or 0)}")
 

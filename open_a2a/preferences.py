@@ -83,7 +83,8 @@ class InMemoryPreferencesProvider(PreferencesProvider):
     """
     Default, dependency-free preferences provider.
 
-    This makes the "preferences" feature usable out of the box while keeping Solid as an optional upgrade.
+    This makes the "preferences" feature usable out of the box while
+    keeping Solid as an optional upgrade.
     """
 
     def __init__(self, data: Optional[dict[str, Any]] = None) -> None:

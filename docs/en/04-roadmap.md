@@ -27,7 +27,7 @@
 
 ### Phase 3: Complex Scenario Simulation ✅
 
-**Goal**: Full A-B-C flow for "ordering noodles".
+**Goal**: Full A-B-C flow for "ordering pizza".
 
 **Completed**:
 

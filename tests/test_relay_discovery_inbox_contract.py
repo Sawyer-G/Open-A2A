@@ -57,7 +57,9 @@ class FakeTransport(TransportAdapter):
         return h
 
 
-def test_nats_discovery_reply_to_uses_open_a2a_inbox_and_relay_allows(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_nats_discovery_reply_to_uses_open_a2a_inbox_and_relay_allows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     async def run() -> None:
         t = FakeTransport()
         d = NatsDiscoveryProvider(transport=t)

@@ -42,7 +42,7 @@
 
 | File | Description |
 |------|-------------|
-| `consumer.py` | Publishes "want noodles" intent, collects merchant offers |
+| `consumer.py` | Publishes "want pizza" intent, collects merchant offers |
 | `merchant.py` | Subscribes to intents, auto-replies with Offer |
 
 ### 4. Dev Environment

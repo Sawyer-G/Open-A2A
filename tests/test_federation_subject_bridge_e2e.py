@@ -27,11 +27,20 @@ class FakeNATSClient:
     async def connect(self, url: str) -> None:
         self.connected_to = url
 
-    async def subscribe(self, subject: str, cb: Callable[[_Msg], Awaitable[None]]) -> Any:
+    async def subscribe(
+        self,
+        subject: str,
+        cb: Callable[[_Msg], Awaitable[None]],
+    ) -> Any:
         self._subs.append((subject, cb))
         return object()
 
-    async def publish(self, subject: str, data: bytes, headers: Optional[dict[str, str]] = None) -> None:
+    async def publish(
+        self,
+        subject: str,
+        data: bytes,
+        headers: Optional[dict[str, str]] = None,
+    ) -> None:
         msg = _Msg(subject=subject, data=data, headers=headers or {})
         # Deliver to all matching subscriptions (best-effort, sequential for determinism).
         for pat, cb in list(self._subs):

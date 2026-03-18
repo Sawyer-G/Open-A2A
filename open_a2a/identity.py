@@ -123,7 +123,12 @@ def canonical_json_bytes(obj: Any) -> bytes:
     - sorted keys
     - ensure_ascii=False
     """
-    return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return json.dumps(
+        obj,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
 
 
 def b64url_nopad(data: bytes) -> str:

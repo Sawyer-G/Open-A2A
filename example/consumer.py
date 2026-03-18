@@ -64,10 +64,10 @@ async def main() -> None:
         location = Location(lat=31.23, lon=121.47)
 
     try:
-        # 创建意图：想吃面条，约束来自偏好或默认
+        # 创建意图：想吃披萨，约束来自偏好或默认
         intent = Intent(
             action="Food_Order",
-            type="Noodle",
+            type="Pizza",
             location=location,
             constraints=constraints,
             reply_to="",  # 下面设置

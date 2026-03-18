@@ -55,11 +55,11 @@ Open-A2A lets **Consumer Agents**, **Merchant Agents**, and **Delivery Agents** 
 
 ---
 
-## Core Capabilities (“A Bowl of Noodles” Journey)
+## Core Capabilities (“A Slice of Pizza” Journey)
 
-Using “order a bowl of noodles” as a concrete example, Open-A2A enables:
+Using “order a pizza” as a concrete example, Open-A2A enables:
 
-- **Global discovery**: A Consumer Agent broadcasts “I want noodles”; nearby Merchant Agents respond within milliseconds.
+- **Global discovery**: A Consumer Agent broadcasts “I want pizza”; nearby Merchant Agents respond within milliseconds.
 - **Intent negotiation**: Consumer and Merchant Agents automatically negotiate constraints (no coriander), price, and time; the human only says one sentence.
 - **Three-party coordination**: After the merchant confirms the order, a Delivery Agent automatically picks it up — no centralized dispatcher.
 - **Value settlement**: Once proof of delivery is recorded, funds are distributed instantly to merchant and courier — no platform cut.

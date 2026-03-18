@@ -23,7 +23,8 @@ except ImportError:
 
 DHT_KEY_PREFIX = "open_a2a:discovery:"
 # Directory-quality TTL (seconds). Clients should renew periodically.
-# This is NOT enforced by the DHT layer itself; we embed expires_at_ts in each record and filter on read.
+# This is NOT enforced by the DHT layer itself; we embed expires_at_ts in
+# each record and filter on read.
 DHT_VALUE_TTL = 300
 
 # 公共 bootstrap 列表（社区/项目提供的长期节点，使所有人加入同一 DHT 网）。

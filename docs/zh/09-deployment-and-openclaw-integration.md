@@ -201,9 +201,9 @@ services:
    ```
    POST {OPENCLAW_GATEWAY}/hooks/agent
    Headers: x-openclaw-token: {OPENCLAW_HOOKS_TOKEN}
-   Body: {
+  Body: {
      "sessionKey": "open-a2a-intent-{intent_id}",
-     "message": "收到意图：用户想吃面条，约束：No_Coriander，请根据你的能力回复报价。",
+     "message": "收到意图：用户想吃披萨，约束：No_Coriander，请根据你的能力回复报价。",
      "channel": "open_a2a"
    }
    ```
@@ -212,7 +212,7 @@ services:
 
 ### 方式 C：混合（完整 A-B-C 流程）
 
-- **Consumer 侧**：用户通过 OpenClaw（WhatsApp）说「订面」→ Tool 发布 Intent
+- **Consumer 侧**：用户通过 OpenClaw（WhatsApp）说「订披萨」→ Tool 发布 Intent
 - **Merchant 侧**：OpenClaw 作为商家 Agent，Bridge 将 Intent 转给 OpenClaw → Agent 报价 → Bridge 发回 NATS
 - **Carrier 侧**：可独立运行 `example/carrier.py`，或同样通过 Bridge 接入 OpenClaw
 

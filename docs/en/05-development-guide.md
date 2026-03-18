@@ -92,7 +92,7 @@ User / Merchant / Rider
 
 | Mode | Description |
 |------|-------------|
-| **Tool** | Wrap as Agent-callable tool; user says "want noodles" → tool publishes intent and returns offers |
+| **Tool** | Wrap as Agent-callable tool; user says "want pizza" → tool publishes intent and returns offers |
 | **Channel** | Like OpenClaw's WhatsApp channel; Agent subscribes to Open-A2A topics and responds |
 | **Bridge** | Adapter connecting Open-A2A SDK to Agent runtime; runtime need not know NATS |
 

@@ -92,7 +92,7 @@ Content-Type: application/json
 **工具描述**（供 Agent 理解何时调用），示例：
 
 ```text
-发布意图到 Open-A2A 网络。当用户表达想吃某类食物（如面条、米饭）或需要某类服务时，调用此工具将意图广播到网络并收集其他 Agent 的报价或响应。参数：type（类型）、constraints（约束列表，如忌口、时间）、lat/lon（位置）。
+发布意图到 Open-A2A 网络。当用户表达想吃某类食物（如披萨、米饭）或需要某类服务时，调用此工具将意图广播到网络并收集其他 Agent 的报价或响应。参数：type（类型）、constraints（约束列表，如忌口、时间）、lat/lon（位置）。
 ```
 
 ### 3.2 YAML 配置示例
