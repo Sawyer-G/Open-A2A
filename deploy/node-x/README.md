@@ -17,25 +17,21 @@
 
 ## 快速开始（Docker）
 
-1) 复制环境变量模板并按需修改：
+1) 初始化（生成强随机密码/Token，并自动同步到 `nats.conf`）：
 
 ```bash
-cp .env.node-x.example ../../.env
+bash ../../scripts/setup-node-x.sh init
 ```
 
-2) 编辑 NATS 配置并修改用户/密码（至少改 `agent_public` 的密码）：
+> 说明：该脚本会创建/更新仓库根目录的 `../../.env`，并把 `deploy/node-x/nats.conf` 里的 `change-me-*` 占位密码替换为一致值，减少人工出错。
 
-```bash
-vim nats.conf
-```
-
-3) 启动：
+2) 启动：
 
 ```bash
 docker compose -f docker-compose.node-x.yml --env-file ../../.env up -d --build
 ```
 
-4) 自检：
+3) 自检：
 
 ```bash
 bash ../../scripts/diagnose-node-x.sh

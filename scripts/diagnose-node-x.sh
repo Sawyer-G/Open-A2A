@@ -115,14 +115,17 @@ echo "[step] Security sanity checks (recommended for public nodes)"
 warned=0
 if [[ "${NATS_RELAY_PASS:-}" == change-me-* || -z "${NATS_RELAY_PASS:-}" ]]; then
   echo "  [warn] NATS_RELAY_PASS is default/empty; change it before public use."
+  echo "        Tip: bash scripts/setup-node-x.sh init"
   warned=1
 fi
 if [[ "${NATS_BRIDGE_PASS:-}" == change-me-* || -z "${NATS_BRIDGE_PASS:-}" ]]; then
   echo "  [warn] NATS_BRIDGE_PASS is default/empty; change it before public use."
+  echo "        Tip: bash scripts/setup-node-x.sh init"
   warned=1
 fi
 if [[ -z "${RELAY_AUTH_TOKEN:-}" ]]; then
   echo "  [warn] RELAY_AUTH_TOKEN is not set; public Relay without auth can be abused."
+  echo "        Tip: bash scripts/setup-node-x.sh init"
   warned=1
 fi
 if [[ "${RELAY_SUBJECT_ALLOWLIST:-}" == *"_INBOX.>"* ]]; then
@@ -216,4 +219,5 @@ echo "[done] If you see failures above:"
 echo "  - verify deploy/node-x/nats.conf passwords match .env"
 echo "  - verify firewall allows ${RELAY_PORT}/tcp (and ${BRIDGE_PORT}/tcp if you expose Bridge)"
 echo "  - verify docker network name is '${NETWORK_NAME}'"
+echo "  - recommended: run 'bash scripts/setup-node-x.sh init' to generate secrets and sync nats.conf"
 
