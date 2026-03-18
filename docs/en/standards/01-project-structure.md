@@ -41,8 +41,17 @@ Open-A2A/
 ├── relay/                      # Open-A2A Relay (WebSocket <-> NATS, outbound-first)
 │   ├── __init__.py
 │   └── main.py
-├── deploy/                     # Deployment examples
+├── federation/                 # Multi-operator federation (selective subject bridge)
+│   └── subject_bridge.py
+├── deploy/                     # Deployment kits (copy-and-run artifacts)
+│   ├── quickstart/             # Full-stack quickstart (Bridge/Relay/NATS/Solid, etc.)
+│   ├── node-x/                 # Operator node kit (Node X)
+│   ├── bridge-directory-registry/ # Bridge Directory Registry (single/HA)
+│   ├── dht-bootstrap/          # DHT bootstrap node kit
+│   ├── federation-x-y/         # X↔Y example (independent NATS + selective subject bridging)
+│   ├── solid/                  # Self-hosted Solid Pod
 │   └── nats-cluster/           # Two-node NATS cluster (docker-compose, conf)
+├── scripts/                    # Ops scripts (setup/diagnose/e2e)
 ├── example/                    # Examples & Demos
 │   ├── consumer.py
 │   ├── merchant.py
@@ -54,15 +63,17 @@ Open-A2A/
 │   ├── relay_e2e_verify.py     # Relay payload E2E verification
 │   ├── profile.json            # Preferences example (Phase 2)
 │   └── upload_profile_to_solid.py
+├── site/                       # Static website (HTML/CSS/JS)
+├── tests/                      # Tests (pytest)
 ├── .venv/                      # Virtual env (not committed)
 ├── .gitignore
 ├── .env.example                # Env var template
 ├── Makefile                    # venv, install, install-*, run-*
 ├── pyproject.toml
 ├── requirements.txt            # Optional, can coexist with pyproject.toml
-├── Dockerfile.bridge
-├── deploy/solid/docker-compose.solid.yml
-├── deploy/quickstart/docker-compose.full.yml
+├── Dockerfile.bridge            # Bridge image build
+├── Dockerfile.relay             # Relay image build
+├── Dockerfile.federation-bridge # subject-bridge image build
 ├── LICENSE
 ├── NOTICE
 └── README.md
@@ -78,7 +89,11 @@ Open-A2A/
 | `example/` | Sample code | Consumer, Merchant, Carrier demos |
 | `docs/` | Project docs | Architecture, requirements, guides; `zh/` and `en/` mirror, each with `standards/`, `reference/` |
 | `relay/` | Relay server | WebSocket↔NATS, outbound-first, optional TLS |
-| `deploy/` | Deployment examples | NATS cluster etc. |
+| `federation/` | Federation implementation | Selective subject bridge (MVP) |
+| `deploy/` | Deployment kits | quickstart, Node X, Directory Registry, DHT bootstrap, federation example, etc. |
+| `scripts/` | Ops scripts | setup/initialize, diagnose, self-check scripts |
+| `site/` | Project website | Static website (entry/overview) |
+| `tests/` | Tests | unit tests and minimal integration tests (mock/E2E) |
 
 ---
 
@@ -137,3 +152,8 @@ See [git.md](./git.md).
 - **Style**: PEP 8, format with `ruff`
 - **Types**: Encourage type hints
 - **Virtual env**: Use `.venv/bin/python`, `.venv/bin/pip`, or `make` targets; avoid polluting system
+
+### 4.1 Dockerfile placement
+
+- Root `Dockerfile.*`: build core service images (Bridge/Relay/subject-bridge) so multiple `deploy/*` kits can reuse them.
+- Dockerfiles under `deploy/*`: only for kit-specific, self-contained components (e.g. `deploy/dht-bootstrap/`), to avoid mixing deployment-only artifacts into the repo root.

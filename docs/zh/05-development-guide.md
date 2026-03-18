@@ -1,5 +1,11 @@
 # 开发指南
 
+## 0. 依赖管理（推荐）
+
+- **权威入口**：`pyproject.toml`（PEP 621）。可选依赖 extras：`.[identity]`、`.[solid]`、`.[bridge]`、`.[relay]`、`.[dht]`、`.[e2e]`、`.[dev]`。
+- **推荐安装方式**：优先使用 `make` 目标（统一虚拟环境与 editable 安装），便于贡献者保持一致。
+- **`requirements.txt`**：仅作为最小依赖/兼容清单（用于必须 `pip install -r` 的环境）。
+
 ## 1. 分步开发资源手册 (Resource Stack)
 
 按分层架构，建议按以下顺序集成资源：

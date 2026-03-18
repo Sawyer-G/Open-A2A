@@ -12,7 +12,7 @@
 在仓库根目录执行：
 
 ```bash
-docker compose -f deploy/federation/x-y/docker-compose.yml up -d --build
+docker compose -f deploy/federation-x-y/docker-compose.yml up -d --build
 docker ps
 ```
 

@@ -130,7 +130,7 @@ networks:
 本仓库已提供一个最小可用实现与可复制示例：
 
 - 文档：[`16-multi-operator-federation-subject-bridge.md`](./16-multi-operator-federation-subject-bridge.md)
-- 示例：`deploy/federation/x-y/`（两套独立 NATS + subject-bridge）
+- 示例：`deploy/federation-x-y/`（两套独立 NATS + subject-bridge）
 
 ---
 

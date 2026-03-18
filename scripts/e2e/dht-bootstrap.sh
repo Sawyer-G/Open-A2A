@@ -8,7 +8,7 @@ set -euo pipefail
 # in your own build environment.
 #
 # Usage:
-#   bash scripts/e2e-dht-bootstrap.sh dht.open-a2a.org:8469
+#   bash scripts/e2e/dht-bootstrap.sh dht.open-a2a.org:8469
 #
 # Output:
 #   - exits 0 if discover hit succeeds
@@ -20,7 +20,7 @@ if [[ -z "$BOOT" ]]; then
   exit 2
 fi
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CAP="${CAPABILITY:-intent.food.order}"
 AGENT_ID="${AGENT_ID:-local-e2e-a}"
 

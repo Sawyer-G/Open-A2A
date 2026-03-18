@@ -25,7 +25,7 @@ services:
 
   subject-bridge:
     build:
-      context: ../../..
+      context: ../..
       dockerfile: Dockerfile.federation-bridge
     environment:
       - OA2A_FED_BRIDGE_ID=x-y-bridge

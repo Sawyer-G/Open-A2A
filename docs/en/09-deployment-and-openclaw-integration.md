@@ -56,7 +56,7 @@ bash scripts/setup-openclaw-bridge.sh
 The script will:
 
 1. Create or update `.env` based on `.env.example`;
-2. Prompt for `NATS_URL`, `OPENCLAW_GATEWAY_URL`, and `OPENCLAW_HOOKS_TOKEN`, then append them to `.env`;
+2. Prompt you to paste required values (then press Enter to continue), and write/update them into `.env` (without blindly appending duplicate keys). This includes `OA2A_STRICT_SECURITY`, `NATS_URL`, Relay auth token, and OpenClaw integration values when forwarding is enabled.
 3. Run:
 
 ```bash
@@ -369,15 +369,15 @@ Relevant environment variables are documented in `.env.example`:
 Copyable artifacts:
 
 - `deploy/bridge-directory-registry/` (single/HA docker-compose)
-- `scripts/e2e-bridge-directory-registry.sh` (cross-container E2E checks)
+- `scripts/e2e/bridge-directory-registry.sh` (cross-container E2E checks)
 
 #### 5.2.3 More systematic E2E (cross-process / cross-container)
 
 From the repo root:
 
 ```bash
-bash scripts/e2e-bridge-directory-registry.sh single-persist
-bash scripts/e2e-bridge-directory-registry.sh redis-ha
+bash scripts/e2e/bridge-directory-registry.sh single-persist
+bash scripts/e2e/bridge-directory-registry.sh redis-ha
 ```
 
 If your environment cannot access Docker Hub (cannot pull `nats` / `redis` images), you can reuse an **already-running NATS/Redis**:
@@ -386,8 +386,8 @@ If your environment cannot access Docker Hub (cannot pull `nats` / `redis` image
 export E2E_EXTERNAL_NATS_URL="nats://host.docker.internal:4222"
 export E2E_EXTERNAL_REDIS_URL="redis://host.docker.internal:6379/0"  # only needed for redis-ha-external
 
-bash scripts/e2e-bridge-directory-registry.sh single-persist-external
-bash scripts/e2e-bridge-directory-registry.sh redis-ha-external
+bash scripts/e2e/bridge-directory-registry.sh single-persist-external
+bash scripts/e2e/bridge-directory-registry.sh redis-ha-external
 ```
 
 What it verifies:

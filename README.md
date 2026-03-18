@@ -101,13 +101,32 @@ See [`docs/en/03-architecture.md`](./docs/en/03-architecture.md) for details.
 | [`open_a2a/`](./open_a2a) | Python reference implementation (SDK). |
 | [`example/`](./example) | Examples: Consumer, Merchant, Carrier demos. |
 | [`bridge/`](./bridge) | Bridge/adapter for Agent runtimes like OpenClaw. |
+| [`relay/`](./relay) | WebSocket ↔ NATS Relay for outbound-only Agents. |
+| [`federation/`](./federation) | Multi-operator federation MVP (selective subject bridge; see `federation/README.md`). |
 | [`docs/`](./docs) | Design docs, architecture, requirements, guides. |
+| [`deploy/`](./deploy) | Copy-and-run deployment kits (quickstart, Node X, Directory Registry, etc.). |
+| [`scripts/`](./scripts) | Ops scripts (setup / diagnose / e2e). |
+| [`site/`](./site) | Project static website (HTML/CSS/JS). |
+| [`tests/`](./tests) | Unit & minimal integration tests. |
+
+### Deployment kits index (`deploy/`)
+
+- **Full node quickstart**: [`deploy/quickstart/`](./deploy/quickstart) (NATS + Relay + Bridge + Solid)
+- **Node X operator kit**: [`deploy/node-x/`](./deploy/node-x) (recommended public operator shape)
+- **Bridge Directory Registry**: [`deploy/bridge-directory-registry/`](./deploy/bridge-directory-registry) (single instance / HA with Redis)
+- **DHT bootstrap node**: [`deploy/dht-bootstrap/`](./deploy/dht-bootstrap)
+- **Federation example (X↔Y)**: [`deploy/federation-x-y/`](./deploy/federation-x-y) (independent NATS + selective subject bridge)
+- **Solid Pod (standalone)**: [`deploy/solid/`](./deploy/solid)
+- **NATS cluster (example)**: [`deploy/nats-cluster/`](./deploy/nats-cluster)
 
 ---
 
 ## Quick Start
 
 > Run all Python commands in a virtualenv (`.venv/bin/python` or `make`) to avoid polluting your system Python.
+
+> Dependency source-of-truth: **`pyproject.toml` is authoritative** (including optional extras like `.[bridge]`, `.[relay]`, `.[dht]`).  
+> `requirements.txt` is kept only as a minimal/compatibility list for environments that require `pip install -r`.
 
 ### 1. Local demo (A→B→C flow)
 
@@ -202,6 +221,20 @@ For a Docker-specific OpenClaw integration guide, see:
 
 - English: [`docs/en/09-openclaw-docker-quickstart.md`](./docs/en/09-openclaw-docker-quickstart.md)
 - Chinese: [`docs/zh/09-openclaw-docker-quickstart.md`](./docs/zh/09-openclaw-docker-quickstart.md)
+
+---
+
+### 4. Common ops shortcuts (recommended)
+
+Prefer `make` targets for a consistent entrypoint:
+
+```bash
+make help
+make setup-node-x
+make e2e-dht-bootstrap
+make e2e-bridge-directory-registry
+make run-federation-xy
+```
 
 ---
 

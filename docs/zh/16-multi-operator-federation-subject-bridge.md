@@ -30,7 +30,7 @@
 
 - 实现：`federation/subject_bridge.py`
 - 容器镜像：`Dockerfile.federation-bridge`
-- 示例（两套独立 NATS + bridge）：`deploy/federation/x-y/`
+- 示例（两套独立 NATS + bridge）：`deploy/federation-x-y/`
 
 ---
 
@@ -106,7 +106,7 @@
 ## 6. 直接可复制的示例（本机）
 
 ```bash
-docker compose -f deploy/federation/x-y/docker-compose.yml up -d --build
+docker compose -f deploy/federation-x-y/docker-compose.yml up -d --build
 ```
 
 默认桥接 allowlist：`intent.>`。

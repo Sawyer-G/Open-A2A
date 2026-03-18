@@ -139,7 +139,7 @@ If you want Node X and Node Y to run **independent NATS servers** but share only
 This repo provides an MVP implementation and a copyable example:
 
 - Doc: `docs/en/16-multi-operator-federation-subject-bridge.md`
-- Example: `deploy/federation/x-y/` (two independent NATS + subject-bridge)
+- Example: `deploy/federation-x-y/` (two independent NATS + subject-bridge)
 
 ---
 

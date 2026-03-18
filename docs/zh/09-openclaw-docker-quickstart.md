@@ -223,7 +223,7 @@ Authorization: Bearer <OPENCLAW_HOOKS_TOKEN>
 2. **OpenClaw Skill（进阶方案 / 官方插件候选）**
    - 在 `~/.openclaw/skills/open-a2a/` 下编写自定义 Skill；
    - 在 Skill 内读取 `BRIDGE_URL` 环境变量，并将 Agent 请求转发到 Bridge；
-   - 在本仓库的 `temp/needfix.md` 中有一个初步的 Skill 目录与配置示例，可作为未来官方 Skill 的原型。
+   - 当前仓库优先维护“协议层与适配层”的稳定接口；Skill 方案可先按本指南的 Tool/Webhook 接入方式落地。
 
 对于多数用户，推荐先使用 **HTTP Tool + Webhook** 路线（配合本指南与 `docs/zh/openclaw-tool-example.md`）。当官方 Skill 成熟后，可以在文档中将 Skill 作为优先推荐路径。
 
@@ -364,5 +364,5 @@ curl -X POST http://localhost:8080/api/publish_intent \
 - 发布官方 OpenClaw Skill，减少用户在 Tool / Webhook 级别的手工配置；
 - 在 `deploy/quickstart/docker-compose.full.yml`（或你的 compose）中预置对 OpenClaw 网络的友好支持。
 
-这些改进的设计草案可参考本仓库 `temp/needfix.md` 中的「后续框架调整建议草案」一节。
+这些优化建议会随版本迭代持续沉淀到 `docs/zh/06-progress.md` 与相应专题文档中（中英文保持同步）。
 

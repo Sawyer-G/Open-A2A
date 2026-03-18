@@ -23,7 +23,8 @@
 bash ../../scripts/setup-node-x.sh init
 ```
 
-> 说明：该脚本会创建/更新仓库根目录的 `../../.env`，并把 `deploy/node-x/nats.conf` 里的 `change-me-*` 占位密码替换为一致值，减少人工出错。
+> 说明：该脚本会创建/更新仓库根目录的 `../../.env`，并把 `deploy/node-x/nats.conf` 里的 `change-me-*` 占位密码替换为一致值，减少人工出错。  
+> 新增：`init` 现在是**交互式向导**（会提示你粘贴/回车），用于快速完成：strict 模式、Relay 鉴权、Relay 运维端点、Directory Registry 鉴权、（可选）federation 对端地址、以及（可选）RFC-004 meta proof（验真）配置。
 
 2) 启动：
 
@@ -36,6 +37,22 @@ docker compose -f docker-compose.node-x.yml --env-file ../../.env up -d --build
 ```bash
 bash ../../scripts/diagnose-node-x.sh
 ```
+
+> 小技巧：如果你希望自检脚本在发现缺参/不安全默认时，直接提示并可选一键运行初始化向导，可用：  
+> `OA2A_DIAG_INTERACTIVE=1 bash ../../scripts/diagnose-node-x.sh`
+
+4)（可选）验证目录 discover（Directory Registry）
+
+当 `BRIDGE_ENABLE_DISCOVERY=1` 且已配置 `BRIDGE_DISCOVERY_DISCOVER_TOKEN` 时，你可以从本机查询一个 capability 的在线目录：
+
+```bash
+curl -sS -H "Authorization: Bearer ${BRIDGE_DISCOVERY_DISCOVER_TOKEN}" \
+  "http://127.0.0.1:${BRIDGE_PORT:-8080}/api/discover?capability=intent.food.order&timeout_seconds=2"
+```
+
+> 如果你在 `setup-node-x.sh init` 向导中修改了 `BRIDGE_CAPABILITIES`，把上面的 capability 替换成你配置的第一个能力即可。
+
+> TTL 建议：如果 `BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS=60`，建议客户端每 30 秒左右续租一次（再次 register），以确保目录中只保留“近实时在线”的节点；清理间隔 `BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS` 可以保持在 3–10 秒范围，用于及时剔除过期项。
 
 ---
 

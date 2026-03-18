@@ -82,7 +82,7 @@ make run-discovery-dht-demo
 
 ```bash
 ## 方式 1：使用脚本（推荐）
-bash scripts/e2e-dht-bootstrap.sh dht.open-a2a.org:8469
+bash scripts/e2e/dht-bootstrap.sh dht.open-a2a.org:8469
 
 ## 方式 2：手动 docker run（等价）
 docker run --rm -t -v "$PWD:/repo" -w /repo python:3.12-slim bash -lc \

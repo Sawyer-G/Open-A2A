@@ -18,7 +18,7 @@
 - **Directory registry (“always discoverable”, formerly Path B)**: Bridge TTL/expiration, optional auth & rate limiting, `/api/discovery_stats`
 - **Client renewal best practice**: example script `example/bridge_discovery_renew.py` (renew periodically based on TTL)
 - **DHT discovery directory quality (renewal)**: DHT records include expiry fields and are filtered on discover; example `example/dht_discovery_renew.py`
-- **Multi-operator federation (Option 2)**: independent NATS + subject-bridge (`deploy/federation/x-y/`)
+- **Multi-operator federation (Option 2)**: independent NATS + subject-bridge (`deploy/federation-x-y/`)
 - **Identity & trust interoperability**: `spec/rfc-004-identity-and-trust.md` (meta minimum fields + proof)
 
 ## Phase 1 Completed

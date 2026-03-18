@@ -41,8 +41,17 @@ Open-A2A/
 ├── relay/                      # Open-A2A Relay（WebSocket <-> NATS，出站优先）
 │   ├── __init__.py
 │   └── main.py
-├── deploy/                     # 部署示例
+├── federation/                 # 多运营者互联（选择性 subject bridge）
+│   └── subject_bridge.py
+├── deploy/                     # 部署套件（可复制产物）
+│   ├── quickstart/             # 一键起全栈（Bridge/Relay/NATS/Solid 等）
+│   ├── node-x/                 # 运营节点 Node X 套件（可公网）
+│   ├── bridge-directory-registry/ # Bridge 目录注册表（单机/HA）
+│   ├── dht-bootstrap/          # DHT bootstrap 节点部署套件
+│   ├── federation-x-y/         # X↔Y federation 示例（独立 NATS + 只桥接部分 subject）
+│   ├── solid/                  # Solid Pod 自托管
 │   └── nats-cluster/           # 两节点 NATS 集群（docker-compose、conf）
+├── scripts/                    # 运维脚本（setup/diagnose/e2e）
 ├── example/                    # 示例与 Demo
 │   ├── consumer.py
 │   ├── merchant.py
@@ -54,15 +63,17 @@ Open-A2A/
 │   ├── relay_e2e_verify.py     # Relay 负载 E2E 验证
 │   ├── profile.json            # 偏好示例（Phase 2）
 │   └── upload_profile_to_solid.py
+├── site/                       # 项目静态站点（HTML/CSS/JS）
+├── tests/                      # 测试（pytest）
 ├── .venv/                      # 虚拟环境（不提交）
 ├── .gitignore
 ├── .env.example                # 环境变量模板
 ├── Makefile                    # venv, install, install-*, run-*
 ├── pyproject.toml
 ├── requirements.txt            # 可选，与 pyproject.toml 并存
-├── Dockerfile.bridge
-├── deploy/solid/docker-compose.solid.yml
-├── deploy/quickstart/docker-compose.full.yml
+├── Dockerfile.bridge            # Bridge 镜像构建
+├── Dockerfile.relay             # Relay 镜像构建
+├── Dockerfile.federation-bridge # subject-bridge 镜像构建
 ├── LICENSE
 ├── NOTICE
 └── README.md
@@ -78,7 +89,11 @@ Open-A2A/
 | `example/` | 示例代码 | Consumer、Merchant、Carrier 等 Demo |
 | `docs/` | 项目文档 | 架构、需求、开发指南等；`zh/` 与 `en/` 镜像，各含 `standards/`、`reference/` |
 | `relay/` | Relay 服务 | WebSocket↔NATS，出站优先，可选 TLS |
-| `deploy/` | 部署示例 | NATS 集群等 |
+| `federation/` | 多运营者互联实现 | 选择性 subject bridge（MVP） |
+| `deploy/` | 部署套件 | quickstart、Node X、目录注册表、DHT bootstrap、federation 示例等 |
+| `scripts/` | 运维脚本 | 安装/初始化、诊断、自测脚本 |
+| `site/` | 项目站点 | 静态网站（用于说明与入口） |
+| `tests/` | 测试 | 单元测试与最小集成测试（mock/E2E） |
 
 ---
 
@@ -137,3 +152,8 @@ Open-A2A/
 - **代码风格**：遵循 PEP 8，使用 `ruff` 格式化
 - **类型注解**：鼓励使用类型提示（Type Hints）
 - **虚拟环境**：所有 Python 操作使用 `.venv/bin/python`、`.venv/bin/pip` 或 `make` 目标，避免污染系统环境
+
+### 4.1 Dockerfile 放置约定
+
+- 根目录的 `Dockerfile.*`：用于构建核心服务镜像（Bridge/Relay/subject-bridge），便于被不同 `deploy/*` 套件复用。
+- `deploy/*` 内的 Dockerfile：仅用于某个套件的自包含组件（例如 `deploy/dht-bootstrap/` 的 bootstrap 镜像），避免把“部署示例专用组件”混入根目录。 

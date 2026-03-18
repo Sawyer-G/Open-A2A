@@ -34,6 +34,24 @@
 
 > 若你希望在一台服务器上快速起一套 **完整的 Open-A2A 节点栈**（作为公共入口或测试网节点），可以使用 quickstart compose：`deploy/quickstart/docker-compose.full.yml`。
 
+### 标准操作方式（推荐：脚本向导）
+
+如果你的服务器上**已经有 OpenClaw（或计划与 OpenClaw 同机部署）**，推荐直接使用仓库自带向导脚本。它会在缺少必要参数时提示你**粘贴/回车**，并把值写入 `.env`（不会无脑追加重复键），然后启动完整节点栈。
+
+```bash
+git clone https://github.com/Sawyer-G/Open-A2A.git
+cd Open-A2A
+
+# 交互式向导：会提示输入/粘贴必要的 token、URL 等
+bash scripts/setup-openclaw-bridge.sh
+```
+
+常见排障（同脚本内置）：
+
+```bash
+bash scripts/setup-openclaw-bridge.sh diagnose
+```
+
 ### 步骤（示例）
 
 ```bash
@@ -353,7 +371,7 @@ curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_se
 对应可复制产物：
 
 - `deploy/bridge-directory-registry/`（单机/HA compose）
-- `scripts/e2e-bridge-directory-registry.sh`（跨容器 E2E 自检）
+- `scripts/e2e/bridge-directory-registry.sh`（跨容器 E2E 自检）
 
 #### 4.1.3 更系统的 E2E（跨进程 / 跨容器）
 
@@ -362,8 +380,8 @@ curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_se
 在仓库根目录执行：
 
 ```bash
-bash scripts/e2e-bridge-directory-registry.sh single-persist
-bash scripts/e2e-bridge-directory-registry.sh redis-ha
+bash scripts/e2e/bridge-directory-registry.sh single-persist
+bash scripts/e2e/bridge-directory-registry.sh redis-ha
 ```
 
 若你的环境无法访问 Docker Hub（无法拉取 `nats` / `redis` 镜像），也可以复用你**已有在跑的 NATS/Redis**：
@@ -372,8 +390,8 @@ bash scripts/e2e-bridge-directory-registry.sh redis-ha
 export E2E_EXTERNAL_NATS_URL="nats://host.docker.internal:4222"
 export E2E_EXTERNAL_REDIS_URL="redis://host.docker.internal:6379/0"  # 仅 redis-ha-external 需要
 
-bash scripts/e2e-bridge-directory-registry.sh single-persist-external
-bash scripts/e2e-bridge-directory-registry.sh redis-ha-external
+bash scripts/e2e/bridge-directory-registry.sh single-persist-external
+bash scripts/e2e/bridge-directory-registry.sh redis-ha-external
 ```
 
 自检覆盖：

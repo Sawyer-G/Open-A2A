@@ -1,5 +1,11 @@
 # Development Guide
 
+## 0. Dependency management (recommended)
+
+- **Source of truth**: `pyproject.toml` (PEP 621). Optional extras: `.[identity]`, `.[solid]`, `.[bridge]`, `.[relay]`, `.[dht]`, `.[e2e]`, `.[dev]`.
+- **Recommended install**: use `make` targets (virtualenv + editable install) so contributors share the same entrypoint.
+- **`requirements.txt`**: kept only as a minimal/compatibility list for environments that require `pip install -r`.
+
 ## 1. Resource Stack (Step-by-Step)
 
 Follow the layered architecture; integrate in this order:

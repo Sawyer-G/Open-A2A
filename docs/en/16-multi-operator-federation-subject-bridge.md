@@ -28,7 +28,7 @@ Artifacts:
 
 - Implementation: `federation/subject_bridge.py`
 - Container image: `Dockerfile.federation-bridge`
-- Example (two independent NATS + bridge): `deploy/federation/x-y/`
+- Example (two independent NATS + bridge): `deploy/federation-x-y/`
 
 ---
 
@@ -104,7 +104,7 @@ They help you validate subscriptions, connection counts, and detect abnormal gro
 ## 6. Copy & run example (local)
 
 ```bash
-docker compose -f deploy/federation/x-y/docker-compose.yml up -d --build
+docker compose -f deploy/federation-x-y/docker-compose.yml up -d --build
 ```
 
 Default allowlist is `intent.>`.

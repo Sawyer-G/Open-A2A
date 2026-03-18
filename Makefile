@@ -111,19 +111,19 @@ run-bridge-discovery-renew:
 	$(PYTHON) example/bridge_discovery_renew.py
 
 run-federation-xy:
-	docker compose -f deploy/federation/x-y/docker-compose.yml up -d --build
+	docker compose -f deploy/federation-x-y/docker-compose.yml up -d --build
 
 down-federation-xy:
-	docker compose -f deploy/federation/x-y/docker-compose.yml down
+	docker compose -f deploy/federation-x-y/docker-compose.yml down
 
 setup-node-x:
 	bash scripts/setup-node-x.sh init
 
 e2e-dht-bootstrap:
-	bash scripts/e2e-dht-bootstrap.sh dht.open-a2a.org:8469
+	bash scripts/e2e/dht-bootstrap.sh dht.open-a2a.org:8469
 
 e2e-bridge-directory-registry:
-	bash scripts/e2e-bridge-directory-registry.sh single-persist
+	bash scripts/e2e/bridge-directory-registry.sh single-persist
 
 run-relay:
 	$(PYTHON) relay/main.py

@@ -92,8 +92,8 @@ curl -sS http://127.0.0.1:8082/health | jq .
 在仓库根目录执行：
 
 ```bash
-bash scripts/e2e-bridge-directory-registry.sh single-persist
-bash scripts/e2e-bridge-directory-registry.sh redis-ha
+bash scripts/e2e/bridge-directory-registry.sh single-persist
+bash scripts/e2e/bridge-directory-registry.sh redis-ha
 ```
 
 若你的环境无法访问 Docker Hub（无法拉取 `nats` / `redis` 镜像），也可以复用你**已有在跑的 NATS/Redis** 来做验证：
@@ -102,8 +102,8 @@ bash scripts/e2e-bridge-directory-registry.sh redis-ha
 export E2E_EXTERNAL_NATS_URL="nats://host.docker.internal:4222"
 export E2E_EXTERNAL_REDIS_URL="redis://host.docker.internal:6379/0"  # 仅 redis-ha-external 需要
 
-bash scripts/e2e-bridge-directory-registry.sh single-persist-external
-bash scripts/e2e-bridge-directory-registry.sh redis-ha-external
+bash scripts/e2e/bridge-directory-registry.sh single-persist-external
+bash scripts/e2e/bridge-directory-registry.sh redis-ha-external
 ```
 
 自检覆盖：

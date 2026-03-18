@@ -35,11 +35,26 @@ else
   STRICT=0
 fi
 
+INTERACTIVE="${OA2A_DIAG_INTERACTIVE:-0}"
+if [[ "$INTERACTIVE" == "1" || "$INTERACTIVE" == "true" || "$INTERACTIVE" == "yes" ]]; then
+  INTERACTIVE=1
+else
+  INTERACTIVE=0
+fi
+
+declare -a FIXES=()
+HARD_FAIL=0
+
+add_fix() {
+  local cmd="$1"
+  FIXES+=("$cmd")
+}
+
 fail_or_warn() {
   local msg="$1"
   if [[ "$STRICT" -eq 1 ]]; then
     echo "  [error] $msg"
-    exit 1
+    HARD_FAIL=1
   else
     echo "  [warn] $msg"
   fi
@@ -88,6 +103,7 @@ fi
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "[warn] .env not found at $ENV_FILE (some checks will use defaults)"
+  add_fix "cp .env.example \"$ENV_FILE\" && bash scripts/setup-node-x.sh init"
 fi
 
 echo "[step] Container status"
@@ -102,12 +118,14 @@ if tcp_check "127.0.0.1" "$RELAY_PORT"; then
   print_kv "relay port open" "127.0.0.1:${RELAY_PORT} (ok)"
 else
   print_kv "relay port open" "127.0.0.1:${RELAY_PORT} (fail)"
+  add_fix "$COMPOSE -f \"$COMPOSE_FILE\" --env-file \"$ENV_FILE\" up -d --build"
 fi
 
 if tcp_check "127.0.0.1" "$BRIDGE_PORT"; then
   print_kv "bridge port open" "127.0.0.1:${BRIDGE_PORT} (ok)"
 else
   print_kv "bridge port open" "127.0.0.1:${BRIDGE_PORT} (fail)"
+  add_fix "$COMPOSE -f \"$COMPOSE_FILE\" --env-file \"$ENV_FILE\" up -d --build"
 fi
 echo
 
@@ -117,32 +135,39 @@ if [[ "${NATS_RELAY_PASS:-}" == change-me-* || -z "${NATS_RELAY_PASS:-}" ]]; the
   echo "  [warn] NATS_RELAY_PASS is default/empty; change it before public use."
   echo "        Tip: bash scripts/setup-node-x.sh init"
   warned=1
+  add_fix "bash scripts/setup-node-x.sh init"
 fi
 if [[ "${NATS_BRIDGE_PASS:-}" == change-me-* || -z "${NATS_BRIDGE_PASS:-}" ]]; then
   echo "  [warn] NATS_BRIDGE_PASS is default/empty; change it before public use."
   echo "        Tip: bash scripts/setup-node-x.sh init"
   warned=1
+  add_fix "bash scripts/setup-node-x.sh init"
 fi
 if [[ -z "${RELAY_AUTH_TOKEN:-}" ]]; then
   echo "  [warn] RELAY_AUTH_TOKEN is not set; public Relay without auth can be abused."
   echo "        Tip: bash scripts/setup-node-x.sh init"
   warned=1
+  add_fix "bash scripts/setup-node-x.sh init"
 fi
 if [[ "${RELAY_SUBJECT_ALLOWLIST:-}" == *"_INBOX.>"* ]]; then
   echo "  [warn] RELAY_SUBJECT_ALLOWLIST contains _INBOX.> (too broad). Prefer _INBOX.open_a2a.>."
   warned=1
+  add_fix "Edit .env: set RELAY_SUBJECT_ALLOWLIST=intent.>,open_a2a.>,_INBOX.open_a2a.>"
 fi
 
 # Strict-mode: fail fast on clearly unsafe defaults for public/operator nodes.
 if [[ "$STRICT" -eq 1 ]]; then
   if [[ "${NATS_RELAY_PASS:-}" == change-me-* || -z "${NATS_RELAY_PASS:-}" ]]; then
     fail_or_warn "STRICT: NATS_RELAY_PASS 仍为占位/空值（必须修改）"
+    add_fix "bash scripts/setup-node-x.sh init"
   fi
   if [[ "${NATS_BRIDGE_PASS:-}" == change-me-* || -z "${NATS_BRIDGE_PASS:-}" ]]; then
     fail_or_warn "STRICT: NATS_BRIDGE_PASS 仍为占位/空值（必须修改）"
+    add_fix "bash scripts/setup-node-x.sh init"
   fi
   if [[ "${NATS_PUBLIC_PASS:-}" == change-me-* && -n "${NATS_PUBLIC_USER:-}" ]]; then
     fail_or_warn "STRICT: NATS_PUBLIC_PASS 仍为占位（若开放 NATS 直连必须修改）"
+    add_fix "bash scripts/setup-node-x.sh init"
   fi
 
   # Relay public entry should have auth token.
@@ -150,6 +175,7 @@ if [[ "$STRICT" -eq 1 ]]; then
   if [[ "$RELAY_HOST" == "0.0.0.0" || "$RELAY_HOST" == "::" || -z "$RELAY_HOST" ]]; then
     if [[ -z "${RELAY_AUTH_TOKEN:-}" ]]; then
       fail_or_warn "STRICT: Relay 绑定公网地址但未设置 RELAY_AUTH_TOKEN"
+      add_fix "bash scripts/setup-node-x.sh init"
     fi
   fi
 
@@ -157,6 +183,7 @@ if [[ "$STRICT" -eq 1 ]]; then
   if [[ "${BRIDGE_ENABLE_DISCOVERY:-1}" == "1" || "${BRIDGE_ENABLE_DISCOVERY:-1}" == "true" ]]; then
     if [[ -z "${BRIDGE_DISCOVERY_REGISTER_TOKEN:-}" || -z "${BRIDGE_DISCOVERY_DISCOVER_TOKEN:-}" ]]; then
       fail_or_warn "STRICT: Bridge discovery 启用但未配置 BRIDGE_DISCOVERY_REGISTER_TOKEN/BRIDGE_DISCOVERY_DISCOVER_TOKEN"
+      add_fix "bash scripts/setup-node-x.sh init"
     fi
   fi
 fi
@@ -168,7 +195,10 @@ echo
 
 echo "[step] Bridge /health (if exposed)"
 if command -v curl >/dev/null 2>&1; then
-  curl -sS "http://127.0.0.1:${BRIDGE_PORT}/health" | sed 's/^/  /' || echo "  [warn] /health not reachable"
+  if ! curl -sS "http://127.0.0.1:${BRIDGE_PORT}/health" | sed 's/^/  /'; then
+    echo "  [warn] /health not reachable"
+    add_fix "$COMPOSE -f \"$COMPOSE_FILE\" --env-file \"$ENV_FILE\" logs --tail 200 open-a2a-bridge"
+  fi
 else
   echo "  [warn] curl not found, skip /health"
 fi
@@ -182,7 +212,7 @@ NATS_URL="nats://${NATS_USER}:${NATS_PASS}@nats:4222"
 docker run --rm --network "$NETWORK_NAME" natsio/nats-box:latest \
   nats --server "$NATS_URL" ping -c 1 2>/dev/null \
   && echo "  NATS ping: ok (${NATS_URL})" \
-  || echo "  [warn] NATS ping failed (${NATS_URL})"
+  || { echo "  [warn] NATS ping failed (${NATS_URL})"; add_fix "$COMPOSE -f \"$COMPOSE_FILE\" --env-file \"$ENV_FILE\" logs --tail 200 nats"; }
 echo
 
 echo "[step] Discovery query (optional)"
@@ -220,4 +250,36 @@ echo "  - verify deploy/node-x/nats.conf passwords match .env"
 echo "  - verify firewall allows ${RELAY_PORT}/tcp (and ${BRIDGE_PORT}/tcp if you expose Bridge)"
 echo "  - verify docker network name is '${NETWORK_NAME}'"
 echo "  - recommended: run 'bash scripts/setup-node-x.sh init' to generate secrets and sync nats.conf"
+
+echo
+echo "== Suggested next commands (copy/paste) =="
+if [[ "${#FIXES[@]}" -eq 0 ]]; then
+  echo "  (no obvious fixes detected)"
+else
+  # Print unique fixes in insertion order (simple de-dupe).
+  printed=""
+  for cmd in "${FIXES[@]}"; do
+    if [[ "$printed" == *$'\n'"$cmd"$'\n'* ]]; then
+      continue
+    fi
+    printed+=$'\n'"$cmd"$'\n'
+    echo "  - $cmd"
+  done
+fi
+
+if [[ "$INTERACTIVE" -eq 1 && "${#FIXES[@]}" -gt 0 ]]; then
+  echo
+  read -rp "Run 'bash scripts/setup-node-x.sh init' now? [y/N]: " yn
+  yn="${yn:-N}"
+  if [[ "${yn,,}" == "y" || "${yn,,}" == "yes" ]]; then
+    bash scripts/setup-node-x.sh init
+    echo
+    echo "[info] Re-run diagnose:"
+    echo "  bash scripts/diagnose-node-x.sh"
+  fi
+fi
+
+if [[ "$HARD_FAIL" -eq 1 ]]; then
+  exit 1
+fi
 
