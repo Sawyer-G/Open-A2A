@@ -114,6 +114,23 @@ This quickstart is meant to get an end-to-end demo running fast. If you plan to 
   - `RELAY_AUTH_TOKEN` must be set
   - If discovery is enabled (`BRIDGE_ENABLE_DISCOVERY=1`), set `BRIDGE_DISCOVERY_REGISTER_TOKEN` and `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
 
+#### 3.4.1 Firewall / security group port matrix (recommended)
+
+> Goal: make the “quickstart” not only runnable, but safely runnable by default. The table below reflects quickstart + DHT bootstrap.
+
+| Component | Port | Proto | Public? | Notes |
+|---|---:|---|---|---|
+| Relay | 8765 | TCP | ✅ recommended | Outbound entrypoint for Agents; strict mode requires `RELAY_AUTH_TOKEN` |
+| Bridge | 8080 | TCP | ⚠️ optional | HTTP API (recommended behind HTTPS reverse proxy); if not integrating OpenClaw, set `BRIDGE_ENABLE_FORWARD=0` |
+| Solid | 8443 | TCP | ⚠️ optional | Self-hosted preferences; keep private if not needed |
+| DHT bootstrap | 8469 | UDP | ✅ recommended | Cross-node discovery entry (recommended to at least open UDP) |
+| DHT bootstrap | 8469 | TCP | ⚠️ optional | The kit currently exposes both TCP/UDP; you may later narrow to UDP-only after verification |
+| NATS | 4222 | TCP | ❌ no | **Keep private** (Relay/Bridge use it via the Docker network). For public NATS access, use `deploy/node-x/` with stronger auth/ACL/TLS |
+
+DNS notes:
+
+- In Cloudflare, create A records for subdomains like `relay` / `dht` pointing to your server IP and set **DNS only** (especially for `dht:8469`, which cannot be proxied as HTTP).
+
 ### 3.3 Environment Variables
 
 | Variable | Description | Example |

@@ -39,10 +39,12 @@ Implementation: `open_a2a/discovery_dht.py` (`ENV_DHT_BOOTSTRAP = "OPEN_A2A_DHT_
 
 ---
 
-## 3. “Community bootstrap list” (placeholder)
+## 3. “Community bootstrap list” (usable default + overridable)
 
-The built-in `DEFAULT_DHT_BOOTSTRAP` is currently empty (placeholder):  
-`open_a2a/discovery_dht.py` → `DEFAULT_DHT_BOOTSTRAP = []`
+This repo now ships a **usable default** `DEFAULT_DHT_BOOTSTRAP` (so you can join a shared DHT network out of the box):  
+`open_a2a/discovery_dht.py` → `DEFAULT_DHT_BOOTSTRAP = [("dht.open-a2a.org", 8469), ...]`
+
+> Operator note: for production, you should still set `OPEN_A2A_DHT_BOOTSTRAP` explicitly (upgrade/scale/failover), rather than relying on the code default long-term.
 
 You have two options:
 

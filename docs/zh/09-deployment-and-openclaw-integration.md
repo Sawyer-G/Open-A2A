@@ -73,7 +73,24 @@ docker ps
   - `RELAY_AUTH_TOKEN` 必须设置
   - 若启用目录 discover（`BRIDGE_ENABLE_DISCOVERY=1`），必须设置 `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
 
-你可以根据需要在云厂商防火墙中开放对应端口，并通过 DNS 将子域（如 `nats.open-a2a.org`、`relay.open-a2a.org`）解析到这台服务器（建议使用 **仅 DNS** 模式，不通过 HTTP 代理）。
+#### 1.1.2 防火墙/安全组端口矩阵（建议）
+
+> 目标：把“能跑起来”变成“默认安全地跑起来”。下表是 quickstart + DHT bootstrap 的最小建议。
+
+| 组件 | 端口 | 协议 | 是否对公网开放 | 说明 |
+|---|---:|---|---|---|
+| Relay | 8765 | TCP | ✅ 建议开放 | 公网出站入口（Agent 连接 Relay）；strict 模式下必须 `RELAY_AUTH_TOKEN` |
+| Bridge | 8080 | TCP | ⚠️ 可选 | 对外 HTTP API（建议走 HTTPS 反代）；不接 OpenClaw 可设 `BRIDGE_ENABLE_FORWARD=0` |
+| Solid | 8443 | TCP | ⚠️ 可选 | 自托管偏好存储；不需要可不对公网开放 |
+| DHT bootstrap | 8469 | UDP | ✅ 建议开放 | 跨节点 discover 的入口（推荐至少开放 UDP） |
+| DHT bootstrap | 8469 | TCP | ⚠️ 可选 | 当前套件同时暴露 TCP/UDP；可按实际验证收敛为仅 UDP |
+| NATS | 4222 | TCP | ❌ 不开放 | **强烈建议保持私有**（仅容器网络内 Relay/Bridge 使用）。若要公网 NATS 直连，请改用 `deploy/node-x/` 并启用更严格鉴权/ACL/TLS |
+
+DNS 建议：
+
+- Cloudflare 上为 `relay` / `dht` 等子域名添加 **A 记录**指向服务器公网 IP，并设置为 **DNS only（灰色云）**（尤其是 `dht:8469` 不可走 HTTP 代理）。
+
+你可以根据需要在云厂商防火墙中开放对应端口，并通过 DNS 将子域（如 `relay.open-a2a.org`、`dht.open-a2a.org`）解析到这台服务器。
 
 ---
 

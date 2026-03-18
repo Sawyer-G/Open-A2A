@@ -12,7 +12,11 @@ from open_a2a.transport import MessageSubscription, TransportAdapter
 
 def test_dht_bootstrap_parse_empty(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(ENV_DHT_BOOTSTRAP, raising=False)
-    assert get_default_dht_bootstrap() == []
+    # When env is not set, we use the built-in community bootstrap defaults.
+    boots = get_default_dht_bootstrap()
+    assert isinstance(boots, list)
+    assert len(boots) >= 1
+    assert ("dht.open-a2a.org", 8469) in boots
 
 
 def test_dht_bootstrap_parse_value(monkeypatch: pytest.MonkeyPatch) -> None:

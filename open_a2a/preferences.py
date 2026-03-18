@@ -79,6 +79,47 @@ class FilePreferencesProvider(PreferencesProvider):
         return None
 
 
+class InMemoryPreferencesProvider(PreferencesProvider):
+    """
+    Default, dependency-free preferences provider.
+
+    This makes the "preferences" feature usable out of the box while keeping Solid as an optional upgrade.
+    """
+
+    def __init__(self, data: Optional[dict[str, Any]] = None) -> None:
+        self._data = dict(data or {})
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return self._data.get(key, default)
+
+    def get_constraints(self) -> list[str]:
+        v = self._data.get("constraints", [])
+        return list(v) if isinstance(v, list) else []
+
+    def get_location(self) -> Optional[dict[str, float]]:
+        loc = self._data.get("location")
+        if loc and isinstance(loc, dict) and "lat" in loc and "lon" in loc:
+            return {"lat": float(loc["lat"]), "lon": float(loc["lon"])}
+        return None
+
+
+def preferences_from_env(*, file_path: "str | Path" = "profile.json") -> PreferencesProvider:
+    """
+    Best-practice factory:
+    - If Solid env vars are present, use SolidPodPreferencesProvider
+    - Else if a local profile.json exists, use FilePreferencesProvider
+    - Else fallback to InMemoryPreferencesProvider
+    """
+    import os
+
+    if os.getenv("SOLID_POD_ENDPOINT", "").strip():
+        return SolidPodPreferencesProvider()
+    p = Path(file_path)
+    if p.exists():
+        return FilePreferencesProvider(p)
+    return InMemoryPreferencesProvider()
+
+
 def _oauth2_client_credentials_token(
     token_url: str, client_id: str, client_secret: str
 ) -> str:

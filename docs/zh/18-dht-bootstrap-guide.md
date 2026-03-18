@@ -39,10 +39,12 @@ export OPEN_A2A_DHT_BOOTSTRAP="1.2.3.4:8469,bootstrap.example.org:8469"
 
 ---
 
-## 3. “社区 bootstrap 列表”（占位）
+## 3. “社区 bootstrap 列表”（可用默认 + 可覆盖）
 
-当前仓库内置的 `DEFAULT_DHT_BOOTSTRAP` 还是空列表（占位）：  
-`open_a2a/discovery_dht.py` → `DEFAULT_DHT_BOOTSTRAP = []`
+当前仓库已内置一个**可用默认**的 `DEFAULT_DHT_BOOTSTRAP`（方便“开箱即用”加入同一 DHT 网）：  
+`open_a2a/discovery_dht.py` → `DEFAULT_DHT_BOOTSTRAP = [("dht.open-a2a.org", 8469), ...]`
+
+> 运营建议：生产环境仍建议你显式设置 `OPEN_A2A_DHT_BOOTSTRAP`（便于替换/扩容/容灾），而不是长期依赖代码内置默认。
 
 你可以选择两种方式：
 

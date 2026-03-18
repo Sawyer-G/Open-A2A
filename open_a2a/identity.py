@@ -22,6 +22,24 @@ except ImportError:
     _DIDLITE_AVAILABLE = False
 
 
+class IdentityNotAvailable(RuntimeError):
+    pass
+
+
+def identity_available() -> bool:
+    return _DIDLITE_AVAILABLE
+
+
+def require_identity() -> None:
+    """
+    Raise a consistent error when identity features are required but didlite is missing.
+    """
+    if not _DIDLITE_AVAILABLE:
+        raise IdentityNotAvailable(
+            "identity features require didlite. Install with: pip install open-a2a[identity]"
+        )
+
+
 class AgentIdentity:
     """
     Agent 身份 - 基于 did:key 的去中心化标识。
@@ -33,11 +51,7 @@ class AgentIdentity:
     """
 
     def __init__(self, seed: Optional[bytes] = None) -> None:
-        if not _DIDLITE_AVAILABLE:
-            raise ImportError(
-                "didlite is required for identity features. "
-                "Install with: pip install open-a2a[identity]"
-            )
+        require_identity()
         if seed:
             self._inner = didlite.AgentIdentity(seed=seed[:32])
         else:

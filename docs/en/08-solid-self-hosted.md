@@ -67,6 +67,18 @@ With `SOLID_POD_ENDPOINT` set, Consumer reads preferences from your self-hosted 
 make run-consumer
 ```
 
+### 5.1 Recommended “auto-select” usage (Solid is optional)
+
+If you want Solid to be an optional upgrade (not a mandatory dependency), use:
+
+- `open_a2a.preferences.preferences_from_env()`
+
+It selects the best backend automatically:
+
+- If `SOLID_POD_ENDPOINT` is set: `SolidPodPreferencesProvider`
+- Else if local `profile.json` exists: `FilePreferencesProvider`
+- Else fallback: `InMemoryPreferencesProvider` (dependency-free, usable by default)
+
 ## 6. Production
 
 - Use your Solid domain for `SOLID_POD_ENDPOINT`, `SOLID_IDP` or `SOLID_TOKEN_URL`

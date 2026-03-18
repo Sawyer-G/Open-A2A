@@ -36,7 +36,7 @@
 |------|------|
 | `intent.py` | Intent、Offer、Location 数据模型 |
 | `broadcaster.py` | NATS 封装：发布意图、订阅意图、发布/收集报价 |
-| `agent.py` | BaseAgent 基类（预留扩展） |
+| `agent.py` | BaseAgent 基类 + `AgentStack`（开箱即用的组合式高层 API：broadcaster + discovery + 可选 identity） |
 
 ### 3. 示例 Demo（`example/`）
 
@@ -102,12 +102,14 @@ Carrier 模拟送达
 ### 1. DID 身份与消息签名
 
 - **identity.py**：基于 [didlite](https://github.com/jondepalma/didlite-pkg) 的 `AgentIdentity`，支持 `did:key` 生成与 JWS 签名/验签
+- **可选依赖策略**：`didlite` 未安装时，可通过 `identity_available()` 探测；如业务必须启用身份，则调用 `require_identity()` 获取一致错误语义（便于提示安装 `open-a2a[identity]`）
 - **broadcaster.py**：可选 `identity` 参数，发布时对 Intent/Offer 签名，订阅时解析 JWS 或 JSON
 - **intent.py**：Intent、Offer 新增 `sender_did` 字段（验签后填充）
 
 ### 2. 偏好存储抽象
 
-- **preferences.py**：`PreferencesProvider` 抽象基类，`FilePreferencesProvider` 基于 JSON 文件实现
+- **preferences.py**：`PreferencesProvider` 抽象基类；默认可用的 `InMemoryPreferencesProvider`（无依赖）；`FilePreferencesProvider`（JSON 文件）；`SolidPodPreferencesProvider`（自托管 Solid）
+- **推荐用法**：使用 `preferences_from_env()` 工厂自动选择（优先 Solid → 其次本地 profile.json → 否则内存后备）
 - **SolidPodPreferencesProvider**：从自托管 Solid Pod 读写偏好（**推荐**，`pip install open-a2a[solid]`），符合数据主权
 - **deploy/solid/docker-compose.solid.yml**：自托管 Solid 一键部署
 - **example/profile.json**：示例偏好文件（constraints、location）
@@ -174,6 +176,9 @@ Carrier 模拟送达
 - **discovery_dht.py**：`DhtDiscoveryProvider`，基于 Kademlia DHT；能力注册/发现写入 DHT，不依赖同一 NATS
 - **适用**：不同 NATS 集群、不同传输的 Agent 通过公共或自建 bootstrap 加入同一 DHT 网即可互相发现
 - **公共 bootstrap 列表**：未传 `bootstrap_nodes` 时使用 `get_default_dht_bootstrap()`；优先读环境变量 `OPEN_A2A_DHT_BOOTSTRAP`（格式 `host1:port1,host2:port2`），未设置时使用 `DEFAULT_DHT_BOOTSTRAP`（可预置社区公共节点）。所有人配置同一列表即加入同一 DHT 网。
+- **目录质量（最佳实践）**：
+  - 记录内置过期字段（`_expires_at_ts`），discover 时会过滤过期数据并 best-effort 回写（减少僵尸记录）
+  - 可选启用“主动卫生维护循环”：`OPEN_A2A_DHT_HYGIENE_INTERVAL_SECONDS`（默认 0 关闭；开启后仅维护**本节点触达过的 key**，不做“全网清理”的错误假设）
 - **依赖**：`pip install open-a2a[dht]`（kademlia）；示例 `make run-discovery-dht-demo`、`example/discovery_dht_demo.py`
 - **与 NATS 发现关系**：NATS 发现适用于「同一 NATS/集群」；DHT 发现适用于「跨集群/完全异构网络」
 

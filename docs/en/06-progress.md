@@ -36,7 +36,7 @@
 |--------|-------------|
 | `intent.py` | Intent, Offer, Location data models |
 | `broadcaster.py` | NATS wrapper: publish intent, subscribe, publish/collect offers |
-| `agent.py` | BaseAgent base class (for future extension) |
+| `agent.py` | BaseAgent base class + `AgentStack` (batteries-included wiring: broadcaster + discovery + optional identity) |
 
 ### 3. Example Demo (`example/`)
 
@@ -62,6 +62,7 @@
 ## Phase 2 Completed
 
 - **identity.py**: `AgentIdentity` based on [didlite](https://github.com/jondepalma/didlite-pkg), `did:key` + JWS sign/verify
+- **Optional dependency behavior**: when `didlite` is missing, check `identity_available()`; if identity is required, call `require_identity()` to raise a consistent error (so you can prompt users to install `open-a2a[identity]`)
 - **preferences.py**: `PreferencesProvider` abstract, `FilePreferencesProvider` (JSON file), `SolidPodPreferencesProvider` (self-hosted Solid, **recommended**)
 - **broadcaster.py**: Optional `identity` param for signing; parse JWS or JSON on receive
 - **intent.py**: `sender_did` field on Intent, Offer
@@ -118,6 +119,9 @@
 - **discovery_dht.py**: `DhtDiscoveryProvider`, Kademlia DHT; register/discover in DHT, independent of NATS
 - **Use case**: Agents on different NATS clusters or transports join same DHT (bootstrap) to discover each other
 - **Public bootstrap list**: When `bootstrap_nodes` is not passed, `get_default_dht_bootstrap()` is used; it reads env `OPEN_A2A_DHT_BOOTSTRAP` (format `host1:port1,host2:port2`) first, else `DEFAULT_DHT_BOOTSTRAP`. Everyone using the same list joins the same DHT.
+- **Directory quality (best practice)**:
+  - Records embed an expiry field (`_expires_at_ts`); discover filters expired records and best-effort writes back (reduces zombie records)
+  - Optional proactive hygiene loop: `OPEN_A2A_DHT_HYGIENE_INTERVAL_SECONDS` (default 0 = disabled). When enabled, it only maintains keys **touched by this node**, and does not assume "global cleanup" is possible.
 - **Install**: `pip install open-a2a[dht]` (kademlia); example `make run-discovery-dht-demo`, `example/discovery_dht_demo.py`
 
 ## NATS Cluster Federation
