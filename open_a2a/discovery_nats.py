@@ -8,7 +8,7 @@ NATS 发现实现
 import asyncio
 import json
 import uuid
-from typing import Any, Optional
+from typing import Any, Callable, Optional, Union
 
 from open_a2a.discovery import DISCOVERY_QUERY_PREFIX, DiscoveryProvider
 from open_a2a.transport import TransportAdapter
@@ -63,6 +63,48 @@ class NatsDiscoveryProvider(DiscoveryProvider):
                     await self._transport.publish(reply_to, meta_bytes)
             except (json.JSONDecodeError, KeyError):
                 pass
+
+        sub = await self._transport.subscribe(subject, cb=on_query)
+        self._subs[capability] = sub
+
+    async def register_responder(
+        self,
+        capability: str,
+        responder: Union[
+            Callable[[], list[dict[str, Any]]],
+            Callable[[dict[str, Any]], list[dict[str, Any]]],
+        ],
+    ) -> None:
+        """
+        Register a dynamic responder for a capability.
+
+        Unlike `register()`, this supports replying with **multiple** meta documents for the same capability
+        (e.g., an operator bridge acting as a directory for multiple agents).
+        """
+        subject = _query_subject(capability)
+
+        async def on_query(data: bytes) -> None:
+            try:
+                payload = json.loads(data.decode("utf-8"))
+                reply_to = payload.get("reply_to")
+                if not reply_to:
+                    return
+
+                try:
+                    metas = responder(payload)  # type: ignore[misc]
+                except TypeError:
+                    metas = responder()  # type: ignore[misc]
+                except Exception:
+                    return
+
+                for meta in metas or []:
+                    try:
+                        meta_bytes = json.dumps(meta, ensure_ascii=False).encode("utf-8")
+                        await self._transport.publish(reply_to, meta_bytes)
+                    except Exception:
+                        continue
+            except (json.JSONDecodeError, KeyError, TypeError):
+                return
 
         sub = await self._transport.subscribe(subject, cb=on_query)
         self._subs[capability] = sub

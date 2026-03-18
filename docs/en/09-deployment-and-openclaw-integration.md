@@ -229,7 +229,7 @@ Bridge supports both:
 ```bash
 curl -X POST http://localhost:8080/api/register_capabilities \
   -H "Content-Type: application/json" \
-  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"}}'
+  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"},"ttl_seconds":60}'
 ```
 
 Other nodes can query:
@@ -242,6 +242,21 @@ Notes:
 
 - NATS Discovery has **no global registry**; “register” is implemented by subscribing to `open_a2a.discovery.query.{capability}` and replying with `meta`.
 - Therefore the Agent (or Bridge acting for it) must stay online to remain discoverable.
+
+#### 5.2.1 Operator-grade features (TTL / auth / rate limit / observability)
+
+To avoid “zombie registrations” and improve operability for public nodes, Bridge also provides:
+
+- **TTL & expiration**: registrations expire if not renewed; renew by calling `POST /api/register_capabilities` again
+- **Access control (optional)**: Bearer tokens for register/discover
+- **Rate limiting (optional)**: simple per-IP limit (requests per minute)
+- **Observability**: `GET /api/discovery_stats` for provider counts, capability distribution, and recent errors
+
+Relevant environment variables are documented in `.env.example`:
+
+- `BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS`
+- `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
+- `BRIDGE_DISCOVERY_RL_PER_MINUTE`
 
 ---
 

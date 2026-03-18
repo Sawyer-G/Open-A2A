@@ -259,7 +259,7 @@ BRIDGE_META_JSON={"region":"shanghai","endpoint":"https://bridge.open-a2a.org"}
 ```bash
 curl -X POST http://localhost:8080/api/register_capabilities \
   -H "Content-Type: application/json" \
-  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"}}'
+  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"},"ttl_seconds":60}'
 ```
 
 其他节点查询：
@@ -267,6 +267,14 @@ curl -X POST http://localhost:8080/api/register_capabilities \
 ```bash
 curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_seconds=3" | jq .
 ```
+
+### 7.1.1 运营级建议：TTL / 鉴权 / 观测
+
+如果你把 Bridge 作为公共节点的一部分，建议开启：
+
+- TTL（避免僵尸注册）：通过 `ttl_seconds` 控制注册有效期；到期需再次调用 register 续租
+- 可选鉴权：`BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
+- 观测：`GET /api/discovery_stats` 查看当前在线 provider 数与 capability 分布
 
 ---
 

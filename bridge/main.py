@@ -13,6 +13,8 @@ import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any, Optional
+from dataclasses import dataclass
+from fastapi import Request
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -47,6 +49,15 @@ BRIDGE_ENABLE_META_PROOF = os.getenv("BRIDGE_ENABLE_META_PROOF", "0").lower() in
 BRIDGE_PUBLIC_URL = os.getenv("BRIDGE_PUBLIC_URL", "").rstrip("/")
 BRIDGE_DID_SEED_B64 = os.getenv("BRIDGE_DID_SEED_B64", "").strip()
 
+# --- Discovery Ops: TTL / Auth / Rate limit ---
+BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS = float(os.getenv("BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS", "60"))
+BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS = float(
+    os.getenv("BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS", "5")
+)
+BRIDGE_DISCOVERY_REGISTER_TOKEN = os.getenv("BRIDGE_DISCOVERY_REGISTER_TOKEN", "").strip()
+BRIDGE_DISCOVERY_DISCOVER_TOKEN = os.getenv("BRIDGE_DISCOVERY_DISCOVER_TOKEN", "").strip()
+BRIDGE_DISCOVERY_RL_PER_MINUTE = int(os.getenv("BRIDGE_DISCOVERY_RL_PER_MINUTE", "60"))
+
 # --- Pydantic 模型 ---
 
 
@@ -79,18 +90,36 @@ class RegisterCapabilitiesRequest(BaseModel):
         description="能力列表（与意图主题一致，例如 intent.food.order）",
     )
     meta: dict[str, Any] = Field(default_factory=dict, description="能力元数据（endpoint/did/region 等）")
+    ttl_seconds: Optional[float] = Field(
+        default=None,
+        ge=5,
+        le=24 * 3600,
+        description="注册 TTL（秒）。到期未续租将被移除。未提供则使用默认值。",
+    )
 
 
 class RegisterCapabilitiesResponse(BaseModel):
     ok: bool = True
     registered_count: int = 0
     message: str = ""
+    expires_at: str = ""
 
 
 class DiscoverResponse(BaseModel):
     capability: str
     results: list[dict[str, Any]] = Field(default_factory=list)
     count: int = 0
+
+
+class DiscoveryStatsResponse(BaseModel):
+    status: str
+    providers_total: int = 0
+    providers_verified: int = 0
+    providers_unverified: int = 0
+    capabilities_total: int = 0
+    by_capability: dict[str, int] = Field(default_factory=dict)
+    last_cleanup_at: str = ""
+    last_error: str = ""
 
 
 # --- 全局 Broadcaster 与状态（在 lifespan 中初始化）---
@@ -107,8 +136,49 @@ _registered_meta: dict[str, Any] = {}
 _bridge_identity: Optional[AgentIdentity] = None
 
 
+@dataclass
+class _Registration:
+    agent_id: str
+    capabilities: list[str]
+    meta: dict[str, Any]
+    expires_at_ts: float
+    updated_at: str
+
+
+_registrations: dict[str, _Registration] = {}
+_capability_subscriptions: set[str] = set()
+_last_cleanup_at: str = ""
+_last_discovery_ops_error: str = ""
+_rl_buckets: dict[str, tuple[int, float]] = {}  # key -> (count, window_start_ts)
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _require_bearer(request: Request, token: str, *, name: str) -> None:
+    if not token:
+        return
+    auth = (request.headers.get("authorization") or "").strip()
+    expected = f"Bearer {token}"
+    if auth != expected:
+        raise HTTPException(status_code=401, detail=f"Unauthorized ({name})")
+
+
+def _rate_limit(request: Request, *, bucket: str, limit_per_minute: int) -> None:
+    if limit_per_minute <= 0:
+        return
+    client = request.client.host if request.client else "unknown"
+    key = f"{bucket}:{client}"
+    now = datetime.now(timezone.utc).timestamp()
+    window = 60.0
+    count, start = _rl_buckets.get(key, (0, now))
+    if now - start >= window:
+        count, start = 0, now
+    count += 1
+    _rl_buckets[key] = (count, start)
+    if count > limit_per_minute:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
 
 
 def _maybe_attach_identity_proof(meta: dict[str, Any]) -> None:
@@ -139,6 +209,53 @@ def _maybe_attach_identity_proof(meta: dict[str, Any]) -> None:
     if _bridge_identity:
         meta["did"] = _bridge_identity.did
         meta["proof"] = build_meta_proof(_bridge_identity, meta, created_at=_now_iso())
+
+
+def _is_verified(meta: dict[str, Any]) -> bool:
+    # Minimal heuristic: did + proof present
+    return bool(meta.get("did")) and bool(meta.get("proof"))
+
+
+def _get_active_metas_for_capability(cap: str) -> list[dict[str, Any]]:
+    now_ts = datetime.now(timezone.utc).timestamp()
+    out: list[dict[str, Any]] = []
+    for reg in _registrations.values():
+        if reg.expires_at_ts <= now_ts:
+            continue
+        if cap in reg.capabilities:
+            out.append(reg.meta)
+    return out
+
+
+async def _sync_discovery_subscriptions() -> None:
+    """
+    Ensure NATS discovery responders exist for all active capabilities.
+    """
+    global _capability_subscriptions, _last_discovery_ops_error
+    if not discovery or _discovery_status != "connected":
+        return
+
+    now_ts = datetime.now(timezone.utc).timestamp()
+    active_caps: set[str] = set()
+    for reg in _registrations.values():
+        if reg.expires_at_ts > now_ts:
+            active_caps.update(reg.capabilities)
+
+    # Add missing responders
+    for cap in sorted(active_caps - _capability_subscriptions):
+        try:
+            await discovery.register_responder(cap, lambda _p=None, c=cap: _get_active_metas_for_capability(c))
+            _capability_subscriptions.add(cap)
+        except Exception as e:
+            _last_discovery_ops_error = str(e)
+
+    # Remove responders that are no longer needed
+    for cap in sorted(_capability_subscriptions - active_caps):
+        try:
+            await discovery.unregister(cap)
+        except Exception:
+            pass
+        _capability_subscriptions.discard(cap)
 
 
 def _parse_capabilities(value: str) -> list[str]:
@@ -179,22 +296,31 @@ async def _apply_registration(agent_id: str, capabilities: list[str], meta: dict
     if not discovery:
         raise RuntimeError("discovery provider not initialized")
 
+    # Back-compat globals for /health
     meta["capabilities"] = list(capabilities)
     _maybe_attach_identity_proof(meta)
-
-    for cap in list(_registered_capabilities):
-        try:
-            await discovery.unregister(cap)
-        except Exception:
-            pass
-    _registered_capabilities = []
     _registered_meta = meta
 
-    for cap in capabilities:
-        await discovery.register(cap, meta)
-        _registered_capabilities.append(cap)
+    ttl = BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS
+    expires_at_ts = datetime.now(timezone.utc).timestamp() + ttl
+    reg = _Registration(
+        agent_id=agent_id,
+        capabilities=list(capabilities),
+        meta=meta,
+        expires_at_ts=expires_at_ts,
+        updated_at=_now_iso(),
+    )
+    _registrations[agent_id] = reg
+    await _sync_discovery_subscriptions()
 
-    return len(_registered_capabilities)
+    # Maintain a legacy union view for /health (not used for responder anymore)
+    union_caps: set[str] = set()
+    now_ts = datetime.now(timezone.utc).timestamp()
+    for r in _registrations.values():
+        if r.expires_at_ts > now_ts:
+            union_caps.update(r.capabilities)
+    _registered_capabilities = sorted(union_caps)
+    return len(reg.capabilities)
 
 
 async def forward_intent_to_openclaw(intent: Intent) -> None:
@@ -284,6 +410,7 @@ async def lifespan(app: FastAPI):
 
     # Discovery：用于能力注册与查询（持续被发现）
     discovery_keepalive_task = None
+    cleanup_task = None
     if BRIDGE_ENABLE_DISCOVERY and _nats_status == "connected":
         discovery = NatsDiscoveryProvider(NATS_URL)
         try:
@@ -300,11 +427,38 @@ async def lifespan(app: FastAPI):
                     print(f"[Bridge] BRIDGE_META_JSON 解析失败，将忽略该字段: {e}")
 
             if caps:
-                n = await _apply_registration(BRIDGE_AGENT_ID, caps, meta)
-                print(f"[Bridge] Discovery 已注册能力 {n} 个: {', '.join(caps)}")
+                # Auto-register as a provider with a long TTL (renewed by cleanup loop).
+                ttl = max(BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS, 60.0)
+                meta["capabilities"] = list(caps)
+                _maybe_attach_identity_proof(meta)
+                _registrations[BRIDGE_AGENT_ID] = _Registration(
+                    agent_id=BRIDGE_AGENT_ID,
+                    capabilities=list(caps),
+                    meta=meta,
+                    expires_at_ts=datetime.now(timezone.utc).timestamp() + ttl,
+                    updated_at=_now_iso(),
+                )
+                await _sync_discovery_subscriptions()
+                print(f"[Bridge] Discovery 已注册能力 {len(caps)} 个: {', '.join(caps)}")
 
             # 保持一个 task 引用，便于 graceful shutdown（未来可扩展心跳/定时刷新）
             discovery_keepalive_task = asyncio.create_task(asyncio.sleep(10**9))
+
+            async def _cleanup_loop() -> None:
+                global _last_cleanup_at, _last_discovery_ops_error
+                while True:
+                    await asyncio.sleep(BRIDGE_DISCOVERY_CLEANUP_INTERVAL_SECONDS)
+                    now_ts = datetime.now(timezone.utc).timestamp()
+                    removed = []
+                    for aid, reg in list(_registrations.items()):
+                        if reg.expires_at_ts <= now_ts:
+                            removed.append(aid)
+                            _registrations.pop(aid, None)
+                    if removed:
+                        await _sync_discovery_subscriptions()
+                    _last_cleanup_at = _now_iso()
+
+            cleanup_task = asyncio.create_task(_cleanup_loop())
         except Exception as e:
             _discovery_status = "error"
             _discovery_error = str(e)
@@ -325,9 +479,15 @@ async def lifespan(app: FastAPI):
                 await discovery_keepalive_task
             except asyncio.CancelledError:
                 pass
+        if cleanup_task:
+            cleanup_task.cancel()
+            try:
+                await cleanup_task
+            except asyncio.CancelledError:
+                pass
         if discovery:
             try:
-                for cap in list(_registered_capabilities):
+                for cap in list(_capability_subscriptions):
                     await discovery.unregister(cap)
             except Exception:
                 pass
@@ -404,13 +564,16 @@ async def health() -> dict[str, Any]:
             "agent_id": BRIDGE_AGENT_ID,
             "registered_capabilities": list(_registered_capabilities),
             "registered_count": len(_registered_capabilities),
+            "providers_total": len(_registrations),
+            "last_cleanup_at": _last_cleanup_at,
+            "last_ops_error": _last_discovery_ops_error,
         },
         "openclaw": openclaw_info,
     }
 
 
 @app.post("/api/register_capabilities", response_model=RegisterCapabilitiesResponse)
-async def register_capabilities(req: RegisterCapabilitiesRequest) -> RegisterCapabilitiesResponse:
+async def register_capabilities(req: RegisterCapabilitiesRequest, request: Request) -> RegisterCapabilitiesResponse:
     """
     注册/更新本节点（或 OpenClaw Agent）支持的能力，用于被其他节点持续 discover。
 
@@ -418,6 +581,8 @@ async def register_capabilities(req: RegisterCapabilitiesRequest) -> RegisterCap
     因此要“持续被发现”，注册方需要保持进程在线（例如 Bridge 常驻运行）。
     """
     global _discovery_status, _discovery_error
+    _require_bearer(request, BRIDGE_DISCOVERY_REGISTER_TOKEN, name="register")
+    _rate_limit(request, bucket="register", limit_per_minute=BRIDGE_DISCOVERY_RL_PER_MINUTE)
     if not BRIDGE_ENABLE_DISCOVERY:
         raise HTTPException(status_code=403, detail="Discovery disabled (BRIDGE_ENABLE_DISCOVERY=0)")
     if not discovery or _discovery_status != "connected":
@@ -437,8 +602,39 @@ async def register_capabilities(req: RegisterCapabilitiesRequest) -> RegisterCap
     meta = _default_meta(req.agent_id)
     meta.update(req.meta or {})
     try:
-        n = await _apply_registration(req.agent_id, caps, meta)
-        return RegisterCapabilitiesResponse(ok=True, registered_count=n, message="capabilities registered")
+        # Apply TTL
+        ttl = float(req.ttl_seconds) if req.ttl_seconds is not None else BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS
+        ttl = max(5.0, min(ttl, 24 * 3600.0))
+        meta["capabilities"] = list(caps)
+        _maybe_attach_identity_proof(meta)
+        expires_at_ts = datetime.now(timezone.utc).timestamp() + ttl
+        expires_at = datetime.fromtimestamp(expires_at_ts, tz=timezone.utc).isoformat()
+
+        _registrations[req.agent_id] = _Registration(
+            agent_id=req.agent_id,
+            capabilities=list(caps),
+            meta=meta,
+            expires_at_ts=expires_at_ts,
+            updated_at=_now_iso(),
+        )
+        await _sync_discovery_subscriptions()
+
+        # legacy view
+        union_caps: set[str] = set()
+        now_ts = datetime.now(timezone.utc).timestamp()
+        for r in _registrations.values():
+            if r.expires_at_ts > now_ts:
+                union_caps.update(r.capabilities)
+        global _registered_capabilities, _registered_meta
+        _registered_meta = meta
+        _registered_capabilities = sorted(union_caps)
+
+        return RegisterCapabilitiesResponse(
+            ok=True,
+            registered_count=len(caps),
+            message="capabilities registered",
+            expires_at=expires_at,
+        )
     except Exception as e:
         _discovery_status = "error"
         _discovery_error = str(e)
@@ -446,8 +642,12 @@ async def register_capabilities(req: RegisterCapabilitiesRequest) -> RegisterCap
 
 
 @app.get("/api/discover", response_model=DiscoverResponse)
-async def discover_capability(capability: str, timeout_seconds: float = 3.0) -> DiscoverResponse:
+async def discover_capability(capability: str, timeout_seconds: float = 3.0, request: Request = None) -> DiscoverResponse:
     """查询支持某能力的 Agent 列表（NATS Discovery request-reply）。"""
+    # `request` is injected by FastAPI; keep it optional for backward compatibility with older clients/tests.
+    if request:
+        _require_bearer(request, BRIDGE_DISCOVERY_DISCOVER_TOKEN, name="discover")
+        _rate_limit(request, bucket="discover", limit_per_minute=BRIDGE_DISCOVERY_RL_PER_MINUTE)
     if not discovery or _discovery_status != "connected":
         raise HTTPException(status_code=503, detail=f"Discovery not connected: {_discovery_error or _discovery_status}")
     cap = (capability or "").strip()
@@ -456,6 +656,31 @@ async def discover_capability(capability: str, timeout_seconds: float = 3.0) -> 
     timeout = max(0.5, min(float(timeout_seconds), 15.0))
     results = await discovery.discover(cap, timeout_seconds=timeout)
     return DiscoverResponse(capability=cap, results=results, count=len(results))
+
+
+@app.get("/api/discovery_stats", response_model=DiscoveryStatsResponse)
+async def discovery_stats(request: Request) -> DiscoveryStatsResponse:
+    _require_bearer(request, BRIDGE_DISCOVERY_DISCOVER_TOKEN, name="stats")
+    _rate_limit(request, bucket="stats", limit_per_minute=BRIDGE_DISCOVERY_RL_PER_MINUTE)
+    now_ts = datetime.now(timezone.utc).timestamp()
+    active = [r for r in _registrations.values() if r.expires_at_ts > now_ts]
+    by_cap: dict[str, int] = {}
+    verified = 0
+    for r in active:
+        if _is_verified(r.meta):
+            verified += 1
+        for c in r.capabilities:
+            by_cap[c] = by_cap.get(c, 0) + 1
+    return DiscoveryStatsResponse(
+        status=_discovery_status,
+        providers_total=len(active),
+        providers_verified=verified,
+        providers_unverified=max(0, len(active) - verified),
+        capabilities_total=len(by_cap),
+        by_capability=by_cap,
+        last_cleanup_at=_last_cleanup_at,
+        last_error=_last_discovery_ops_error or _discovery_error,
+    )
 
 @app.post("/api/publish_intent", response_model=PublishIntentResponse)
 async def publish_intent(req: PublishIntentRequest) -> PublishIntentResponse:

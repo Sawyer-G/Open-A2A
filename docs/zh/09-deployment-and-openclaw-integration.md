@@ -215,7 +215,7 @@ Bridge 支持两种方式：
 ```bash
 curl -X POST http://localhost:8080/api/register_capabilities \
   -H "Content-Type: application/json" \
-  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"}}'
+  -d '{"agent_id":"openclaw-agent","capabilities":["intent.food.order"],"meta":{"region":"shanghai"},"ttl_seconds":60}'
 ```
 
 其他节点可查询某能力的提供者列表：
@@ -228,6 +228,21 @@ curl "http://localhost:8080/api/discover?capability=intent.food.order&timeout_se
 
 - NATS Discovery **没有中心化注册表**；`register` 的实现是订阅 `open_a2a.discovery.query.{capability}` 并在被查询时返回 `meta`。
 - 因此要“持续被发现”，注册方（或代注册的 Bridge）需要保持在线。
+
+#### 4.1.1 运营级能力（TTL / 鉴权 / 限流 / 观测）
+
+为了避免“僵尸注册”（长期不在线的 provider 仍在目录中）、并提升公共节点的可运维性，Bridge 额外提供：
+
+- **TTL/过期回收**：`ttl_seconds` 到期未续租将自动移除；续租方式是再次调用 `POST /api/register_capabilities`
+- **访问控制（可选）**：可为 register/discover 分别设置 Bearer Token
+- **速率限制（可选）**：简单的按 IP 限流（每分钟请求数）
+- **观测**：`GET /api/discovery_stats` 返回当前在线 provider 数、按 capability 的分布、以及最近错误
+
+相关环境变量见 `.env.example`：
+
+- `BRIDGE_DISCOVERY_DEFAULT_TTL_SECONDS`
+- `BRIDGE_DISCOVERY_REGISTER_TOKEN` / `BRIDGE_DISCOVERY_DISCOVER_TOKEN`
+- `BRIDGE_DISCOVERY_RL_PER_MINUTE`
 
 ## 5.1 非 Docker 部署（高级用户）
 
