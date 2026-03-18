@@ -1,11 +1,19 @@
 """
-DID 身份与消息签名 (Phase 2)
+DID 身份与消息签名/验签 (Phase 2)
 
-基于 did:key 的 Agent 身份与消息签名/验签。
+MVP 最优解（现代、可互操作）：
+- DID method: did:key
+- Signature: JWS (Ed25519 / EdDSA)
+- Canonical JSON hashing for stable interoperability
+- Meta proof: sign meta hash to prove ownership (optional but recommended)
+
 didlite 为可选依赖，未安装时身份功能不可用。
 """
 
-from typing import Any, Optional
+import base64
+import hashlib
+import json
+from typing import Any, Optional, Tuple
 
 try:
     import didlite
@@ -89,3 +97,102 @@ def parse_message(data: str) -> tuple[dict[str, Any], Optional[str]]:
     # 回退为纯 JSON
     payload = json.loads(data)
     return payload, None
+
+
+def canonical_json_bytes(obj: Any) -> bytes:
+    """
+    Deterministic JSON serialization for signing/verifying.
+
+    Rules (MVP):
+    - UTF-8
+    - separators without spaces
+    - sorted keys
+    - ensure_ascii=False
+    """
+    return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def b64url_nopad(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode("ascii").rstrip("=")
+
+
+def sha256_b64url(data: bytes) -> str:
+    return b64url_nopad(hashlib.sha256(data).digest())
+
+
+def build_meta_proof(
+    identity: "AgentIdentity",
+    meta: dict[str, Any],
+    *,
+    created_at: Optional[str] = None,
+    purpose: str = "meta",
+) -> dict[str, Any]:
+    """
+    Create a proof object for a meta document.
+
+    We sign a stable hash of canonical JSON(meta_without_proof) to avoid cross-language
+    canonicalization issues inside JWS libraries.
+    """
+    meta_to_sign = dict(meta)
+    meta_to_sign.pop("proof", None)
+    meta_canon = canonical_json_bytes(meta_to_sign)
+    meta_hash = sha256_b64url(meta_canon)
+
+    payload = {
+        "purpose": purpose,
+        "meta_hash_sha256_b64url": meta_hash,
+        "created_at": created_at or "",
+        "did": identity.did,
+    }
+    jws = identity.sign(payload)
+    return {
+        "type": "jws",
+        "alg": "EdDSA",
+        "purpose": purpose,
+        "created_at": payload["created_at"],
+        "jws": jws,
+        "meta_hash_sha256_b64url": meta_hash,
+        "did": identity.did,
+    }
+
+
+def verify_meta_proof(meta: dict[str, Any]) -> Tuple[bool, str, Optional[str]]:
+    """
+    Verify meta.proof if present.
+
+    Returns:
+      (ok, reason, signer_did)
+    """
+    proof = meta.get("proof")
+    if not proof:
+        return False, "missing_proof", None
+    if not isinstance(proof, dict):
+        return False, "invalid_proof_type", None
+
+    jws = proof.get("jws")
+    if not isinstance(jws, str) or not jws:
+        return False, "missing_jws", None
+
+    if not _DIDLITE_AVAILABLE:
+        return False, "identity_not_available", None
+
+    try:
+        payload, signer_did = AgentIdentity.verify(jws)
+    except Exception:
+        return False, "invalid_signature", None
+
+    # Recompute hash from meta without proof
+    meta_to_check = dict(meta)
+    meta_to_check.pop("proof", None)
+    meta_hash = sha256_b64url(canonical_json_bytes(meta_to_check))
+    expected = payload.get("meta_hash_sha256_b64url")
+    if expected != meta_hash:
+        return False, "hash_mismatch", signer_did
+
+    # Optional consistency checks
+    did_in_meta = meta.get("did")
+    did_in_payload = payload.get("did")
+    if did_in_meta and did_in_payload and did_in_meta != did_in_payload:
+        return False, "did_mismatch", signer_did
+
+    return True, "ok", signer_did

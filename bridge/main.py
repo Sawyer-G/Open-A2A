@@ -11,6 +11,7 @@ import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 import httpx
@@ -25,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from open_a2a import Intent, IntentBroadcaster, Location
 from open_a2a.intent import TOPIC_INTENT_FOOD_OFFER_PREFIX
 from open_a2a.discovery_nats import NatsDiscoveryProvider
+from open_a2a.identity import AgentIdentity, build_meta_proof
 
 # --- 配置 ---
 NATS_URL = os.getenv("NATS_URL", "nats://localhost:4222")
@@ -39,6 +41,11 @@ BRIDGE_ENABLE_DISCOVERY = os.getenv("BRIDGE_ENABLE_DISCOVERY", "1").lower() in (
 BRIDGE_AGENT_ID = os.getenv("BRIDGE_AGENT_ID", "openclaw-agent")
 BRIDGE_CAPABILITIES = os.getenv("BRIDGE_CAPABILITIES", "intent.food.order")
 BRIDGE_META_JSON = os.getenv("BRIDGE_META_JSON", "")
+
+# --- Identity/Trust (meta proof) ---
+BRIDGE_ENABLE_META_PROOF = os.getenv("BRIDGE_ENABLE_META_PROOF", "0").lower() in ("1", "true", "yes")
+BRIDGE_PUBLIC_URL = os.getenv("BRIDGE_PUBLIC_URL", "").rstrip("/")
+BRIDGE_DID_SEED_B64 = os.getenv("BRIDGE_DID_SEED_B64", "").strip()
 
 # --- Pydantic 模型 ---
 
@@ -97,6 +104,41 @@ _discovery_status: str = "unknown"
 _discovery_error: str = ""
 _registered_capabilities: list[str] = []
 _registered_meta: dict[str, Any] = {}
+_bridge_identity: Optional[AgentIdentity] = None
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _maybe_attach_identity_proof(meta: dict[str, Any]) -> None:
+    """
+    Ensure meta has did/proof fields following RFC-004.
+
+    - If identity is unavailable/disabled, meta remains unverified (did empty, proof None).
+    - If enabled and identity exists, attach did and proof.
+    """
+    global _bridge_identity
+    if not BRIDGE_ENABLE_META_PROOF:
+        return
+    if _bridge_identity is None:
+        # Best-effort: initialize identity. If didlite not installed, keep unverified.
+        try:
+            if BRIDGE_DID_SEED_B64:
+                import base64
+
+                seed = base64.b64decode(BRIDGE_DID_SEED_B64)
+                _bridge_identity = AgentIdentity(seed=seed)
+            else:
+                _bridge_identity = AgentIdentity()
+        except Exception as e:
+            print(f"[Bridge] Identity 初始化失败，将以 unverified meta 继续: {e}")
+            _bridge_identity = None
+            return
+
+    if _bridge_identity:
+        meta["did"] = _bridge_identity.did
+        meta["proof"] = build_meta_proof(_bridge_identity, meta, created_at=_now_iso())
 
 
 def _parse_capabilities(value: str) -> list[str]:
@@ -115,9 +157,15 @@ def _default_meta(agent_id: str) -> dict[str, Any]:
         "agent_id": agent_id,
         "runtime": "openclaw",
         "bridge": {"kind": "open-a2a-bridge", "health": "/health"},
+        "did": "",
+        "endpoints": [],
+        "capabilities": [],
+        "proof": None,
     }
     if OPENCLAW_GATEWAY_URL:
         meta["openclaw_gateway_url"] = OPENCLAW_GATEWAY_URL
+    if BRIDGE_PUBLIC_URL:
+        meta["endpoints"].append({"type": "http", "url": BRIDGE_PUBLIC_URL})
     return meta
 
 
@@ -130,6 +178,9 @@ async def _apply_registration(agent_id: str, capabilities: list[str], meta: dict
     global discovery, _registered_capabilities, _registered_meta
     if not discovery:
         raise RuntimeError("discovery provider not initialized")
+
+    meta["capabilities"] = list(capabilities)
+    _maybe_attach_identity_proof(meta)
 
     for cap in list(_registered_capabilities):
         try:

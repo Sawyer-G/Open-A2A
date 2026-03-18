@@ -48,6 +48,9 @@ services:
       - BRIDGE_AGENT_ID=${BRIDGE_AGENT_ID:-node-x-bridge}
       - BRIDGE_CAPABILITIES=${BRIDGE_CAPABILITIES:-intent.food.order}
       - BRIDGE_META_JSON=${BRIDGE_META_JSON:-}
+      - BRIDGE_ENABLE_META_PROOF=${BRIDGE_ENABLE_META_PROOF:-0}
+      - BRIDGE_PUBLIC_URL=${BRIDGE_PUBLIC_URL:-}
+      - BRIDGE_DID_SEED_B64=${BRIDGE_DID_SEED_B64:-}
       # Operator node does not bind to any specific OpenClaw by default.
       - OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL:-}
       - OPENCLAW_HOOKS_TOKEN=${OPENCLAW_HOOKS_TOKEN:-}
