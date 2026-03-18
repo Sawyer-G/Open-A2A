@@ -48,6 +48,8 @@ docker ps
 - **Bridge 日志**：`subject-bridge` 每 10 秒输出一行统计：
   - `a->b / b->a` 转发计数
   - `skip_self / skip_hop / skip_dedupe / errors`
+- **Bridge 运维端点（HTTP JSON，可选）**：
+  - 默认监听：`http://127.0.0.1:9464/healthz`（可通过 `OA2A_FED_HTTP_*` 配置）
 - **NATS 监控端口**（本示例已启用）：
   - X：`http://localhost:8222/`（连接数、订阅数等）
   - Y：`http://localhost:9222/`

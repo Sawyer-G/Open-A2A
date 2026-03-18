@@ -132,3 +132,11 @@ OA2A_FED_SUBJECTS=intent.food.>,intent.logistics.>
 | `OA2A_FED_STATS_INTERVAL_SECONDS` | 统计间隔 | `10` |
 | `OA2A_FED_LOG_FORWARD_SAMPLES` | 是否打印每条转发样例 | `0` |
 
+运维端点（可选，建议仅内网）：
+
+| 变量 | 说明 | 默认 |
+|---|---|---|
+| `OA2A_FED_HTTP_ENABLE` | 是否启用 HTTP JSON 端点 | `1` |
+| `OA2A_FED_HTTP_HOST` | 监听地址 | `127.0.0.1` |
+| `OA2A_FED_HTTP_PORT` | 监听端口（`/healthz`） | `9464` |
+

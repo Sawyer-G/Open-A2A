@@ -130,3 +130,11 @@ OA2A_FED_SUBJECTS=intent.food.>,intent.logistics.>
 | `OA2A_FED_STATS_INTERVAL_SECONDS` | Stats interval | `10` |
 | `OA2A_FED_LOG_FORWARD_SAMPLES` | Print per-message forward samples | `0` |
 
+Ops endpoint (optional, keep private):
+
+| Variable | Description | Default |
+|---|---|---|
+| `OA2A_FED_HTTP_ENABLE` | Enable HTTP JSON endpoint | `1` |
+| `OA2A_FED_HTTP_HOST` | Bind host | `127.0.0.1` |
+| `OA2A_FED_HTTP_PORT` | Bind port (`/healthz`) | `9464` |
+
