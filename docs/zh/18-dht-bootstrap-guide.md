@@ -66,6 +66,57 @@ make install-dht
 make run-discovery-dht-demo
 ```
 
+### 4.1 使用 Docker 在本机做一次“外网 bootstrap 可用性”验证（推荐）
+
+> 目的：验证你的 DHT bootstrap（例如 `dht.open-a2a.org:8469`）在**外网环境**下可加入、可写入、可读出。  
+> 该验证不依赖本机 Python 环境，直接在 Docker 容器里安装 `open-a2a[dht]` 后运行。
+
+前置：
+
+- 本机已安装 Docker
+- 你要验证的 bootstrap 已对公网开放端口（建议 **UDP 8469**，可选 TCP 8469）
+
+在仓库根目录执行（会启动两个临时 DHT 节点 A/B，都 bootstrap 到同一个公网入口；A 写入，B 读出）：
+
+```bash
+docker run --rm -t -v "$PWD:/repo" -w /repo python:3.12-slim bash -lc \
+  "python -m pip install -q --no-cache-dir -e '.[dht]' && python - <<'PY'
+import asyncio
+from open_a2a.discovery_dht import DhtDiscoveryProvider
+
+BOOT = [('dht.open-a2a.org', 8469)]
+CAP = 'intent.food.order'
+
+async def main():
+  a = DhtDiscoveryProvider(dht_port=18468, bootstrap_nodes=BOOT)
+  b = DhtDiscoveryProvider(dht_port=18469, bootstrap_nodes=BOOT)
+  await a.connect()
+  await b.connect()
+  try:
+    meta = {'agent_id':'local-e2e-a','capabilities':[CAP],'endpoints':[]}
+    await a.register(CAP, meta)
+    await asyncio.sleep(1.0)
+    res = await b.discover(CAP, timeout_seconds=2.0)
+    print('discover_count', len(res))
+    hit = [x for x in res if isinstance(x, dict) and x.get('agent_id')=='local-e2e-a']
+    print('hit', bool(hit))
+    if hit:
+      print('hit_meta', hit[0])
+    else:
+      print('sample', res[:3])
+  finally:
+    await a.disconnect()
+    await b.disconnect()
+
+asyncio.run(main())
+PY"
+```
+
+预期输出包含：
+
+- `discover_count` 大于 0
+- `hit True`
+
 ---
 
 ## 5. 运营建议（避免踩坑）

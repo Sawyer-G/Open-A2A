@@ -66,6 +66,57 @@ make install-dht
 make run-discovery-dht-demo
 ```
 
+### 4.1 Verify a public bootstrap from your laptop (Docker, recommended)
+
+> Goal: verify your DHT bootstrap (e.g. `dht.open-a2a.org:8469`) is reachable from the Internet and supports join + write + read.  
+> This check does not depend on your local Python environment: it runs inside a Docker container.
+
+Prereqs:
+
+- Docker installed locally
+- Your bootstrap is reachable publicly (recommended **UDP 8469**, optional TCP 8469)
+
+From the repo root (this starts two temporary DHT nodes A/B, both bootstrapped to the same public entry; A registers, B discovers):
+
+```bash
+docker run --rm -t -v "$PWD:/repo" -w /repo python:3.12-slim bash -lc \
+  "python -m pip install -q --no-cache-dir -e '.[dht]' && python - <<'PY'
+import asyncio
+from open_a2a.discovery_dht import DhtDiscoveryProvider
+
+BOOT = [('dht.open-a2a.org', 8469)]
+CAP = 'intent.food.order'
+
+async def main():
+  a = DhtDiscoveryProvider(dht_port=18468, bootstrap_nodes=BOOT)
+  b = DhtDiscoveryProvider(dht_port=18469, bootstrap_nodes=BOOT)
+  await a.connect()
+  await b.connect()
+  try:
+    meta = {'agent_id':'local-e2e-a','capabilities':[CAP],'endpoints':[]}
+    await a.register(CAP, meta)
+    await asyncio.sleep(1.0)
+    res = await b.discover(CAP, timeout_seconds=2.0)
+    print('discover_count', len(res))
+    hit = [x for x in res if isinstance(x, dict) and x.get('agent_id')=='local-e2e-a']
+    print('hit', bool(hit))
+    if hit:
+      print('hit_meta', hit[0])
+    else:
+      print('sample', res[:3])
+  finally:
+    await a.disconnect()
+    await b.disconnect()
+
+asyncio.run(main())
+PY"
+```
+
+Expected output:
+
+- `discover_count` > 0
+- `hit True`
+
 ---
 
 ## 5. Operator tips
