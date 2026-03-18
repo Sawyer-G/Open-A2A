@@ -89,3 +89,39 @@ OA2A_STRICT_SECURITY=1
 - **公共入口优先 Relay**：终端用户通常只需要出站连接 WS/WSS 即可接入，降低门槛。
 - **Bridge 默认不转发到运营者 OpenClaw**：运营节点不应把全网意图转发到某个特定业务运行时。若运营者要把 Bridge 用作“目录/适配层”，建议 `BRIDGE_ENABLE_FORWARD=0`、`BRIDGE_ENABLE_DISCOVERY=1`。
 
+---
+
+## （可选）X↔Y 多运营者互联（federation / subject bridge）
+
+如果你已经运营了节点 X，且希望与另一个运营者的节点 Y **只共享一部分主题**（建议默认只桥接 `intent.>`），可以启用本仓库的 `subject-bridge`（方式 2：独立 NATS + 只桥接部分 subject）。
+
+### 你需要准备什么
+
+- **节点 X（本套件）**：默认 NATS 为内网服务（容器网络内可访问 `nats:4222`）
+- **节点 Y**：一个可访问的 NATS 地址（通常带鉴权），例如 `nats://<user>:<pass>@nats-y.example.org:4222`
+
+> 注意：`subject-bridge` 需要在两侧都具备对所桥接 subject 的订阅/发布权限。建议为 federation 专门创建最小权限用户，而不是复用 `agent_public`。
+
+### 启用方式（Docker Compose profile）
+
+1) 在仓库根目录 `.env` 中设置至少两项：
+
+- `OA2A_FED_NATS_B`：指向节点 Y 的 NATS
+- （可选）`OA2A_FED_SUBJECTS`：桥接 allowlist，默认 `intent.>`
+
+2) 启动时带上 `--profile federation`：
+
+```bash
+docker compose -f deploy/node-x/docker-compose.node-x.yml --env-file .env --profile federation up -d --build
+```
+
+### 观测
+
+- **subject-bridge `/healthz`**：默认映射到本机 `127.0.0.1:9464`  
+  你可以访问 `http://127.0.0.1:9464/healthz` 查看转发计数与丢弃原因（hop/self/dedupe/errors）。
+- **NATS 监控端口**：若你在 NATS 配置中启用了 `http` 监控端口，可用于排查订阅/连接状态。
+
+更多原理与推荐默认值请参考：
+
+- `docs/zh/16-multi-operator-federation-subject-bridge.md`
+
