@@ -1,7 +1,7 @@
 # Open-A2A 开发命令
 # 使用 make 或 make help 查看可用命令
 
-.PHONY: venv install install-full install-solid install-bridge install-relay install-dht install-e2e run-merchant run-merchant-2 run-merchant-3 run-consumer run-carrier run-bridge run-relay run-relay-e2e-verify run-multi-merchant-demo run-discovery-demo run-discovery-dht-demo run-dht-discovery-renew run-bridge-discovery-renew run-federation-xy down-federation-xy lint test help
+.PHONY: venv install install-full install-solid install-bridge install-relay install-dht install-e2e run-merchant run-merchant-2 run-merchant-3 run-consumer run-carrier run-bridge run-relay run-relay-e2e-verify run-multi-merchant-demo run-discovery-demo run-discovery-dht-demo run-dht-discovery-renew run-bridge-discovery-renew run-federation-xy down-federation-xy setup-node-x e2e-dht-bootstrap e2e-bridge-directory-registry lint test help
 
 # 默认使用 .venv
 VENV := .venv
@@ -32,6 +32,9 @@ help:
 	@echo "  make install-e2e         - 安装 Relay 负载 E2E 加密依赖（cryptography）"
 	@echo "  make run-relay           - 运行 Relay 服务（WebSocket <-> NATS，可选 TLS：RELAY_WS_TLS=1）"
 	@echo "  make run-relay-e2e-verify - 验证 Relay 负载 E2E 加密（需先 make install-e2e，NATS+Relay 已启）"
+	@echo "  make setup-node-x        - 初始化 Node X（生成密钥并同步 nats.conf）"
+	@echo "  make e2e-dht-bootstrap   - DHT bootstrap 公网 E2E（join+write+read，需 Docker）"
+	@echo "  make e2e-bridge-directory-registry - Directory Registry 跨容器 E2E（需 Docker）"
 	@echo "  make lint                - 运行 ruff check（open_a2a/ relay/ tests/）"
 	@echo "  make test                - 运行 pytest（需 make install 含 dev 依赖）"
 	@echo ""
@@ -112,6 +115,15 @@ run-federation-xy:
 
 down-federation-xy:
 	docker compose -f deploy/federation/x-y/docker-compose.yml down
+
+setup-node-x:
+	bash scripts/setup-node-x.sh init
+
+e2e-dht-bootstrap:
+	bash scripts/e2e-dht-bootstrap.sh dht.open-a2a.org:8469
+
+e2e-bridge-directory-registry:
+	bash scripts/e2e-bridge-directory-registry.sh single-persist
 
 run-relay:
 	$(PYTHON) relay/main.py

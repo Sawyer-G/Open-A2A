@@ -198,7 +198,10 @@ Then, in OpenClaw:
 - Configure a webhook at `{OPENCLAW_GATEWAY_URL}/hooks/agent` with the provided token.
 
 See [`docs/en/openclaw-tool-example.md`](./docs/en/openclaw-tool-example.md) for detailed Tool + Hook configuration, and the Chinese version under `docs/zh/openclaw-tool-example.md` if you prefer Chinese.  
-For a Docker-specific OpenClaw integration guide, see [`docs/zh/09-openclaw-docker-quickstart.md`](./docs/zh/09-openclaw-docker-quickstart.md) (Chinese only for now).
+For a Docker-specific OpenClaw integration guide, see:
+
+- English: [`docs/en/09-openclaw-docker-quickstart.md`](./docs/en/09-openclaw-docker-quickstart.md)
+- Chinese: [`docs/zh/09-openclaw-docker-quickstart.md`](./docs/zh/09-openclaw-docker-quickstart.md)
 
 ---
 
@@ -228,11 +231,21 @@ See [`docs/en/04-roadmap.md`](./docs/en/04-roadmap.md) and [`docs/en/06-progress
 | Roadmap | [`04-roadmap`](./docs/en/04-roadmap.md) |
 | Development guide | [`05-development-guide`](./docs/en/05-development-guide.md) |
 | Progress | [`06-progress`](./docs/en/06-progress.md) |
+| Multi-language SDK planning | [`07-multi-language-sdk`](./docs/en/07-multi-language-sdk.md) |
 | Self-hosted Solid Pod | [`08-solid-self-hosted`](./docs/en/08-solid-self-hosted.md) |
 | Deployment & OpenClaw | [`09-deployment-and-openclaw-integration`](./docs/en/09-deployment-and-openclaw-integration.md) |
+| OpenClaw (Docker) quickstart | [`09-openclaw-docker-quickstart`](./docs/en/09-openclaw-docker-quickstart.md) |
 | NATS cluster & federation | [`10-nats-cluster-federation`](./docs/en/10-nats-cluster-federation.md) |
 | Relay E2E encryption | [`11-relay-e2e-verify`](./docs/en/11-relay-e2e-verify.md) |
 | Cross-IP testing | [`12-cross-ip-testing`](./docs/en/12-cross-ip-testing.md) |
+| Security considerations | [`13-security-considerations`](./docs/en/13-security-considerations.md) |
+| User story (pizza delivery) | [`14-user-story-pizza-delivery`](./docs/en/14-user-story-pizza-delivery.md) |
+| Node X operator kit | [`15-node-x-operator-kit`](./docs/en/15-node-x-operator-kit.md) |
+| Multi-operator federation (subject bridge) | [`16-multi-operator-federation-subject-bridge`](./docs/en/16-multi-operator-federation-subject-bridge.md) |
+| Identity & trust (operator guide) | [`17-identity-and-trust`](./docs/en/17-identity-and-trust.md) |
+| DHT bootstrap guide | [`18-dht-bootstrap-guide`](./docs/en/18-dht-bootstrap-guide.md) |
+| DHT community bootstraps | [`19-dht-community-bootstraps`](./docs/en/19-dht-community-bootstraps.md) |
+| Prometheus alert templates | [`20-observability-alerts-prometheus`](./docs/en/20-observability-alerts-prometheus.md) |
 | OpenClaw Tool example | [`openclaw-tool-example`](./docs/en/openclaw-tool-example.md) |
 
 **Doc entrypoints**:  
