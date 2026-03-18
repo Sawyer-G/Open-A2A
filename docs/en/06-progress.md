@@ -16,6 +16,7 @@
 
 - **Node X operator kit (copyable)**: `deploy/node-x/` (compose, nats.conf, env template, diagnose script)
 - **Path B “always discoverable” hardening**: Bridge TTL/expiration, optional auth & rate limiting, `/api/discovery_stats`
+- **Client renewal best practice**: example script `example/bridge_discovery_renew.py` (renew periodically based on TTL)
 - **Multi-operator federation (Option 2)**: independent NATS + subject-bridge (`deploy/federation/x-y/`)
 - **Identity & trust interoperability**: `spec/rfc-004-identity-and-trust.md` (meta minimum fields + proof)
 
