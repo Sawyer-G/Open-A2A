@@ -33,6 +33,7 @@ def _load_constraints() -> list[str]:
 async def main() -> None:
     relay_ws_url = os.getenv("RELAY_WS_URL", "ws://localhost:8765")
     consumer_id = os.getenv("CONSUMER_ID", "consumer-relay-full-001")
+    intent_type = os.getenv("INTENT_TYPE", "Pizza")
 
     transport = RelayClientTransport(relay_ws_url=relay_ws_url)
     broadcaster = IntentBroadcaster(transport=transport)
@@ -44,7 +45,7 @@ async def main() -> None:
     try:
         intent = Intent(
             action="Food_Order",
-            type="Noodle",
+            type=intent_type,
             location=location,
             constraints=constraints,
             reply_to="",
