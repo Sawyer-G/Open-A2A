@@ -130,15 +130,34 @@ def _is_subject_allowed(subject: str) -> bool:
 
 
 def _extract_auth_token(ws: Any) -> str:
+    # websockets 旧版本：request_headers / path
+    # websockets 新版本：request.headers / request.path
+    req_headers = None
+    req_path = ""
     try:
-        auth = (ws.request_headers.get("Authorization") or "").strip()
+        req_headers = getattr(ws, "request_headers", None)
+        req_path = getattr(ws, "path", "") or ""
+    except Exception:
+        req_headers = None
+        req_path = ""
+    try:
+        req = getattr(ws, "request", None)
+        if req is not None:
+            if req_headers is None:
+                req_headers = getattr(req, "headers", None)
+            if not req_path:
+                req_path = getattr(req, "path", "") or ""
+    except Exception:
+        pass
+
+    try:
+        auth = ((req_headers.get("Authorization") if req_headers else "") or "").strip()
         if auth.lower().startswith("bearer "):
             return auth.split(" ", 1)[1].strip()
     except Exception:
         pass
     try:
-        path = getattr(ws, "path", "") or ""
-        q = urlparse(path).query
+        q = urlparse(req_path).query
         token = (parse_qs(q).get("token") or [""])[0]
         return str(token).strip()
     except Exception:

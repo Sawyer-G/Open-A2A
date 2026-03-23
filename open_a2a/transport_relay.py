@@ -13,11 +13,13 @@ Agent 无需公网 IP 或 webhook：通过 WebSocket 主动连接 Open-A2A Relay
 
 import asyncio
 import base64
+import inspect
 import json
 import os
 import ssl
 import uuid
 from typing import Any, Awaitable, Callable, Optional
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from open_a2a.transport import MessageSubscription, TransportAdapter
 
@@ -121,10 +123,16 @@ class RelayClientTransport(TransportAdapter):
             raise TimeoutError("Relay connection timed out") from e
         return None
 
-    def _ws_connect_kwargs(self) -> dict[str, Any]:
+    def _ws_connect_kwargs(self, *, ws_url: Optional[str] = None) -> dict[str, Any]:
+        # 如果 URL query 已含 token，则让 Relay 通过 query token 鉴权，避免 Authorization header
+        # 在某些客户端/版本组合下出现解析差异导致的误拒绝。
+        url_for_auth = ws_url or self._relay_ws_url
+        parsed = urlparse(url_for_auth)
+        has_query_token = any(k == "token" for k, _ in parse_qsl(parsed.query, keep_blank_values=True))
+
         ssl_ctx = self._resolve_ssl()
         headers = []
-        if self._auth_token:
+        if self._auth_token and not has_query_token:
             headers.append(("Authorization", f"Bearer {self._auth_token}"))
         kwargs: dict[str, Any] = {
             "ping_interval": 20,
@@ -132,15 +140,40 @@ class RelayClientTransport(TransportAdapter):
             "ssl": ssl_ctx,
         }
         if headers:
-            kwargs["extra_headers"] = headers
+            # websockets 旧版本使用 extra_headers；新版本使用 additional_headers
+            header_arg = "extra_headers"
+            try:
+                sig = inspect.signature(websockets.connect)
+                if "additional_headers" in sig.parameters:
+                    header_arg = "additional_headers"
+            except Exception:
+                pass
+            kwargs[header_arg] = headers
         return kwargs
+
+    def _resolve_relay_ws_url_with_token(self) -> str:
+        """
+        Relay 支持从 URL query 读取 token: ?token=...
+        为了兼容不同 websockets/header 路径，把 token 也追加到 URL。
+        """
+        if not self._auth_token:
+            return self._relay_ws_url
+
+        parsed = urlparse(self._relay_ws_url)
+        q = parse_qsl(parsed.query, keep_blank_values=True)
+        if any(k == "token" for k, _ in q):
+            return self._relay_ws_url
+        q.append(("token", self._auth_token))
+        new_query = urlencode(q)
+        return urlunparse(parsed._replace(query=new_query))
 
     async def _run_forever(self) -> None:
         backoff = self._reconnect_initial
         while not self._stop:
             try:
                 self._remote_subjects.clear()
-                self._ws = await websockets.connect(self._relay_ws_url, **self._ws_connect_kwargs())
+                ws_url = self._resolve_relay_ws_url_with_token()
+                self._ws = await websockets.connect(ws_url, **self._ws_connect_kwargs(ws_url=ws_url))
                 self._connected_evt.set()
                 backoff = self._reconnect_initial
                 await self._resubscribe_all()
